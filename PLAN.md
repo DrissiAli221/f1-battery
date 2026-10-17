@@ -90,6 +90,11 @@ D8). Qualifying and sprints are deferred.
 - Java service calling the OpenF1 REST API: rate-limited (stay under 3 req/s
   and 30 req/min), **idempotent** (re-running never creates duplicates),
   **resumable** (a crash mid-season continues where it stopped).
+- **Two sources behind one interface:** the live API, and the local raw
+  backup in `data/raw/openf1/` (one JSON file per request plus
+  `manifest.json`, made by `tools/backup_openf1.py` before Phase 0). The
+  parser and the upsert are identical for both; only the fetch differs.
+  Tests use the local files.
 - About 17 races × 22 cars ≈ 400 car_data requests. The rate limit isn't the
   bottleneck.
 - Handle the 404 races (Bahrain 11261, Jeddah 11269) as "no data", not as errors.
