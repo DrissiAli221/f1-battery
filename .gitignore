@@ -1,0 +1,21 @@
+# Data is never committed (DECISIONS.md D5)
+data/
+spike/cache/
+*.parquet
+*.csv
+*.json.gz
+*.dump
+
+# Python
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+
+# Java
+target/
+build/
+.gradle/
+.idea/
+
+.env
+.DS_Store
