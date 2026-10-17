@@ -164,6 +164,13 @@ is a bonus for the Jan/Feb 2027 applications.
   event**, never hard-coded.
 - Regime classification: deploy / brake-harvest / lift-and-coast / super-clip /
   idle. Show it on a track map per car.
+- **Derate detector:** the cut-off is a ramp, not a step. C5.12.6 limits the
+  reduction to 50 kW/s at events whose power-limited distance exceeds 3500 m
+  and 100 kW/s elsewhere (only while ERS-K power is above 100 kW), so the ramp
+  length is event-dependent. Define the **cut-off as the ramp start**, fit the
+  ramp with the rate read from docs/regulations.md for that event, never
+  hard-coded. Allow for the ~200 kW burst on throttle reapplication when
+  labelling lifts.
 
 **Gate 3:** what is the model's biggest assumption, and how would you know if it's wrong?
 

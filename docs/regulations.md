@@ -86,9 +86,14 @@ Suzuka qualifying was cut 9→8 MJ by FIA notice on 2026-03-26 (formula1.com).
 Modelling caveats from driver/engineer statements (The Race 2026-04-04 and
 04-20, fetched): lifting below ~98 % throttle and reapplying triggers a brief
 ~200 kW MGU-K deployment the driver does not control (Norris), so "lift"
-detection must allow for a deploy burst on reapplication; derate rate is
-limited to 50 kW/s from 350 kW to 0 (Russell; matches C5.12.6), so a full
-derate takes ~7 s and a cut-off is a ramp, not a step. Public traces have
+detection must allow for a deploy burst on reapplication; the derate
+rate is limited by C5.12.6 while ERS-K power is above 100 kW: 50 kW/s at
+events where the FIA's power-limited distance exceeds 3500 m, 100 kW/s
+elsewhere (Russell's "50 kW/s" is the long-circuit case). A full derate from
+350 kW therefore takes about 5 s or 2.5 s depending on the event, so a cut-off
+is a ramp whose length is event-dependent. The detector defines the cut-off
+as the **ramp start**, and reads the rate from the per-event table below
+(column added in Phase 2). Public traces have
 dropped frames (f1technical forum, snippet), which argues for the 1.5 s
 brake guard and against raw gradient thresholds.
 

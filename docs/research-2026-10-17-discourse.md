@@ -9,7 +9,9 @@ fan-thread claims rest on snippets.
 ## The effect we measure is public knowledge, under the name "derating"
 - Media describe it in words: speeds "peak in the first half of the straight,
   then plateau or fall" (PlanetF1 Monza, S). Russell: derate is limited to
-  50 kW/s from 350 kW to 0 (The Race 04-20, F). arXiv 2603.01290 (V) models a
+  50 kW/s from 350 kW to 0 (The Race 04-20, F); that is the C5.12.6 rate for
+  events with more than 3500 m of power-limited distance, elsewhere it is
+  100 kW/s (docs/regulations.md). arXiv 2603.01290 (V) models a
   rival's ERS with an explicit L_derate state, on simulated data only.
 - Nobody found publishes a per-straight cut-off distance per car across a
   season. Closest: j5t3313/season_opening_analysis (0 stars, F) flags
@@ -73,8 +75,10 @@ fan-thread claims rest on snippets.
 ## What this means for the project
 1. Keep the pitch: measured derating per car, season-wide, tested against
    overtakes. Everyone talks about it; nobody has counted it.
-2. Phase 3 must model the cut-off as a ramp (50 kW/s) and tolerate dropped
-   frames; the 1.5 s brake guard stays.
+2. Phase 3 must model the cut-off as a ramp whose rate is event-dependent
+   (50 or 100 kW/s per C5.12.6, read from docs/regulations.md), define the
+   cut-off as the ramp start, and tolerate dropped frames; the 1.5 s brake
+   guard stays.
 3. The lift-and-reapply 200 kW burst is a real confound for "lift" labels.
 4. Per-event qualifying limits exist publicly; race limits mostly don't.
    Monza's low limit explains the absent super-clip, and means clip
