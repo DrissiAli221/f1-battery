@@ -83,8 +83,8 @@ noisy, what was done about it, and why active aero is a confounder.
 ## Phase 1: ingestion, race sessions only (target: gate passed by 2026-10-30)
 
 Scope: 2026 **race** sessions only. Endpoints: sessions, drivers, laps, stints,
-pit, car_data, overtakes, race_control. Qualifying, sprints and location are
-deferred.
+pit, car_data, overtakes, race_control, location (needed for the track map,
+D8). Qualifying and sprints are deferred.
 
 - Java service calling the OpenF1 REST API: rate-limited (stay under 3 req/s
   and 30 req/min), **idempotent** (re-running never creates duplicates),
@@ -117,8 +117,9 @@ TimescaleDB, as groundwork for estimating hidden battery usage.
 ## Phase 1.5: thin cloud deploy (target: by 2026-11-15)
 
 Cloud is half the profile, so it doesn't wait for Phase 6. Containerised
-ingestion service plus a managed Postgres on one cloud provider, deployed
-from CI, with basic metrics (rows ingested, requests, 429 count). No public
+ingestion service plus Postgres/Timescale on an Oracle Cloud free-tier ARM VM,
+one small AWS piece (D8), deployed from GitHub Actions, with basic metrics
+(rows ingested, requests, 429 count). No public
 data (DECISIONS.md D5). Gate: Ali explains the deploy pipeline end to end.
 
 **Minimum interview story, due 2026-11-15:** Phase S figures, ingestion in
@@ -129,9 +130,9 @@ is a bonus for the Jan/Feb 2027 applications.
 
 ## Phase 2: data model and alignment
 
-- Hypertable for car_data. Map each sample to a lap and a distance along the
-  lap (integrate speed between lap start timestamps). Validate once against
-  the `location` endpoint on one race.
+- Hypertables for car_data and location. Map each sample to a lap and a
+  distance along the lap (integrate speed between lap start timestamps).
+  Validate once against `location` on one race.
 - Data-quality report per race: sample rate, gaps, missing drivers, laps
   behind the safety car or VSC (from race_control).
 - `docs/regulations.md` filled for every race (see Phase 3 dependency).
@@ -187,7 +188,9 @@ What did you assume instead?
 ## Phase 6: API, view, deploy
 
 - Java REST API over the results table.
-- Small web view: track map with regimes, per-race comparison.
+- React + TypeScript view (D8): track map from `location` with regimes per
+  lap, time scrubbing, two-car comparison, per-race PU-maker summary. This is
+  the one place to spend design effort.
 - Extends the Phase 1.5 deploy. Public view shows **aggregates or a recorded
   demo only**. Full per-lap derived telemetry stays local (see DECISIONS.md D5).
 
@@ -195,8 +198,15 @@ What did you assume instead?
 
 ---
 
+## Phase 7 (optional): live replay with Kafka
+
+Re-emit one race's samples at real speed onto a Kafka topic; a consumer keeps
+a running regime estimate and the React view follows it live. The only
+justified use of streaming here (D8). Gate 7: why Kafka here and not in
+ingestion?
+
 ## Deferred (only after Phase 5)
 
-Qualifying and sprint sessions (cleanest clipping signal). Location data.
-Team radio as weak validation (2026 radio coverage is very low per OpenF1).
-Remaining 2026 races as they happen.
+Qualifying and sprint sessions (cleanest clipping signal). Team radio as weak
+validation (2026 radio coverage is very low per OpenF1). Remaining 2026 races
+as they happen.

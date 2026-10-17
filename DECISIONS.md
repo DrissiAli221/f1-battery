@@ -87,5 +87,32 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   from guesses.
 - **Owner note:** Ali confirms D1, D7 and HYPOTHESIS.md wording.
 
+## D8 — 2026-10-17 — Stack choices confirmed by Ali
+- **Postgres + TimescaleDB from the start.** Timescale is a Postgres extension
+  (hypertables: automatic time chunking, compression, time-bucket helpers),
+  not a separate database. At ~9M rows plain Postgres would cope; Ali keeps
+  Timescale to learn it. Gate 0 must include "what would change without it".
+- **Rejected: MongoDB.** The data is relational (car_data → laps → stints,
+  overtakes → two drivers, everything → sessions), the workload is analytical
+  SQL (window functions, group by distance bin), and pandas reads SQL in one
+  line. Every row has the same ten fields, so documents buy nothing.
+- **Rejected: Kafka and Spark in the main pipeline.** The season is ~9M rows
+  fetched once in ~25 min and analysed in batch. Kafka is for continuous
+  multi-producer streams, Spark for data that doesn't fit one machine. Neither
+  applies. Adding them would be for the CV, and that is the wrong interview
+  answer. Kafka is allowed later as a **replay mode** (Phase 7): re-emit a
+  race at real speed onto a topic, consumer updates the regime estimate live.
+  That is a real streaming problem with a real reason.
+- **View: React + TypeScript (Vite).** Frontend is a strength of Ali's; the
+  view should be genuinely good: track map from the `location` endpoint with
+  regimes per lap, time scrubbing, two-car comparison. Consequence: `location`
+  is ingested in Phase 2, no longer deferred.
+- **Cloud: Oracle Cloud free tier (ARM VM, 24 GB) for the services and
+  database, plus one small AWS piece (S3 for cached raw JSON, or ECR, or a
+  scheduled Lambda fetch) for AWS exposure at near-zero cost.** One deploy
+  path only.
+- **Ingestion details:** Spring Data JDBC with explicit SQL (not JPA), a
+  hand-written token-bucket rate limiter (not Resilience4j), build tool TBD.
+
 ## Gate results
 (date — gate — pass/fail — notes)

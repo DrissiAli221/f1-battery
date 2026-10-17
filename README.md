@@ -42,5 +42,12 @@ output is renamed an "energy-management proxy" (see DECISIONS.md).
 ## Data
 
 [OpenF1](https://openf1.org/) (free historical tier, non-commercial use), plus
-[FastF1](https://docs.fastf1.dev/) where useful. Not affiliated with Formula 1,
+[FastF1](https://docs.fastf1.dev/) where useful.
+
+## Stack
+
+Java 21 / Spring Boot ingestion → PostgreSQL + TimescaleDB → Python batch
+model (numpy, pandas, scipy) → Spring Boot REST API → React + TypeScript view.
+Oracle Cloud free tier plus a small AWS piece. Kafka only in an optional
+replay mode (PLAN.md Phase 7). Reasons and rejected options: DECISIONS.md D3, D8. Not affiliated with Formula 1,
 FIA or FOM. Raw data is never committed or redistributed.
