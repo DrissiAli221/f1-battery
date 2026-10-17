@@ -60,6 +60,16 @@ Only add an entry once the thing exists and Ali can explain it without notes.
   estimate under stated assumptions, validated indirectly (C5.2.8 taper,
   overtakes).
 
+## Framing
+- **What did you find?** Not "I discovered the cut-off". Derating is a known
+  effect. "I measured derating per car across the season from public data,
+  checked it was an energy decision and not top speed or an aero-zone
+  boundary, and tested whether it predicts overtakes." The existing academic
+  work (arXiv 2603.01290) is simulation-only; this runs on real telemetry.
+- **What went wrong first?** The first super-clip result was a smoothing
+  artifact (braking onset leaking backwards). Caught by checking the
+  time-to-brake of every candidate. Fixed with a guard window.
+
 ## Cloud
 - **Why Oracle plus a small AWS piece?** Oracle's free ARM tier runs the whole
   thing for nothing; the raw cache in a private S3 bucket is both the backup

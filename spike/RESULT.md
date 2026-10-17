@@ -23,7 +23,8 @@ state-of-charge numbers) unless a later check changes that.
 
 ## What the data does show
 
-**A repeatable deploy cut-off on long straights.** At full throttle in top
+**A repeatable deploy cut-off on long straights** (the known effect called
+**derating**; see DECISIONS.md D1 addendum). At full throttle in top
 gear above ~300 kph the cars sit at near-zero acceleration (median 0.1–0.7
 m/s², against 1.3–1.6 m/s² at 280–300 kph) while C5.2.8 would still allow
 ≥ 200 kW of MGU-K. So deployment is cut by energy management, not by the
@@ -41,7 +42,11 @@ straight: the cars accelerate all the way to the brake point. That is the
 expected contrast.
 
 **No harvest-under-throttle at Monza in the race.** Nothing sustained below
-−1.5 m/s² at full throttle outside the braking approach. If "super-clipping"
+−1.5 m/s² at full throttle outside the braking approach. Reported
+explanation (r/F1Technical thread "How did teams avoid serious super
+clipping at Monza?", and GrandPrix.com; figures 5 MJ vs 6–6.5 MJ disagree,
+none verified): the FIA set a lower per-lap harvest limit at Monza, so
+teams did not need to harvest under throttle. If "super-clipping"
 in the 350 kW harvest sense happens, it is not in race data at 3.7 Hz, or it
 is hidden by the active-aero mode change before braking.
 

@@ -18,6 +18,17 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   simulators/visualisers. **None found is season-wide, engineered as a
   pipeline, or validated against an observable outcome.** Those three are the
   differentiators, not novelty of the idea.
+- **Addendum 2026-10-17 (second agent's search, arXiv checked by Claude):**
+  the deploy cut-off found in Phase S is a known effect called **derating**
+  (media: PlanetF1, Scuderia Fans; arXiv 2603.01290 "Opponent State
+  Inference Under Partial Observability: An HMM-POMDP Framework for 2026 F1
+  Energy Strategy" models a rival's ERS state with an explicit L_derate
+  mode, on **simulated data only**, real telemetry listed as future work, no
+  code). A Reddit r/F1Technical post read Hamilton's Canada 2026 top speed
+  falling then recovering before a pass as save-then-attack: our hypothesis
+  as one anecdote. Pitch therefore: "measured derating per car across the
+  season from public data and tested whether it predicts overtakes", never
+  "discovered the cut-off".
 - **Rejected:** race replay (heavily cloned), winner prediction (heavily cloned),
   pit-strategy simulator (already done), team-radio AI (2026 radio mostly
   missing), stewarding dataset (less fun, scraping terms unclear).

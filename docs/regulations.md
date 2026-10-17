@@ -70,7 +70,7 @@ stays "unknown" until a public source gives it (see B7.2.1b above).
 | Belgium | 11334 | 2026-07-19 | 19 | unknown | |
 | Hungary | 11342 | 2026-07-26 | 19 | unknown | |
 | Netherlands | 11353 | 2026-08-23 | 20 | unknown | 11348 is the sprint |
-| Italy (Monza) | 11361 | 2026-09-06 | 20 | unknown | Spike race |
+| Italy (Monza) | 11361 | 2026-09-06 | 20 | reported reduced: 5 MJ (GrandPrix.com) or 6 MJ / 6.5 with Overtake (Reddit comment); **unverified, secondary** | Spike race |
 | Spain (Madrid) | 11369 | 2026-09-13 | 20 | unknown | |
 | Azerbaijan | 11377 | 2026-09-26 | 20 | unknown | |
 | Bahrain GP in Malaysia (Kuala Lumpur) | 11731 | 2026-10-04 | 20 | unknown | Real race: OpenF1 meeting 1308 is "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026" (relocated Bahrain round, country label kept as Bahrain). Include. Checked 2026-10-17 |
