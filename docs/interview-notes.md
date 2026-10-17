@@ -32,6 +32,14 @@ Only add an entry once the thing exists and Ali can explain it without notes.
   turns ~24k rows per car into one round trip per batch.
 
 ## Architecture
+- **Is this microservices?** No. Two programs sharing one database would be
+  the microservices anti-pattern. It's a modular monolith with a batch job:
+  one codebase, one schema, two deployables with different lifecycles. No
+  network between modules, no distributed transactions, nothing to split
+  until there's a reason.
+- **How do new races get in?** The ingester is re-runnable: list sessions,
+  skip windows already complete in the ingestion log, fetch only the new
+  ones. A weekly cron on the server runs it, then the model.
 - **Why two runnable modules and a shared db module?** Ingestion is a job,
   the API is a server; they share only the schema. Flyway in one place means
   no drift between Java and Python.

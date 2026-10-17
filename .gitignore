@@ -19,3 +19,6 @@ build/
 
 .env
 .DS_Store
+
+# Private notes, never pushed
+private/
