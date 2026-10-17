@@ -4,7 +4,9 @@ F1 does not publish battery (ERS) data in 2026. This project estimates each
 car's energy management from public telemetry, then tests one pre-registered
 question against real overtakes.
 
-Status: **Phase S (feasibility spike)**, not started. See [PLAN.md](PLAN.md).
+Status: **Phase S done** (1 of 3 exit conditions; continuing as an
+energy-management proxy, see [spike/RESULT.md](spike/RESULT.md) and D10).
+Next: Phase 0. See [PLAN.md](PLAN.md).
 
 ## Why this exists
 

@@ -151,5 +151,20 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   429s), structured logs, config via environment variables, no secrets in git.
 - Interview-relevant reasoning is collected in docs/interview-notes.md.
 
+## D10 — 2026-10-17 — Phase S result: proceed in proxy mode (PROPOSED, Ali to confirm)
+- **Result:** 1 of 3 exit conditions passed (spike/RESULT.md). Taper not
+  demonstrated (Overtake state and active aero unobserved, few samples above
+  340 kph). Super-clip harvest segments: the first pass was a smoothing
+  artifact, none survive a brake-onset guard. Regime agreement lap to lap:
+  pass (≥ 0.91 mean at Monza, ≥ 0.94 at Singapore).
+- **What is real:** a per-straight deploy cut-off above ~300 kph, repeatable
+  within 20–75 m on the two long Monza straights, absent at Singapore.
+- **Decision:** continue as an **energy-management proxy**: regimes, cut-off
+  distance and speed per straight, relative deploy energy. No state-of-charge
+  numbers. HYPOTHESIS.md variables to be re-expressed in cut-off terms before
+  freezing. Taper check deferred to qualifying data.
+- **Rejected:** claiming the first-pass super-clip result; estimating SoC with
+  an assumed engine curve (not identifiable from this data).
+
 ## Gate results
 (date — gate — pass/fail — notes)

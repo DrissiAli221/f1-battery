@@ -20,7 +20,7 @@ below say what "done" means, not who does it. Ali assigns.
 
 ---
 
-## Phase S: feasibility spike (target 2026-10-18 → 10-20)
+## Phase S: feasibility spike — DONE 2026-10-17, result 1/3, proxy mode (spike/RESULT.md, D10)
 
 Question: can the energy regimes be seen in 3.7 Hz public telemetry at all?
 
@@ -174,8 +174,9 @@ is a bonus for the Jan/Feb 2027 applications.
 **Precondition:** HYPOTHESIS.md is complete, dated and frozen before any
 Phase 4 output exists.
 
-- Per-lap energy trajectory, constrained to the 4 MJ state-of-charge window
-  (C5.2.9) and the per-event recharge cap (C5.2.10).
+- **Proxy mode (D10):** per-straight deploy cut-off distance and speed,
+  relative deploy energy above the ICE-only plateau, regime maps. SoC
+  trajectories only if a later qualifying check shows the taper.
 - Uncertainty bands, not single numbers. Assumptions (engine power, mass/fuel
   burn, drag) listed in the output.
 - If Phase S failed: skip state numbers and keep only per-lap regime proxies.

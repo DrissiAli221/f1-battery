@@ -1,0 +1,224 @@
+{
+ "63": {
+  "green_laps": 58,
+  "straights": [
+   {
+    "straight_start_m": 1022,
+    "run_len_m": 559,
+    "laps": 58,
+    "frac_with_cut": 0.03,
+    "cut_median_m": 1475,
+    "cut_std_m": 11.8,
+    "cut_iqr_m": 8,
+    "v_at_cut": 308,
+    "v_max": 308
+   },
+   {
+    "straight_start_m": 3115,
+    "run_len_m": 271,
+    "laps": 53,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 275
+   },
+   {
+    "straight_start_m": 3636,
+    "run_len_m": 474,
+    "laps": 58,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 293
+   }
+  ],
+  "agreement_fullthrottle_mean": 0.972,
+  "agreement_fullthrottle_min": 0.9
+ },
+ "44": {
+  "green_laps": 56,
+  "straights": [
+   {
+    "straight_start_m": 1025,
+    "run_len_m": 580,
+    "laps": 55,
+    "frac_with_cut": 0.09,
+    "cut_median_m": 1478,
+    "cut_std_m": 23.7,
+    "cut_iqr_m": 9,
+    "v_at_cut": 288,
+    "v_max": 293
+   },
+   {
+    "straight_start_m": 3113,
+    "run_len_m": 278,
+    "laps": 54,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 267
+   },
+   {
+    "straight_start_m": 3629,
+    "run_len_m": 491,
+    "laps": 56,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 280
+   }
+  ],
+  "agreement_fullthrottle_mean": 0.975,
+  "agreement_fullthrottle_min": 0.923
+ },
+ "3": {
+  "green_laps": 56,
+  "straights": [
+   {
+    "straight_start_m": 1012,
+    "run_len_m": 577,
+    "laps": 55,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 293
+   },
+   {
+    "straight_start_m": 3102,
+    "run_len_m": 281,
+    "laps": 55,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 268
+   },
+   {
+    "straight_start_m": 3621,
+    "run_len_m": 485,
+    "laps": 56,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 285
+   }
+  ],
+  "agreement_fullthrottle_mean": 0.99,
+  "agreement_fullthrottle_min": 0.953
+ },
+ "18": {
+  "green_laps": 32,
+  "straights": [
+   {
+    "straight_start_m": 995,
+    "run_len_m": 549,
+    "laps": 32,
+    "frac_with_cut": 0.28,
+    "cut_median_m": 1385,
+    "cut_std_m": 8.1,
+    "cut_iqr_m": 3,
+    "v_at_cut": 279,
+    "v_max": 285
+   },
+   {
+    "straight_start_m": 2196,
+    "run_len_m": 230,
+    "laps": 27,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 252
+   },
+   {
+    "straight_start_m": 3033,
+    "run_len_m": 321,
+    "laps": 30,
+    "frac_with_cut": 0.13,
+    "cut_median_m": 3350,
+    "cut_std_m": 28.3,
+    "cut_iqr_m": 19,
+    "v_at_cut": 257,
+    "v_max": 258
+   },
+   {
+    "straight_start_m": 3568,
+    "run_len_m": 470,
+    "laps": 25,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 277
+   }
+  ],
+  "agreement_fullthrottle_mean": 0.937,
+  "agreement_fullthrottle_min": 0.891
+ },
+ "27": {
+  "green_laps": 56,
+  "straights": [
+   {
+    "straight_start_m": 1019,
+    "run_len_m": 578,
+    "laps": 56,
+    "frac_with_cut": 0.02,
+    "cut_median_m": 1501,
+    "cut_std_m": NaN,
+    "cut_iqr_m": 0,
+    "v_at_cut": 291,
+    "v_max": 291
+   },
+   {
+    "straight_start_m": 2249,
+    "run_len_m": 239,
+    "laps": 31,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 264
+   },
+   {
+    "straight_start_m": 3116,
+    "run_len_m": 278,
+    "laps": 56,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 270
+   },
+   {
+    "straight_start_m": 3628,
+    "run_len_m": 498,
+    "laps": 55,
+    "frac_with_cut": 0.0,
+    "cut_median_m": null,
+    "cut_std_m": null,
+    "cut_iqr_m": null,
+    "v_at_cut": null,
+    "v_max": 283
+   }
+  ],
+  "agreement_fullthrottle_mean": 0.974,
+  "agreement_fullthrottle_min": 0.891
+ }
+}
