@@ -49,6 +49,8 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   CC BY-NC-SA 4.0. Checked on openf1.org 2026-10-17.
 - **Decision:** raw and derived data stay local and are never committed. A
   public deploy shows aggregates or a recorded demo only. Credit OpenF1 with a link.
+- **Amended by D9 (2026-10-17):** derived outputs may be served publicly;
+  raw samples never.
 
 ## D6 — 2026-10-17 — Limits come from a per-event regulation table
 - **Why:** the rules changed during the season (April 2026 package applied
@@ -113,6 +115,41 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   path only.
 - **Ingestion details:** Spring Data JDBC with explicit SQL (not JPA), a
   hand-written token-bucket rate limiter (not Resilience4j), build tool TBD.
+
+## D9 — 2026-10-17 — Design details confirmed by Ali
+- **D5 amended:** this is a personal, non-commercial project. The public
+  deploy may serve **derived** outputs (regime labels per lap at coarse
+  distance bins, energy estimates, aggregates) credited to OpenF1 under
+  CC BY-NC-SA. It never serves raw speed, throttle, brake, rpm or location
+  samples. Raw data still stays local and is never committed.
+- **Build: Maven, multi-module monorepo.** `db/` owns every Flyway migration
+  (including the Python results table), `ingest/` is a job that runs and
+  exits, `api/` is a long-running read-only server. `ingest` and `api` depend
+  on `db`, never on each other. No shared entity classes.
+- **Schema ownership:** Flyway in `db/` only. Python inserts into the results
+  table with `model_version` and `run_id`; it never creates tables.
+- **Fetch granularity:** car_data and location are fetched in time windows
+  (~10 min). The window is the unit of the ingestion log and of resumability.
+- **Keys:** car_data unique on (session_key, driver_number, date); Timescale
+  requires the time column in any unique index. Duplicate timestamps from the
+  API are deduped in the ingester before insert.
+- **Hosting:** Ali's existing Oracle Cloud free-tier ARM server (already runs
+  another light project). All images built arm64 in CI. Keep something
+  running so Oracle doesn't reclaim it.
+- **Backup = the AWS piece:** cached raw JSON goes to a private S3 bucket.
+  Database and results are rebuildable from it. A private bucket is not
+  redistribution.
+- **Lap assignment:** explicit rules in Phase 2 for lap 1 without a start
+  time, out-laps, pit laps and SC/VSC laps; the quality report counts samples
+  with no lap.
+- **API:** read-only, paginated, CORS for the React origin, ETag caching
+  (results are immutable per model version), basic rate limit (unauthenticated).
+- **Tests:** Testcontainers (timescaledb image) for the DB, WireMock with
+  recorded OpenF1 responses for HTTP, including 429 and 502 paths. CI never
+  calls the live API.
+- **Observability:** Actuator health, Micrometer counters (rows, requests,
+  429s), structured logs, config via environment variables, no secrets in git.
+- Interview-relevant reasoning is collected in docs/interview-notes.md.
 
 ## Gate results
 (date — gate — pass/fail — notes)

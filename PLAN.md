@@ -68,8 +68,9 @@ noisy, what was done about it, and why active aero is a confounder.
 ## Phase 0: setup (after Phase S)
 
 - docker compose: Postgres + TimescaleDB.
-- Java 21 Spring Boot skeleton (`ingest/`). JDK 23 is installed, so compile
-  with `--release 21`.
+- Maven multi-module skeleton (D9): `db/` (Flyway migrations), `ingest/`
+  (job), `api/` (server). Java 21; JDK 23 is installed, so compile with
+  `--release 21`.
 - Python package skeleton (`model/`), pinned venv. Check that the scientific
   stack supports the local Python 3.14. If not, use 3.12.
 - One versioned results table, the only interface from the Python side to the
@@ -97,8 +98,17 @@ D8). Qualifying and sprints are deferred.
   "Kuala Lumpur") is the relocated Bahrain GP in Malaysia, a real race; key
   on `meeting_key`/`circuit_key`, not on country name.
 - Ingestion log table: what was fetched when, row counts.
+- Fetch car_data and location in ~10-minute windows; the window is the unit
+  of the ingestion log and of resume (D9).
+- Dedupe duplicate (driver, timestamp) rows before insert. Unique key
+  (session_key, driver_number, date).
 - Bulk inserts (JDBC batching or COPY), not row-by-row.
-- Integration tests with Testcontainers (Postgres), CI on GitHub Actions.
+- Tests: Testcontainers (timescaledb image) and WireMock with recorded OpenF1
+  responses for the 200, 429 and 502 paths. CI on GitHub Actions, arm64 image
+  build included.
+- Actuator health, Micrometer counters (rows, requests, 429s), structured logs,
+  config via environment variables.
+- Cached raw JSON synced to a private S3 bucket (backup and the AWS piece).
 - **Ali writes by hand:** the rate limiter, the upsert, and the resume logic.
   Agents may draft the rest.
 
@@ -133,8 +143,9 @@ is a bonus for the Jan/Feb 2027 applications.
 - Hypertables for car_data and location. Map each sample to a lap and a
   distance along the lap (integrate speed between lap start timestamps).
   Validate once against `location` on one race.
-- Data-quality report per race: sample rate, gaps, missing drivers, laps
-  behind the safety car or VSC (from race_control).
+- Explicit lap-assignment rules: lap 1 without a start time, out-laps, pit
+  laps, SC/VSC laps. Data-quality report per race: sample rate, gaps, missing
+  drivers, samples with no lap, laps behind the safety car or VSC.
 - `docs/regulations.md` filled for every race (see Phase 3 dependency).
 
 **Gate 2:** why distance and not time as the x-axis? How do you treat safety-car laps?
@@ -187,7 +198,8 @@ What did you assume instead?
 
 ## Phase 6: API, view, deploy
 
-- Java REST API over the results table.
+- Java REST API over the results table: read-only, paginated, ETag caching,
+  CORS, basic rate limit. Serves derived outputs only (D9), never raw samples.
 - React + TypeScript view (D8): track map from `location` with regimes per
   lap, time scrubbing, two-car comparison, per-race PU-maker summary. This is
   the one place to spend design effort.
