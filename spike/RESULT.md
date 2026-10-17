@@ -57,6 +57,40 @@ bins; the `location` endpoint should still be used to anchor it in Phase 2.
 **Feed timing.** OpenF1 samples every car on identical timestamps (26,698
 rows per car at Monza). Cross-car alignment is free.
 
+## Tow test: is the cut-off a distance decision or a speed limit? (2026-10-17)
+
+Per car and straight at Monza, cut-off distance and cut-off speed were
+regressed on entry speed (speed 150 m into the full-throttle run; spread of
+10–40 kph across laps from tows and traffic). Script: `tow_test.py`, numbers in
+`out/11361/tow_test.json`.
+
+| Straight | Cut distance vs entry speed | Cut speed vs entry speed | Reading |
+|---|---|---|---|
+| T1 → Roggia | slope 0.3 to 2.4 m per kph, r 0.02–0.33 | r 0.24–0.62, +2 to +6 kph on fast laps | **Distance-fixed.** A faster entry just arrives at the same point faster. Energy decision |
+| Lesmo 2 → Ascari | slope −3 m per kph, r −0.2 to −0.3 | r ≈ 0 | **Distance-fixed**, slightly earlier when entering faster |
+| Ascari → Parabolica | slope −5 to −18 m per kph, r −0.2 to −0.66; fast-entry laps cut ~230 m earlier | flat at 302–313 kph | **Speed-targeted.** Deploy stops once ~305–313 kph is reached, wherever that is |
+| Main straight | not testable: the run is split by the lap boundary and the car is already cut at the line | | Treat 5250 → 740 m as one straight in Phase 2 |
+
+Conclusion: the cut-off is **not** the car's top speed (the same cars reach
+320–350 kph elsewhere on the lap) and on two of three straights it is a fixed
+place on the track, so it is an energy-management decision. On the third it
+follows a target speed. Consequence for HYPOTHESIS.md: the per-straight
+variable must be expressed relative to the car's own median for that straight
+and controlled for entry speed, not as a raw distance.
+
+## Active-aero zones vs cut-offs (2026-10-17)
+
+Monza's 2026 straight-mode zones are published only qualitatively (PlanetF1,
+formula1news.co.uk; one source says two zones, the better-supported count is
+four): main straight from the line; Curva Grande exit → Roggia entry;
+Lesmo 2 → Ascari; Ascari exit → Parabolica entry. No metre markers, no FIA
+document reached. Each zone ends at the entry to the next corner, i.e. at or
+after the braking point. The measured cut-offs sit mid-zone: ~470 m before
+Roggia, ~200 m before Ascari, 130–470 m before Parabolica. So the cut-off is
+not an aero-mode change at a zone boundary. Caveat: a driver may close the
+wing early inside a zone; that cannot be seen in this data. Zone definitions
+with metres are an open item for Phase 2 (`docs/regulations.md`, per event).
+
 ## Lessons for Gate S
 
 1. The smoothing window leaks the braking onset backwards and fakes a

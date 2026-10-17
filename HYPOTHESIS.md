@@ -36,13 +36,17 @@ predict being passed, after controlling for pace difference and tyre age?
   `intervals.interval` under ___ s for at least ___ consecutive samples
   (intervals arrive every 3–6 s, so N is small), no pass within the next
   ___ s.
-- **Main variables (all from the Phase 3/4 estimator, measured at the control
-  line of the lap *before* the event):**
-  - defender super-clip count and lift-and-coast count on the previous lap
-  - defender − attacker estimated net deploy on the previous lap (MJ, with
-    uncertainty band)
-  - whether the defender clipped or lifted on the approach straight to the
-    pass (binary)
+- **Main variables (proxy mode, D10; from the Phase 3 regime model, measured
+  on the lap *before* the event):**
+  - defender's deploy cut-off on the approach straight, as the difference
+    from that car's own median cut-off on that straight, controlled for entry
+    speed (spike/RESULT.md tow test). Read as "earlier cut = more energy
+    saving on that straight", not "less energy": the car may be saving for
+    later in the lap.
+  - defender − attacker relative deploy energy above the ICE-only plateau,
+    summed over the previous lap (relative units, with uncertainty band)
+  - whether the defender lifted (throttle < full) on the approach straight
+    (binary)
 - **Controls:** pace delta (median clean-lap time of each car over the previous
   ___ laps), tyre age difference (`stints`), track (fixed effect), lap number,
   Overtake availability (gap under the threshold at the control line, from
