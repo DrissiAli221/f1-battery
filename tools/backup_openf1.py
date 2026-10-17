@@ -1,5 +1,5 @@
 """One-time raw backup of all 2026 OpenF1 race sessions into data/raw/openf1/ (gitignored).
-Usage: python tools/backup_openf1.py [--summary]
+Usage: python tools/backup_openf1.py [--summary] [--sessions "Race"]  (comma-separated session_name values; default Race)
 - Rate limit: sleeps 2.2 s between requests (<=27/min, under the 30/min and 3/s free-tier caps).
 - Resumable: a request whose file exists is skipped. Retries with exponential backoff on 429/5xx.
 - Layout: data/raw/openf1/<session_key>/<endpoint>[_<driver>][_<window>].json, one file per request,
@@ -54,12 +54,13 @@ def main():
         return
     now = datetime.now(timezone.utc)
     sessions = get("/sessions?year=2026", ROOT / "sessions_2026.json")
+    names = sys.argv[sys.argv.index("--sessions") + 1].split(",") if "--sessions" in sys.argv else ["Race"]
     races = [s for s in json.load(open(ROOT / "sessions_2026.json"))
-             if s["session_name"] == "Race" and datetime.fromisoformat(s["date_start"]) < now]
-    print(f"{len(races)} race sessions in 2026 before now", flush=True)
+             if s["session_name"] in names and datetime.fromisoformat(s["date_start"]) < now]
+    print(f"{len(races)} sessions {names} in 2026 before now", flush=True)
     for s in races:
         sk = s["session_key"]; d = ROOT / str(sk); d.mkdir(exist_ok=True)
-        m = manifest["sessions"].setdefault(str(sk), {"name": f'{s["circuit_short_name"]} {s["date_start"][:10]}', "rows": {}})
+        m = manifest["sessions"].setdefault(str(sk), {"name": f'{s["circuit_short_name"]} {s["session_name"]} {s["date_start"][:10]}', "rows": {}})
         if m.get("status") == "complete":
             print(f"{sk} {m['name']}: already complete", flush=True); continue
         print(f"== {sk} {m['name']}", flush=True)
