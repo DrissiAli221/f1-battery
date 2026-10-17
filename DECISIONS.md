@@ -162,7 +162,7 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   429s), structured logs, config via environment variables, no secrets in git.
 - Interview-relevant reasoning is collected in docs/interview-notes.md.
 
-## D10 — 2026-10-17 — Phase S result: proceed in proxy mode (PROPOSED, Ali to confirm)
+## D10 — 2026-10-17 — Phase S result: proceed in proxy mode (CONFIRMED by Ali, 2026-10-17)
 - **Result:** 1 of 3 exit conditions passed (spike/RESULT.md). Taper not
   demonstrated (Overtake state and active aero unobserved, few samples above
   340 kph). Super-clip harvest segments: the first pass was a smoothing

@@ -51,30 +51,46 @@ secondary.
 
 ## Per-event table (to fill in Phase 2)
 
-Issue in force = newest Section C issue dated before the race. Recharge limit
-stays "unknown" until a public source gives it (see B7.2.1b above).
+Issue in force = newest Section C issue dated before the race. **Race**
+recharge limits stay "unknown" until a public source gives them (B7.2.1b).
+**Qualifying** forecasts are from The Race, Jon Noble, 2026-05-02,
+"F1's new energy rankings for qualifying revealed" (verified by direct fetch
+2026-10-17): "the current forecasts for the ceilings for the remainder of the
+campaign", finalised by the FIA four weeks before each event, so treat as
+secondary and possibly revised. Race limits differ: Miami race 9 MJ (PlanetF1
+FIA clarification 2026-05-01, snippet), Monza race 7 MJ (The Race snippet).
+Suzuka qualifying was cut 9→8 MJ by FIA notice on 2026-03-26 (formula1.com).
 
-| Race | session_key | Date | Issue in force | Recharge limit | Notes |
-|---|---|---|---|---|---|
-| Australia | 11234 | 2026-03-08 | 16 | unknown | Pre-April package |
-| China | 11245 | 2026-03-15 | 16 | unknown | 11240 is the sprint |
-| Japan | 11253 | 2026-03-29 | 16 | unknown | |
-| Bahrain | 11261 | 2026-04-12 | 16 | | No OpenF1 data (404); round relocated to Kuala Lumpur, see 11731 |
-| Saudi Arabia | 11269 | 2026-04-19 | 16 | | No OpenF1 data (404) |
-| Miami | 11280 | 2026-05-03 | 17 | unknown | First race of the April package |
-| Canada | 11291 | 2026-05-24 | 18 | unknown | |
-| Monaco | 11299 | 2026-06-07 | 18 | unknown | |
-| Spain (Barcelona) | 11307 | 2026-06-14 | 18 | unknown | |
-| Austria | 11315 | 2026-06-28 | 19 | unknown | |
-| Britain | 11326 | 2026-07-05 | 19 | unknown | |
-| Belgium | 11334 | 2026-07-19 | 19 | unknown | |
-| Hungary | 11342 | 2026-07-26 | 19 | unknown | |
-| Netherlands | 11353 | 2026-08-23 | 20 | unknown | 11348 is the sprint |
-| Italy (Monza) | 11361 | 2026-09-06 | 20 | reported reduced: 5 MJ (GrandPrix.com) or 6 MJ / 6.5 with Overtake (Reddit comment); **unverified, secondary** | Spike race |
-| Spain (Madrid) | 11369 | 2026-09-13 | 20 | unknown | |
-| Azerbaijan | 11377 | 2026-09-26 | 20 | unknown | |
-| Bahrain GP in Malaysia (Kuala Lumpur) | 11731 | 2026-10-04 | 20 | unknown | Real race: OpenF1 meeting 1308 is "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026" (relocated Bahrain round, country label kept as Bahrain). Include. Checked 2026-10-17 |
-| Singapore | 11388 | 2026-10-11 | 20 | unknown | Spike contrast race |
+| Race | session_key | Date | Issue in force | Race recharge limit | Quali forecast (The Race 05-02) | Notes |
+|---|---|---|---|---|---|---|
+| Australia | 11234 | 2026-03-08 | 16 | unknown | unknown | Pre-April package |
+| China | 11245 | 2026-03-15 | 16 | unknown | unknown | 11240 is the sprint |
+| Japan | 11253 | 2026-03-29 | 16 | unknown | 8 (FIA notice 03-26) | |
+| Bahrain | 11261 | 2026-04-12 | 16 | | unknown | No OpenF1 data (404); round relocated to Kuala Lumpur, see 11731 |
+| Saudi Arabia | 11269 | 2026-04-19 | 16 | | unknown | No OpenF1 data (404) |
+| Miami | 11280 | 2026-05-03 | 17 | 9 reported (PlanetF1 FIA clarification, snippet) | 8 | First race of the April package |
+| Canada | 11291 | 2026-05-24 | 18 | unknown | 6 | |
+| Monaco | 11299 | 2026-06-07 | 18 | unknown | 9 | |
+| Spain (Barcelona) | 11307 | 2026-06-14 | 18 | unknown | 7 | |
+| Austria | 11315 | 2026-06-28 | 19 | unknown | 6 | |
+| Britain | 11326 | 2026-07-05 | 19 | unknown | 7.5 | |
+| Belgium | 11334 | 2026-07-19 | 19 | unknown | 8 | |
+| Hungary | 11342 | 2026-07-26 | 19 | unknown | 9 | |
+| Netherlands | 11353 | 2026-08-23 | 20 | unknown | 7.5 | 11348 is the sprint |
+| Italy (Monza) | 11361 | 2026-09-06 | 20 | 7 reported (The Race snippet, unverified) | 5 | Spike race; Piastri pre-race: a higher harvest limit would have meant "30 or 40 km/h" lost per straight |
+| Spain (Madrid) | 11369 | 2026-09-13 | 20 | unknown | 8 | |
+| Azerbaijan | 11377 | 2026-09-26 | 20 | unknown | 8.5 | |
+| Bahrain GP in Malaysia (Kuala Lumpur) | 11731 | 2026-10-04 | 20 | unknown | unknown | Real race: OpenF1 meeting 1308 is "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026" (relocated Bahrain round, country label kept as Bahrain). Include. Checked 2026-10-17 |
+| Singapore | 11388 | 2026-10-11 | 20 | unknown | 9 | Spike contrast race |
+
+Modelling caveats from driver/engineer statements (The Race 2026-04-04 and
+04-20, fetched): lifting below ~98 % throttle and reapplying triggers a brief
+~200 kW MGU-K deployment the driver does not control (Norris), so "lift"
+detection must allow for a deploy burst on reapplication; derate rate is
+limited to 50 kW/s from 350 kW to 0 (Russell; matches C5.12.6), so a full
+derate takes ~7 s and a cut-off is a ramp, not a step. Public traces have
+dropped frames (f1technical forum, snippet), which argues for the 1.5 s
+brake guard and against raw gradient thresholds.
 
 Data caveat (checked 2026-10-17): OpenF1 `sessions?session_type=Race` returns
 31 rows for 2026 because sprints also carry session_type "Race". Select races

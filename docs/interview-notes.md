@@ -70,6 +70,11 @@ Only add an entry once the thing exists and Ali can explain it without notes.
   artifact (braking onset leaking backwards). Caught by checking the
   time-to-brake of every candidate. Fixed with a guard window.
 
+- **Why believe the overtake hypothesis is worth testing?** The paddock
+  states it: Norris "no point of trying to defend" at 5 % battery, Alonso
+  "press one button and you overtake", Verstappen "inefficient" to deploy
+  behind a car. Widely believed, never measured.
+
 ## Cloud
 - **Why Oracle plus a small AWS piece?** Oracle's free ARM tier runs the whole
   thing for nothing; the raw cache in a private S3 bucket is both the backup
