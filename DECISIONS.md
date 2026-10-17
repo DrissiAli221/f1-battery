@@ -66,7 +66,9 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   added; per-event limits are FIA notices to teams (B7.2.1b), not public, so
   code carries a `limit_known` flag; the 350 kW super-clip recharge figure is
   cited to The Race, not C5.2.x; `session_type=Race` includes sprints; session
-  11731 looks like bad data; `overtakes` has no reason field.
+  11731 is the Bahrain GP relocated to Kuala Lumpur, a real race (first
+  flagged as bad data, corrected the same day after checking meeting 1308);
+  `overtakes` has no reason field.
 - **Plan changes:** Phase S exit conditions now have numbers (slope break in
   290–345 kph vs a drag-only fit; clip segments on ≥ 80 % of green-flag laps
   within ±50 m; ≥ 80 % lap-to-lap regime agreement) and PU-maker differences

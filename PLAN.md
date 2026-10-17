@@ -41,7 +41,9 @@ high-downforce mode shifts the drag baseline by ~1.6 m/s² at 300 kph) and
 **slipstream**. Note the C5.2.8 taper starts at **290 kph** (1800 − 5·290 =
 350), not near 345.
 
-**Exit condition (all three, each with a number):**
+**Exit condition (all three, each with a number).** The thresholds below are
+fixed in advance so the result can't be moved after the fact; they are
+judgment calls, not proven values.
 1. **Taper visible:** at full throttle in top gear, the acceleration-vs-speed
    curve shows a slope break in the 290–345 kph band relative to a drag-only
    fit made below 290 kph (same car, same lap set). Report the residual.
@@ -91,8 +93,9 @@ deferred.
   bottleneck.
 - Handle the 404 races (Bahrain 11261, Jeddah 11269) as "no data", not as errors.
 - Select races by `session_name == "Race"`: `session_type=Race` also returns
-  sprints (31 rows for 2026). Exclude session 11731 (bad "Kuala Lumpur" row)
-  until explained.
+  sprints (31 rows for 2026). Session 11731 (country "Bahrain", circuit
+  "Kuala Lumpur") is the relocated Bahrain GP in Malaysia, a real race; key
+  on `meeting_key`/`circuit_key`, not on country name.
 - Ingestion log table: what was fetched when, row counts.
 - Bulk inserts (JDBC batching or COPY), not row-by-row.
 - Integration tests with Testcontainers (Postgres), CI on GitHub Actions.

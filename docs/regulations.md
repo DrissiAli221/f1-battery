@@ -59,7 +59,7 @@ stays "unknown" until a public source gives it (see B7.2.1b above).
 | Australia | 11234 | 2026-03-08 | 16 | unknown | Pre-April package |
 | China | 11245 | 2026-03-15 | 16 | unknown | 11240 is the sprint |
 | Japan | 11253 | 2026-03-29 | 16 | unknown | |
-| Bahrain | 11261 | 2026-04-12 | 16 | | No OpenF1 data (404) |
+| Bahrain | 11261 | 2026-04-12 | 16 | | No OpenF1 data (404); round relocated to Kuala Lumpur, see 11731 |
 | Saudi Arabia | 11269 | 2026-04-19 | 16 | | No OpenF1 data (404) |
 | Miami | 11280 | 2026-05-03 | 17 | unknown | First race of the April package |
 | Canada | 11291 | 2026-05-24 | 18 | unknown | |
@@ -73,7 +73,7 @@ stays "unknown" until a public source gives it (see B7.2.1b above).
 | Italy (Monza) | 11361 | 2026-09-06 | 20 | unknown | Spike race |
 | Spain (Madrid) | 11369 | 2026-09-13 | 20 | unknown | |
 | Azerbaijan | 11377 | 2026-09-26 | 20 | unknown | |
-| Kuala Lumpur | 11731 | 2026-10-04 | | | **Bad data?** country "Bahrain", circuit "Kuala Lumpur", not on the real calendar. Exclude until explained |
+| Bahrain GP in Malaysia (Kuala Lumpur) | 11731 | 2026-10-04 | 20 | unknown | Real race: OpenF1 meeting 1308 is "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026" (relocated Bahrain round, country label kept as Bahrain). Include. Checked 2026-10-17 |
 | Singapore | 11388 | 2026-10-11 | 20 | unknown | Spike contrast race |
 
 Data caveat (checked 2026-10-17): OpenF1 `sessions?session_type=Race` returns
