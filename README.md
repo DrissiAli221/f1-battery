@@ -39,6 +39,8 @@ output is renamed an "energy-management proxy" (see DECISIONS.md).
 | [HYPOTHESIS.md](HYPOTHESIS.md) | Pre-registered test. Frozen before Phase 4 output exists |
 | [docs/regulations.md](docs/regulations.md) | FIA energy limits per event, cited |
 | [docs/research-2026-10-17.md](docs/research-2026-10-17.md) | Original idea research, data checks |
+| [docs/research-2026-10-17-discourse.md](docs/research-2026-10-17-discourse.md) | What drivers, media and fans say about 2026 energy management |
+| [docs/energy-data-sources-2026-10-17.md](docs/energy-data-sources-2026-10-17.md) | Every possible source of real 2026 energy data, checked: none exists |
 | [spike/](spike/) | Throwaway feasibility notebook |
 
 ## Data
