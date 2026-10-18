@@ -353,3 +353,25 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   the start/finish line is one entry (id 1) with wrap handling.
 - Kuala Lumpur race was truncated by the backup cap and refetched (D13
   correction); now complete.
+
+## D18 — 2026-10-18 — Phase 3 check failed on one criterion; estimator choice
+- The Phase 3 reproduction check (PLAN.md) passed on Monza (all ten
+  cut-offs within 5 m of the spike) and on regime agreement, and **failed**
+  on Singapore straight 3: the hinge derate detector flags a ramp on 27.5 %
+  of laps against a 10 % limit (0 % on the other straights). The detector's
+  plateau condition was fixed before the run and was not tuned afterwards;
+  a value that makes Singapore pass loses most Monza Lesmo→Ascari
+  detections (docs/phase3-regimes.md).
+- **Decision:** the threshold-crossing estimator (the quantity the spike
+  validated and the pipeline reproduces) is the primary cut-off for Phases 4
+  and 5. The hinge ramp start is computed alongside and stored as
+  experimental (`hinge_*` variables). No exit criterion is rewritten after
+  the fact. Singapore straight 3 is investigated separately
+  (docs/investigations/singapore-straight3.md); its outcome may change the
+  hinge detector's status through a later decision, never this check.
+- Assumptions accepted from the build: drag area is not identifiable per
+  car from full-throttle data, so a session-wide value is used (±50 m
+  systematic on the hinge start); start mass 838 kg (768 dry + 70 fuel)
+  with assumed fuel loads; relative deploy energy is power-based (J/kg);
+  the per-event derate rate is unknown everywhere, so 100 kW/s is used and
+  flagged (Monza fits imply ~66–77 kW/s).
