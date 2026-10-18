@@ -1,11 +1,12 @@
 """One-time raw backup of all 2026 OpenF1 race sessions into data/raw/openf1/ (gitignored).
 Usage: python tools/backup_openf1.py [--summary] [--sessions "Race"]  (comma-separated session_name values; default Race)
+- Requests gzip transfer (~29x smaller payloads; the API honours Accept-Encoding).
 - Rate limit: sleeps 2.2 s between requests (<=27/min, under the 30/min and 3/s free-tier caps).
 - Resumable: a request whose file exists is skipped. Retries with exponential backoff on 429/5xx.
 - Layout: data/raw/openf1/<session_key>/<endpoint>[_<driver>][_<window>].json, one file per request,
   plus data/raw/openf1/manifest.json with dates and row counts. Phase 1 can ingest from these files.
 """
-import json, sys, time, pathlib, urllib.request, urllib.error
+import json, sys, time, pathlib, urllib.request, urllib.error, gzip
 from datetime import datetime, timedelta, timezone
 
 BASE = "https://api.openf1.org/v1"
@@ -28,8 +29,11 @@ def get(path, file):
         return len(json.load(open(file)))
     for attempt in range(8):
         try:
-            with urllib.request.urlopen(BASE + path, timeout=120) as r:
-                data = json.load(r)
+            req = urllib.request.Request(BASE + path, headers={"Accept-Encoding": "gzip"})
+            with urllib.request.urlopen(req, timeout=120) as r:
+                raw = r.read()
+                if r.headers.get("Content-Encoding") == "gzip": raw = gzip.decompress(raw)
+                data = json.loads(raw)
             break
         except urllib.error.HTTPError as e:
             if e.code == 404:
