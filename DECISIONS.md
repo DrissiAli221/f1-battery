@@ -375,3 +375,21 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   with assumed fuel loads; relative deploy energy is power-based (J/kg);
   the per-event derate rate is unknown everywhere, so 100 kW/s is used and
   flagged (Monza fits imply ~66–77 kW/s).
+
+## D19 — 2026-10-18 — Singapore straight 3 explained: hinge detector artifact
+- Investigation (docs/investigations/singapore-straight3.md): the power drop
+  the hinge detector reports appears on 95.7 % of straight-3 laps, flagged or
+  not; the flag is a threshold cut through a smooth distribution of
+  plateau acceleration (median 1.14 m/s² against a 1.0 limit), lowered by a
+  26° flat-out bend at 1320–1500 m. Tow, Overtake windows, gearshifts, drag
+  area and gradient are ruled out with numbers.
+- More important: the fitted ramp start sits at the earliest index the fit
+  allows on 62 % of those laps and 85 % of Monza T1→Roggia laps. Power peaks
+  ~0.75 s after full throttle and falls steadily, so there is no flat deploy
+  level for a hinge to find. The hinge ramp start was therefore not a
+  measurement, at Monza either.
+- **Decision:** the Phase 3 Singapore criterion stands as written. The hinge
+  detector stays experimental; it now requires an interior ramp start (≥ 1 s
+  of deploy level before the start) and reports "not detected" when pinned.
+  The plateau limit is not tuned. The primary cut-off remains the
+  threshold-crossing estimator (D18).
