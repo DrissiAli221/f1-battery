@@ -5,3 +5,12 @@ spring:
     password: ${DB_PASSWORD:f1dev}
   flyway:
     enabled: false
+  jackson:
+    default-property-inclusion: always
+
+api:
+  cors-origin: ${API_CORS_ORIGIN:http://localhost:5173}
+  rate-per-min: ${API_RATE_PER_MIN:60}
+  outline:
+    # Stored location units between kept outline points (OpenF1 x/y are 1/10 m, so 500 = 50 m).
+    spacing-units: 500

@@ -1,0 +1,5 @@
+spring:
+  flyway:
+    enabled: true
+api:
+  rate-per-min: 100000

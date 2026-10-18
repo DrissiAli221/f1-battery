@@ -10,3 +10,4 @@ probes, for the Phase 2 data-quality report.
 | All races | `starting_grid` returns 0 rows on race sessions; it returns 22 rows on the qualifying session | Backup 2026-10-18 | Read the grid from the qualifying session of the same meeting |
 | Most sessions | `team_radio` is 0 rows; Canada 33, Monaco 36 | Backup 2026-10-18 | Radio is not a usable validation source, as expected |
 | All | `drs` is null on every 2026 sample | Spike cache 2026-10-17 | Column kept nullable, never used |
+| All | `location` x, y, z are in **tenths of a metre**: a Monza lap's x/y path length is 57,330 units for a 5,793 m lap (chord sampling at ~3.7 Hz under-reads slightly) | psql on 11361 driver 63 lap 30, 2026-10-18 | Divide by 10 for metres; the API outline's 500-unit spacing is 50 m |
