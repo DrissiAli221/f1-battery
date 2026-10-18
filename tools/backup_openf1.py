@@ -57,7 +57,7 @@ def get(path, file):
             c.request("GET", "/v1" + path, headers={"Accept-Encoding": "gzip", "Host": HOST})
             r = c.getresponse(); raw = r.read()
             if r.status == 404:
-                raw = gzip.compress(b"[]"); break
+                raw = gzip.compress(b"[]"); data = []; break
             if r.status != 200:
                 wait = SLEEP * (2 ** attempt)
                 print(f"  HTTP {r.status} {path} -> wait {wait:.0f}s", flush=True); time.sleep(wait); continue
