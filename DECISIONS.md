@@ -227,5 +227,44 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   would also compete with the backup for bandwidth). `MigrationsIT` is the
   check; it runs in CI and locally once Docker is up. Gate 0 waits for it.
 
+## D13 — 2026-10-18 — Raw OpenF1 backup, race sessions (done)
+- `tools/backup_openf1.py`, gzip files under `data/raw/openf1/` (gitignored),
+  one request per driver per endpoint, ≤30 req/min, two in flight. Ran
+  2026-10-17 → 2026-10-18 on slow links; finished 15:28 UTC.
+- Endpoints per session: drivers, laps, stints, pit, overtakes, race_control,
+  intervals, position, weather, session_result, starting_grid, team_radio,
+  car_data, location; plus sessions and meetings for 2026.
+- Coverage check: a session is complete only if each driver's location rows
+  are within 10 % of car_data rows; failures get one windowed re-fetch.
+
+| session | name | status | laps | overtakes | intervals | car_data | location |
+|---|---|---|---|---|---|---|---|
+| 11234 | Melbourne Race 2026-03-08 | complete | 1002 | 299 | 22276 | 433,664 | 444,994 |
+| 11245 | Shanghai Race 2026-03-15 | complete | 924 | 279 | 20663 | 492,976 | 499,158 |
+| 11253 | Suzuka Race 2026-03-29 | complete | 1108 | 218 | 28324 | 521,092 | 535,546 |
+| 11261 | Sakhir Race 2026-04-12 | no data (404) | | | | | |
+| 11269 | Jeddah Race 2026-04-19 | no data (404) | | | | | |
+| 11280 | Miami Race 2026-05-03 | complete | 1042 | 267 | 25483 | 501,446 | 516,318 |
+| 11291 | Montreal Race 2026-05-24 | complete | 1212 | 243 | 22532 | 504,922 | 515,218 |
+| 11299 | Monte Carlo Race 2026-06-07 | complete_with_feed_gaps (22 drivers short) | 1452 | 132 | 29916 | 735,856 | 39,644 |
+| 11307 | Catalunya Race 2026-06-14 | complete | 1241 | 296 | 25022 | 490,644 | 502,194 |
+| 11315 | Spielberg Race 2026-06-28 | complete | 1342 | 242 | 26312 | 468,006 | 477,444 |
+| 11326 | Silverstone Race 2026-07-05 | complete | 1114 | 232 | 28253 | 472,626 | 484,682 |
+| 11334 | Spa-Francorchamps Race 2026-07-19 | complete | 875 | 214 | 23116 | 453,002 | 462,374 |
+| 11342 | Hungaroring Race 2026-07-26 | complete | 1432 | 262 | 29593 | 516,736 | 529,914 |
+| 11353 | Zandvoort Race 2026-08-23 | complete | 1369 | 292 | 30616 | 673,596 | 666,182 |
+| 11361 | Monza Race 2026-09-06 | complete | 1055 | 334 | 21955 | 592,614 | 599,874 |
+| 11369 | Madring Race 2026-09-13 | complete | 1109 | 123 | 26935 | 520,036 | 525,250 |
+| 11377 | Baku Race 2026-09-26 | complete | 983 | 160 | 24933 | 528,506 | 543,598 |
+| 11731 | Kuala Lumpur Race 2026-10-04 | complete | 1145 | 505 | 21448 | 885,984 | 900,944 |
+| 11388 | Singapore Race 2026-10-11 | complete | 1240 | 191 | 28131 | 539,044 | 540,496 |
+
+- **Totals (17 races):** car_data 9,330,750, location 8,783,830, laps 19,645, overtakes 4,289, intervals 435,508.
+- **Known gaps:** Bahrain 11261 and Jeddah 11269 have no data; Monaco 11299
+  location stops at 14:00:14 for all 22 drivers (feed gap, re-fetch
+  confirmed); starting_grid is empty for every 2026 race; team_radio is 0–40
+  clips per race. Details: docs/data-quality-notes.md.
+- Qualifying and sprint pass: running, recorded in D14 when complete.
+
 ## Gate results
 (date — gate — pass/fail — notes)
