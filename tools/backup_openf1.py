@@ -129,7 +129,8 @@ def main():
             if "location_check" not in m and m.get("status") == "complete":
                 laps = load(d / "laps.json"); t0 = datetime.fromisoformat(s["date_start"]); t1 = datetime.fromisoformat(s["date_end"])
                 ends = [datetime.fromisoformat(l["date_start"]) + timedelta(seconds=l["lap_duration"] or 0) for l in laps if l.get("date_start")]
-                t_end = min(max(ends) + timedelta(minutes=5), t1 + timedelta(minutes=60)) if ends else t1
+                # Cap on the last lap end only: a race delayed by red flags can run well past the scheduled end.
+        t_end = max(ends) + timedelta(minutes=5) if ends else t1 + timedelta(minutes=60)
                 drivers = [x["driver_number"] for x in load(d / "drivers.json")]
                 print(f"{sk} {m['name']}: verifying location coverage", flush=True)
                 print(f"  -> {verify_location(sk, s, d, m, drivers, t0, t_end)}", flush=True)
@@ -149,7 +150,8 @@ def main():
         laps = load(d / "laps.json")
         ends = [datetime.fromisoformat(l["date_start"]) + timedelta(seconds=l["lap_duration"] or 0)
                 for l in laps if l.get("date_start")]
-        t_end = min(max(ends) + timedelta(minutes=5), t1 + timedelta(minutes=60)) if ends else t1
+        # Cap on the last lap end only: a race delayed by red flags can run well past the scheduled end.
+        t_end = max(ends) + timedelta(minutes=5) if ends else t1 + timedelta(minutes=60)
         drivers = [x["driver_number"] for x in load(d / "drivers.json")]
         for ep in ("car_data", "location"):
             jobs = []
