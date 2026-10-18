@@ -6,11 +6,27 @@ Usage: python tools/backup_openf1.py [--summary] [--sessions "Race"]  (comma-sep
 - Layout: data/raw/openf1/<session_key>/<endpoint>[_<driver>_w<window-minutes>_<index>].json.gz (gzip bytes exactly as the API sent them), one file per request,
   plus data/raw/openf1/manifest.json with dates and row counts. Phase 1 can ingest from these files.
 """
-import json, sys, time, pathlib, urllib.request, urllib.error, gzip
+import json, sys, time, pathlib, urllib.request, urllib.error, gzip, http.client, threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 BASE = "https://api.openf1.org/v1"
-SLEEP = 2.0
+HOST = "api.openf1.org"
+SLEEP = 2.0            # minimum spacing between request STARTS, shared by all workers -> <=30/min
+WORKERS = 2            # requests in flight; overlaps server time and transfer, never exceeds the spacing above
+_lock = threading.Lock(); _next_start = [0.0]
+_local = threading.local()
+
+def _conn():
+    c = getattr(_local, "conn", None)
+    if c is None:
+        c = http.client.HTTPSConnection(HOST, timeout=120); _local.conn = c
+    return c
+
+def _wait_slot():
+    with _lock:
+        now = time.monotonic(); start = max(now, _next_start[0]); _next_start[0] = start + SLEEP
+    time.sleep(max(0.0, start - time.monotonic()))
 WINDOW = timedelta(hours=3)   # one request per driver per endpoint covers a whole session; gzip keeps it ~600 KB
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "data" / "raw" / "openf1"
 ROOT.mkdir(parents=True, exist_ok=True)
@@ -35,25 +51,26 @@ def get(path, file):
     if file.exists() or gz.exists():
         return len(load(file))
     for attempt in range(8):
+        _wait_slot()
         try:
-            req = urllib.request.Request(BASE + path, headers={"Accept-Encoding": "gzip"})
-            with urllib.request.urlopen(req, timeout=120) as r:
-                raw = r.read()
-                if r.headers.get("Content-Encoding") != "gzip": raw = gzip.compress(raw)
-                data = json.loads(gzip.decompress(raw))
+            c = _conn()
+            c.request("GET", "/v1" + path, headers={"Accept-Encoding": "gzip", "Host": HOST})
+            r = c.getresponse(); raw = r.read()
+            if r.status == 404:
+                raw = gzip.compress(b"[]"); break
+            if r.status != 200:
+                wait = SLEEP * (2 ** attempt)
+                print(f"  HTTP {r.status} {path} -> wait {wait:.0f}s", flush=True); time.sleep(wait); continue
+            if r.getheader("Content-Encoding") != "gzip": raw = gzip.compress(raw)
+            data = json.loads(gzip.decompress(raw))
             break
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                data = []; raw = gzip.compress(b"[]"); break
-            wait = SLEEP * (2 ** attempt)
-            print(f"  HTTP {e.code} {path} -> wait {wait:.0f}s", flush=True); time.sleep(wait)
         except Exception as e:
+            _local.conn = None
             print(f"  {e!r} {path} -> retry", flush=True); time.sleep(SLEEP * 3)
     else:
         raise SystemExit(f"gave up: {path}")
     gz.write_bytes(raw)
-    requests_made += 1
-    time.sleep(SLEEP)
+    with _lock: requests_made += 1
     return len(data)
 
 def iso(t): return t.isoformat().replace("+00:00", "")
@@ -91,14 +108,16 @@ def main():
         t_end = min(max(ends) + timedelta(minutes=5), t1 + timedelta(minutes=60)) if ends else t1
         drivers = [x["driver_number"] for x in load(d / "drivers.json")]
         for ep in ("car_data", "location"):
-            total = 0
+            jobs = []
             for drv in drivers:
                 t = t0; i = 0
                 while t < t_end:
                     te = min(t + WINDOW, t_end)
-                    total += get(f"/{ep}?session_key={sk}&driver_number={drv}&date>={iso(t)}&date<{iso(te)}",
-                                 d / f"{ep}_{drv}_w{int(WINDOW.total_seconds() // 60)}_{i:02d}.json")
+                    jobs.append((f"/{ep}?session_key={sk}&driver_number={drv}&date>={iso(t)}&date<{iso(te)}",
+                                 d / f"{ep}_{drv}_w{int(WINDOW.total_seconds() // 60)}_{i:02d}.json"))
                     t = te; i += 1
+            with ThreadPoolExecutor(max_workers=WORKERS) as ex:
+                total = sum(ex.map(lambda j: get(*j), jobs))
             rows[ep] = total
             print(f"  {ep}: {total} rows over {len(drivers)} drivers", flush=True)
         m["status"] = "complete"; m["fetched"] = datetime.now(timezone.utc).isoformat(); m["drivers"] = len(drivers)
