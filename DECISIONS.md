@@ -332,3 +332,24 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - CI could not run (Actions billing); all tests, including Testcontainers
   ITs, pass locally with Docker (`-Dapi.version=1.44` needed for the local
   Docker Desktop).
+
+## D17 — 2026-10-18 — Phase 2 closed; sessions excluded from modelling
+- Alignment, lap quality, straights and regulation seed are in
+  (docs/phase2-alignment.md). Database compressed from 3.7 GB to 292 MB with
+  row counts unchanged. 29,350 laps, 19,762 green (race 77 %, qualifying
+  34 %, as expected since qualifying is mostly out/in laps).
+- **Hungary race 11342 is excluded from modelling.** Its lap and pit
+  timestamps disagree with the telemetry by a non-constant 3–6 min, and its
+  `location` feed is frozen from about 13:25, so lap boundaries cannot be
+  recovered from either source. A speed-profile tracker on car_data alone
+  could recover it later; deferred.
+- Shanghai race and sprint and Suzuka race lose 94–121 laps each to the
+  3 % lap-length rule (mostly laps 2–3, off by ±10 %); telemetry-derived
+  boundaries do not fix it and the cause is unexplained. The laps are
+  excluded conservatively; the sessions stay.
+- Straights: curated sections files for 11 circuits; derived from the
+  fastest green lap (full throttle ≥ 4 s above 200 kph) for Shanghai,
+  Suzuka, Madrid and Kuala Lumpur, labelled 'derived'. The straight across
+  the start/finish line is one entry (id 1) with wrap handling.
+- Kuala Lumpur race was truncated by the backup cap and refetched (D13
+  correction); now complete.
