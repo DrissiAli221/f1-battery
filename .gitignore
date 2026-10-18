@@ -22,3 +22,8 @@ build/
 
 # Private notes, never pushed
 private/
+
+# Maven / Python
+.mvn/wrapper/maven-wrapper.jar
+model/*.egg-info
+.pytest_cache/

@@ -204,5 +204,28 @@ Ali owns this file. Agents propose entries, Ali confirms them.
 - **Rejected:** deep models (no labels), F1 TV tokens (terms), broadcast bar
   as ground truth (FOM estimate).
 
+## D12 — 2026-10-18 — Phase 0 scaffolding choices (PROPOSED by the building agent, reviewed by Claude; Ali to confirm)
+- Spring Boot 3.4.5, WireMock 3.9.2, Testcontainers; failsafe runs `*IT`
+  tests; `db` is a plain jar holding the Flyway migrations; Boot plugin only on
+  `ingest` and `api`. Maven wrapper is script-only (no jar committed).
+- Keys: lap (session, driver, lap_number); stint (session, driver,
+  stint_number); pit (session, driver, lap_number); overtake (session, date,
+  overtaking, overtaken); interval_sample and position (session, driver,
+  date); race_control unique on (session, date, md5(message),
+  coalesce(driver, -1)); ingestion_log unique on (endpoint, session,
+  coalesce(driver, -1), window_start) because NULLs are distinct in a plain
+  unique index; car_data and location unique on (session, driver, ts), the
+  time column being mandatory in Timescale unique indexes; model_result
+  unique on (model_version, run_id, session, driver, lap, coalesce(straight,
+  -1), variable) so a model re-run is idempotent too.
+- Added by review: `position` and `weather` tables (both in the backup,
+  weather needed by Phase 3), lap speed traps i1/i2, DB port bound to
+  127.0.0.1 only.
+- No foreign keys except driver → session, so ingestion order stays free.
+- **Unverified as of 2026-10-18:** the migrations have not run against a
+  real TimescaleDB yet (Docker Desktop was not running; pulling the image
+  would also compete with the backup for bandwidth). `MigrationsIT` is the
+  check; it runs in CI and locally once Docker is up. Gate 0 waits for it.
+
 ## Gate results
 (date — gate — pass/fail — notes)

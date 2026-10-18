@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/f1battery}
+    username: ${DB_USER:f1}
+    password: ${DB_PASSWORD:f1dev}
+  flyway:
+    enabled: false
