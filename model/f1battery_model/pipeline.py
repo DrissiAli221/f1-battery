@@ -180,21 +180,26 @@ def analyse_driver(prep: Prepared, ctx: SessionContext, driver: int, cda_hinge: 
     cda["cda_used_m2"] = cda_hinge
     df = pd.DataFrame(rows)
 
-    # Relative deploy energy on the deploy phase, referenced to the car's own plateau acceleration.
+    # Relative deploy energy: integral of (p - p_plateau) dt over the deploy phase, J/kg (m^2/s^2).
+    # p_plateau is the car's median fitted plateau level on that straight (any lap with a fit).
     if len(df):
-        e_av, e_v = [], []
+        e_p, dur, acc = [], [], []
         for r in df.itertuples():
             end = int(r.end_g) if bool(r.detected) else int(r.u1)
             sl = slice(int(r.u0), end)
-            e_av.append(float(np.sum(tr.a[sl] * tr.v[sl]) * ph.GRID))
-            e_v.append(float(np.sum(tr.v[sl]) * ph.GRID))
-        df["energy_a_v"], df["energy_v"] = e_av, e_v
-        det = df[df["detected"].astype(bool)]
-        glob_ref = float(det["plateau_accel"].median()) if len(det) else 0.0
-        refs = {int(sid): (float(g["plateau_accel"].median()) if len(g) >= ENERGY_REF_MIN_LAPS else glob_ref)
-                for sid, g in det.groupby("straight_id")}
-        df["a_ref"] = df["straight_id"].map(refs).fillna(glob_ref)
-        df["energy_rel"] = df["energy_a_v"] - df["a_ref"] * df["energy_v"]
+            e_p.append(float(np.sum(ph.specific_excess_power(tr, cda_hinge, sl)) * ph.GRID))
+            dur.append((end - int(r.u0)) * ph.GRID)
+            ci = r.cross_spike_idx
+            if ci is not None and ci == ci and int(r.u1) - int(ci) >= 4:
+                acc.append(float(np.mean(tr.a[int(ci):int(r.u1)])))
+            else:
+                acc.append(np.nan)
+        df["energy_p"], df["energy_dur"], df["cross_plateau_accel"] = e_p, dur, acc
+        fit = df[df["p_plateau"].notna()] if "p_plateau" in df else df.iloc[0:0]
+        glob = float(fit["p_plateau"].median()) if len(fit) else np.nan
+        refs = {int(sid): float(g["p_plateau"].median()) for sid, g in fit.groupby("straight_id")}
+        df["p_ref"] = df["straight_id"].map(refs).fillna(glob)
+        df["energy_rel"] = df["energy_p"] - df["p_ref"] * df["energy_dur"]
 
     lap_bins: dict[int, np.ndarray] = {}
     agr = {"mean": np.nan, "min": np.nan, "pairs": 0}

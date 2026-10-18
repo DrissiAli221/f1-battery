@@ -45,6 +45,7 @@ MIN_USABLE_S = 2.5          # usable segment needed for a fit
 HINGE_V_MIN_KPH = 200.0     # below this p is not flat (gear shifts, traction limit)
 TAU_GRID_S = np.arange(0.25, 8.01, 0.25)
 MIN_DEPLOY_STEPS = 2        # grid steps of deploy level before t0
+MIN_VALID_DEPLOY_S = 1.0    # a reported ramp start needs this much deploy level before it and must not sit at the search boundary
 MIN_PLATEAU_STEPS = 4       # grid steps of plateau after the ramp (1 s)
 
 # detection thresholds
@@ -154,6 +155,7 @@ def straight_lap(tr: ph.Trace, lap_row: int, win: tuple[float, float], runs, cda
     sc = threshold_crossing(tr.a[r0:r1], tr.v[r0:r1] * 3.6)
     spike_d = float(tr.cum[r0 + sc] - c0) if sc is not None else np.nan
     spike_v = float(tr.v[r0 + sc] * 3.6) if sc is not None else np.nan
+    spike_idx = r0 + sc if sc is not None else None
     u0 = r0 + int(round(START_GUARD_S / ph.GRID))
     u1 = r1 - int(round(END_GUARD_S / ph.GRID))
     near_brake = np.flatnonzero(tr.tb[u0:max(u1, u0)] <= ph.GUARD_S)
@@ -165,7 +167,7 @@ def straight_lap(tr: ph.Trace, lap_row: int, win: tuple[float, float], runs, cda
     v_kph = tr.v[sl] * 3.6
     out = {"run_start_d": float(tr.cum[r0] - c0), "run_len_m": float(tr.cum[r1 - 1] - tr.cum[r0]),
            "u0": u0, "u1": u1, "r1": r1, "detected": False,
-           "cross_spike_d": spike_d, "cross_spike_v_kph": spike_v}
+           "cross_spike_d": spike_d, "cross_spike_idx": spike_idx, "cross_spike_v_kph": spike_v}
     # entry speed: 150 m into the full-throttle run
     j = int(np.searchsorted(tr.cum, tr.cum[r0] + 150.0))
     out["entry_kph"] = float(tr.v[min(j, len(tr.v) - 1)] * 3.6)
@@ -202,4 +204,6 @@ def straight_lap(tr: ph.Trace, lap_row: int, win: tuple[float, float], runs, cda
     detected = (delta_kw >= DELTA_MIN_KW and out["sse_ratio"] <= SSE_RATIO_MAX
                 and out["hinge_v_kph"] >= RAMP_V_MIN_KPH and abs(out["plateau_accel"]) <= PLATEAU_A_MAX)
     out["detected"] = bool(detected)
+    # Interior ramp start: not pinned at the earliest index the search allows, >= 1 s of deploy level before t0.
+    out["hinge_valid"] = bool(fit.t0_idx > MIN_DEPLOY_STEPS and fit.t0_idx * ph.GRID >= MIN_VALID_DEPLOY_S)
     return out

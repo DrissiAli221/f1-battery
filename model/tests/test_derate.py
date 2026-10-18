@@ -90,3 +90,11 @@ def test_regime_bins_and_agreement():
     other = np.array([regimes.DEPLOY, regimes.PLATEAU, regimes.PLATEAU, regimes.PLATEAU], dtype=np.int8)
     agr = regimes.agreement([bins, other])
     assert agr["pairs"] == 1 and abs(agr["mean"] - 0.75) < 1e-12
+
+
+def test_ramp_at_series_start_is_pinned_at_search_boundary():
+    # A ramp that is already under way at the first sample cannot be located: the fit sits at the
+    # earliest allowed index, which estimate.py treats as "not a measurement" (hinge_valid False).
+    p = synthetic_p(n=48, k0=-6, tau=12)
+    fit = derate.fit_hinge(p, rate_wkg_s=1000.0)
+    assert fit is not None and fit.t0_idx <= derate.MIN_DEPLOY_STEPS
