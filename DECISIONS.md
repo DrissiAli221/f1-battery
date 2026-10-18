@@ -266,5 +266,46 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   clips per race. Details: docs/data-quality-notes.md.
 - Qualifying and sprint pass: running, recorded in D14 when complete.
 
+## D14 — 2026-10-18 — Raw OpenF1 backup, qualifying and sprint sessions (done)
+Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
+
+| session | name | status | laps | car_data | location |
+|---|---|---|---|---|---|
+| 11230 | Melbourne Qualifying 2026-03-07 | complete | 359 | 407,132 | 413,336 |
+| 11236 | Shanghai Sprint Qualifying 2026-03-13 | complete | 257 | 233,442 | 238,458 |
+| 11240 | Shanghai Sprint 2026-03-14 | complete | 399 | 198,330 | 203,082 |
+| 11241 | Shanghai Qualifying 2026-03-14 | complete | 325 | 318,560 | 321,882 |
+| 11249 | Suzuka Qualifying 2026-03-28 | complete | 324 | 313,456 | 318,758 |
+| 11257 | Sakhir Qualifying 2026-04-11 | no data (404) | | | |
+| 11265 | Jeddah Qualifying 2026-04-18 | no data (404) | | | |
+| 11271 | Miami Sprint Qualifying 2026-05-01 | complete | 237 | 231,286 | 235,180 |
+| 11275 | Miami Sprint 2026-05-02 | complete | 381 | 182,468 | 190,124 |
+| 11276 | Miami Qualifying 2026-05-02 | complete | 324 | 331,408 | 341,990 |
+| 11282 | Montreal Sprint Qualifying 2026-05-22 | complete | 300 | 327,272 | 339,988 |
+| 11286 | Montreal Sprint 2026-05-23 | complete | 491 | 176,528 | 182,072 |
+| 11287 | Montreal Qualifying 2026-05-23 | complete | 456 | 309,342 | 315,568 |
+| 11295 | Monte Carlo Qualifying 2026-06-06 | complete | 484 | 345,246 | 349,998 |
+| 11303 | Catalunya Qualifying 2026-06-13 | complete | 255 | 359,810 | 374,770 |
+| 11311 | Spielberg Qualifying 2026-06-27 | complete | 290 | 316,888 | 320,342 |
+| 11317 | Silverstone Sprint Qualifying 2026-07-03 | complete | 236 | 233,574 | 237,204 |
+| 11321 | Silverstone Sprint 2026-07-04 | complete | 372 | 166,100 | 172,920 |
+| 11322 | Silverstone Qualifying 2026-07-04 | complete | 309 | 351,736 | 358,050 |
+| 11330 | Spa-Francorchamps Qualifying 2026-07-18 | complete | 269 | 359,524 | 368,764 |
+| 11338 | Hungaroring Qualifying 2026-07-25 | complete | 299 | 311,124 | 319,572 |
+| 11344 | Zandvoort Sprint Qualifying 2026-08-21 | complete | 254 | 228,184 | 234,190 |
+| 11348 | Zandvoort Sprint 2026-08-22 | complete | 506 | 190,498 | 185,306 |
+| 11349 | Zandvoort Qualifying 2026-08-22 | complete | 377 | 305,492 | 296,230 |
+| 11357 | Monza Qualifying 2026-09-05 | complete | 307 | 314,314 | 320,210 |
+| 11365 | Madring Qualifying 2026-09-12 | complete | 312 | 317,108 | 321,266 |
+| 11373 | Baku Qualifying 2026-09-25 | complete | 373 | 334,400 | 342,716 |
+| 11730 | Kuala Lumpur Qualifying 2026-10-03 | complete | 239 | 315,084 | 321,288 |
+| 11379 | Singapore Sprint Qualifying 2026-10-09 | complete | 287 | 361,218 | 364,034 |
+| 11383 | Singapore Sprint 2026-10-10 | complete | 320 | 408,232 | 412,060 |
+| 11384 | Singapore Qualifying 2026-10-10 | complete | 363 | 378,290 | 388,080 |
+
+- **Totals:** car_data 8,626,046, location 8,787,438, laps 9,705; sprint races add 548 overtakes and 54,813 intervals.
+- Location gaps: none. `starting_grid` is populated on qualifying sessions (22 rows each).
+- Whole backup on disk: see manifest; gzip files.
+
 ## Gate results
 (date — gate — pass/fail — notes)
