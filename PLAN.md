@@ -91,7 +91,7 @@ D8). Qualifying and sprints are deferred.
   and 30 req/min), **idempotent** (re-running never creates duplicates),
   **resumable** (a crash mid-season continues where it stopped).
 - **Two sources behind one interface:** the live API, and the local raw
-  backup in `data/raw/openf1/` (one JSON file per request plus
+  backup in `data/raw/openf1/` (one gzipped JSON file per request plus
   `manifest.json`, made by `tools/backup_openf1.py` before Phase 0). The
   parser and the upsert are identical for both; only the fetch differs.
   Tests use the local files.

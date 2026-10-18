@@ -3,7 +3,7 @@ Usage: python tools/backup_openf1.py [--summary] [--sessions "Race"]  (comma-sep
 - Requests gzip transfer (~29x smaller payloads; the API honours Accept-Encoding).
 - Rate limit: sleeps 2.2 s between requests (<=27/min, under the 30/min and 3/s free-tier caps).
 - Resumable: a request whose file exists is skipped. Retries with exponential backoff on 429/5xx.
-- Layout: data/raw/openf1/<session_key>/<endpoint>[_<driver>][_<window>].json, one file per request,
+- Layout: data/raw/openf1/<session_key>/<endpoint>[_<driver>][_<window>].json.gz (gzip bytes exactly as the API sent them), one file per request,
   plus data/raw/openf1/manifest.json with dates and row counts. Phase 1 can ingest from these files.
 """
 import json, sys, time, pathlib, urllib.request, urllib.error, gzip
@@ -22,29 +22,36 @@ def save_manifest():
     manifest["updated"] = datetime.now(timezone.utc).isoformat()
     json.dump(manifest, open(MANIFEST, "w"), indent=1)
 
+def load(file):
+    """Read a .json or .json.gz file."""
+    gz = file.with_suffix(".json.gz") if file.suffix == ".json" else file
+    if gz.exists(): return json.loads(gzip.decompress(gz.read_bytes()))
+    return json.load(open(file))
+
 def get(path, file):
-    """Fetch BASE+path into file (skip if exists). Returns row count."""
+    """Fetch BASE+path into file (.json.gz on disk; skip if .json or .json.gz exists). Returns row count."""
     global requests_made
-    if file.exists():
-        return len(json.load(open(file)))
+    gz = file.with_suffix(".json.gz")
+    if file.exists() or gz.exists():
+        return len(load(file))
     for attempt in range(8):
         try:
             req = urllib.request.Request(BASE + path, headers={"Accept-Encoding": "gzip"})
             with urllib.request.urlopen(req, timeout=120) as r:
                 raw = r.read()
-                if r.headers.get("Content-Encoding") == "gzip": raw = gzip.decompress(raw)
-                data = json.loads(raw)
+                if r.headers.get("Content-Encoding") != "gzip": raw = gzip.compress(raw)
+                data = json.loads(gzip.decompress(raw))
             break
         except urllib.error.HTTPError as e:
             if e.code == 404:
-                data = []; break
+                data = []; raw = gzip.compress(b"[]"); break
             wait = SLEEP * (2 ** attempt)
             print(f"  HTTP {e.code} {path} -> wait {wait:.0f}s", flush=True); time.sleep(wait)
         except Exception as e:
             print(f"  {e!r} {path} -> retry", flush=True); time.sleep(SLEEP * 3)
     else:
         raise SystemExit(f"gave up: {path}")
-    json.dump(data, open(file, "w"))
+    gz.write_bytes(raw)
     requests_made += 1
     time.sleep(SLEEP)
     return len(data)
@@ -60,7 +67,7 @@ def main():
     sessions = get("/sessions?year=2026", ROOT / "sessions_2026.json")
     get("/meetings?year=2026", ROOT / "meetings_2026.json")
     names = sys.argv[sys.argv.index("--sessions") + 1].split(",") if "--sessions" in sys.argv else ["Race"]
-    races = [s for s in json.load(open(ROOT / "sessions_2026.json"))
+    races = [s for s in load(ROOT / "sessions_2026.json")
              if s["session_name"] in names and datetime.fromisoformat(s["date_start"]) < now]
     print(f"{len(races)} sessions {names} in 2026 before now", flush=True)
     for s in races:
@@ -78,11 +85,11 @@ def main():
         if rows["laps"] == 0:
             m["status"] = "no_data"; save_manifest(); print("  no data (404)", flush=True); continue
         # window end = last lap end + 5 min, capped to date_end + 60 min
-        laps = json.load(open(d / "laps.json"))
+        laps = load(d / "laps.json")
         ends = [datetime.fromisoformat(l["date_start"]) + timedelta(seconds=l["lap_duration"] or 0)
                 for l in laps if l.get("date_start")]
         t_end = min(max(ends) + timedelta(minutes=5), t1 + timedelta(minutes=60)) if ends else t1
-        drivers = [x["driver_number"] for x in json.load(open(d / "drivers.json"))]
+        drivers = [x["driver_number"] for x in load(d / "drivers.json")]
         for ep in ("car_data", "location"):
             total = 0
             for drv in drivers:
