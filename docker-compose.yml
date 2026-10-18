@@ -15,5 +15,38 @@ services:
       timeout: 3s
       retries: 10
 
+  # Optional live-replay broker (Phase 7, docs/phase7-replay.md). Not started by a plain
+  # `docker compose up`; enable with `docker compose --profile replay up -d`.
+  # Single-node KRaft (broker + controller in one process): no ZooKeeper, no schema registry.
+  kafka:
+    image: apache/kafka:3.8.0
+    profiles: ["replay"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Replay data is disposable: keep the log small.
+      KAFKA_LOG_RETENTION_HOURS: 6
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "127.0.0.1:9092:9092"
+    volumes:
+      - f1battery_kafka:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 15s
+
 volumes:
   f1battery_pgdata:
+  f1battery_kafka:

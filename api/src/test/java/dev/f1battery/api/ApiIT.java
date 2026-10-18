@@ -240,4 +240,11 @@ class ApiIT {
         mvc.perform(get("/api/sessions").header("Origin", "http://localhost:5173"))
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
     }
+
+    @Test
+    void liveEndpointIsDisabledByDefault() throws Exception {
+        mvc.perform(get("/api/live/" + SESSION))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error", is("replay disabled")));
+    }
 }

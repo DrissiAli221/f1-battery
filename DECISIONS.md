@@ -427,3 +427,25 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   failed, are the evidence that the results were not tuned; they stay
   visible rather than being summarised away. Nothing in the log rewrites a
   criterion; later status changes are separate decisions (D18, D19).
+
+## D22 — 2026-10-18 — Phase 7 built: Kafka replay as the one streaming use
+- Optional module `replay/` plus a `kafka` Compose service behind the
+  `replay` profile; an SSE endpoint in the API enabled only by
+  `API_REPLAY_ENABLED=true`; a live page in the view. With Kafka absent,
+  ingestion, the model, the API and the view behave exactly as before (the
+  API returns 404 "replay disabled" on the live endpoint).
+- Why Kafka here and not in ingestion (D8): ingestion is a one-shot batch
+  of ~9 M rows per pass with one producer and one consumer; the replay is
+  a continuous, keyed, real-time-paced stream (one key per car) with
+  independent consumers (the regime consumer, the API's SSE bridge), which
+  is the workload a log-based broker exists for.
+- Verified end to end on Monza 11361 at 20× speed: producer pacing held,
+  consumer emitted per-driver regime states, SSE delivered them, the live
+  page showed four cars moving with regimes and speeds.
+- Limits recorded in docs/phase7-replay.md: the live regime labeller is a
+  simplified version of the batch rules (no Savitzky–Golay, no brake
+  guard); lap distance on the live page is a running integral since the
+  consumer started, so dot position is approximate; single-node Kafka;
+  local-only because the feed carries near-raw speed values (D9).
+- Found while building: `car_data` and `location` do not share timestamps
+  across feeds (docs/data-quality-notes.md).

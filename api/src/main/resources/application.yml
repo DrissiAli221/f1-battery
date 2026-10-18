@@ -14,3 +14,7 @@ api:
   outline:
     # Stored location units between kept outline points (OpenF1 x/y are 1/10 m, so 500 = 50 m).
     spacing-units: 500
+  replay:
+    # Opt-in live replay (Phase 7): streams regime-state.<session_key> from Kafka over SSE.
+    enabled: ${API_REPLAY_ENABLED:false}
+    kafka-bootstrap: ${KAFKA_BOOTSTRAP:localhost:9092}

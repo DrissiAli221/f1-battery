@@ -121,7 +121,7 @@ export function SessionView({ sessionKey }: { sessionKey: number }) {
 
   return (
     <>
-      <p className="crumb"><a href="#/">Sessions</a></p>
+      <p className="crumb"><a href="#/">Sessions</a> · <a href={`#/live/${sessionKey}`}>Live replay</a></p>
       <h1>
         {session.circuit_short_name ?? "Unknown circuit"} <span className="muted">{session.session_name} {session.year}</span>
       </h1>

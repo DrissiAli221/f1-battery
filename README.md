@@ -8,7 +8,7 @@ Status: **Phases 0–6 built; findings written** (2026-10-18). The
 pre-registered test returned **no effect**: a defender's derating cut-off
 does not predict being passed once pace difference is controlled. See
 [docs/findings.md](docs/findings.md), DECISIONS.md D20, and
-[PLAN.md](PLAN.md). Not deployed yet (Phase 1.5).
+[PLAN.md](PLAN.md). Phase 7 live replay (Kafka, optional) built. Not deployed yet (Phase 1.5).
 
 ## Why this exists
 
