@@ -1,4 +1,5 @@
 import { url, useRemote } from "./api";
+import { straightName } from "./types";
 import type { Page, RegimeLabel, Straight, SummaryDriver } from "./types";
 import { Async, Empty, fmt, label } from "./ui";
 import { REGIME_COLORS } from "./TrackMap";
@@ -22,7 +23,7 @@ export function SummaryTable({ session, straights, hasResults }: { session: numb
                   <th>Team</th>
                   <th>Driver</th>
                   {ids.map((id) => (
-                    <th key={id} className="num">{straights.find((s) => s.straight_id === id)?.label ?? `Straight ${id}`} (m)</th>
+                    <th key={id} className="num">{straightName(straights.find((s) => s.straight_id === id) ?? { straight_id: id })} (m)</th>
                   ))}
                   {REGIMES.map((r) => (
                     <th key={r} className="num"><i className="dot" style={{ background: REGIME_COLORS[r] }} />{r}</th>

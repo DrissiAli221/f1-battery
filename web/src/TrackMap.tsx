@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { straightName } from "./types";
 import type { Outline, RegimeBin, RegimeLabel, Straight } from "./types";
 
 export const REGIME_COLORS: Record<RegimeLabel, string> = {
@@ -66,7 +67,7 @@ export function TrackMap({ outline, straights, regimes }: Props) {
           <path d={segments.map(d).join("")} stroke="var(--track)" strokeWidth={stroke * 1.9} />
           {straights.map((s) => (
             <path key={s.straight_id} d={straightSegs(s).map(d).join("")} stroke="var(--straight)" strokeWidth={stroke * 2.6} opacity="0.55">
-              <title>{s.label ?? `Straight ${s.straight_id}`}</title>
+              <title>{straightName(s)}</title>
             </path>
           ))}
           {segments.map((g, i) => (

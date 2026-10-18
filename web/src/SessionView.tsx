@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { straightName } from "./types";
 import { url, useRemote } from "./api";
 import { SeriesChart, type Series } from "./SeriesChart";
 import { SummaryTable } from "./SummaryTable";
@@ -165,7 +166,7 @@ function StraightPicker({ straights, value, onChange }: { straights: Straight[];
     <div className="tabs" role="tablist" aria-label="Straight">
       {straights.map((s) => (
         <button key={s.straight_id} role="tab" aria-selected={s.straight_id === value} onClick={() => onChange(s.straight_id)}>
-          {s.label ?? `Straight ${s.straight_id}`}
+          {straightName(s)}
         </button>
       ))}
     </div>
