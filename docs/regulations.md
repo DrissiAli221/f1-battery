@@ -49,7 +49,12 @@ secondary.
   18 (05-07), 19 (06-25), 20 (08-05, newest as of 2026-10-17). The 8→7 MJ
   change is visible as a "87MJ" redline in Issue 17's C5.2.10.i.
 
-## Per-event table (to fill in Phase 2)
+## Per-event table
+
+Machine-readable seed for `regulation_event`: `docs/regulation-events.csv`
+(generated 2026-10-18 from this file and the session list; `derate_rate_kw_per_s`
+is empty because the per-event power-limited distance is not public; all
+limits are secondary unless marked FIA).
 
 Issue in force = newest Section C issue dated before the race. **Race**
 recharge limits stay "unknown" until a public source gives them (B7.2.1b).

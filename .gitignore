@@ -27,3 +27,10 @@ private/
 .mvn/wrapper/maven-wrapper.jar
 model/*.egg-info
 .pytest_cache/
+
+# Small gzipped OpenF1 fixtures used by the ingest tests (real rows, a handful each)
+!ingest/src/test/resources/backup/**/*.json.gz
+!ingest/src/test/resources/backup/*.json.gz
+
+# Curated reference tables in docs/ are not data dumps
+!docs/*.csv
