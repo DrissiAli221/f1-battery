@@ -261,7 +261,11 @@ The project owner maintains this file; agents propose entries.
   location stops at 14:00:14 for all 22 drivers (feed gap, re-fetch
   confirmed); starting_grid is empty for every 2026 race; team_radio is 0–40
   clips per race. Details: docs/data-quality-notes.md.
-- Qualifying and sprint pass: running, recorded in D14 when complete.
+- Qualifying and sprint pass: recorded in D14.
+- **Correction 2026-10-18:** Kuala Lumpur 11731 was truncated at 10:00 by the
+  backup's window cap (scheduled end + 60 min); refetched after the cap was
+  changed to the last lap end, now 993,652 car_data rows. The table above
+  keeps the original count as recorded.
 
 ## D14 — 2026-10-18 — Raw OpenF1 backup, qualifying and sprint sessions (done)
 Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
