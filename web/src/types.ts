@@ -103,8 +103,8 @@ export interface Compare {
   drivers: CompareDriver[];
 }
 
-/** Display name for a straight: curated files label every straight "Straight", so the id is always shown. */
+/** Display name for a straight; `label` holds the resolved name when the straight went through `nameStraights`. */
 export function straightName(s: { straight_id: number; label?: string | null }): string {
   const l = (s.label ?? "").trim();
-  return l && !/^(straight|derived)$/i.test(l) ? `${l} (S${s.straight_id})` : `Straight ${s.straight_id}`;
+  return l && !/^(straight|derived)$/i.test(l) ? l : `Straight ${s.straight_id}`;
 }

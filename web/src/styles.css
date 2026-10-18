@@ -128,3 +128,5 @@ p.note + .sessions { margin-top: 12px; }
 .ml-field p { margin: 0; overflow-wrap: anywhere; }
 .ml-sources { margin: 14px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
 @media (max-width: 520px) { .navlink { margin-left: 12px; } .ml-timeline { padding-left: 16px; } .ml-item::before { left: -23px; } }
+.tabs button.no-data:not([aria-selected="true"]) { opacity: 0.5; color: var(--muted); }
+.tabs button.no-data[aria-selected="true"] { opacity: 0.7; }

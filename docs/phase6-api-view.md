@@ -68,6 +68,8 @@ at phone width. Regime bins and straights are placed on the outline by their
 fraction of the lap (bin count and `start_pct/end_pct`), because outline
 distance is in position units, not metres.
 
+Driver selection and straight names: the picker is sorted by lap count (descending, then driver number) and opens on the driver with the most laps that has a straight median in `/summary`; drivers under 75 % of the session maximum are labelled with their lap count and drivers without summary results with "no results". The API labels every curated straight "Straight", so the view takes names from `web/src/content/straight-names.json` (circuit_key, then straight_id; Monza and the Singapore pit straight only) and otherwise shows "Straight N · a–b km", derived from `start_pct`/`end_pct` and the outline length (last outline distance, in decimetres). Straight buttons for which the selected driver has no cut-off rows in `/results` are greyed (still clickable); changing driver selects the first straight that has cut-offs.
+
 The view also has a static "Method log" page at `#/method` (linked from the header and the sessions page). It needs no API: it renders `web/src/content/method-log.json`, a curated record of what was tried, the pre-set check, what was found and what changed, with source links to the repo on GitHub. `docs/method-log.md` is generated from the same file with `node web/scripts/gen-method-log.mjs` (run from the repo root); edit the JSON, not the markdown.
 
 ## Running locally

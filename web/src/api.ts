@@ -59,3 +59,28 @@ export function useRemote<T>(href: string | null): Remote<T> {
 }
 
 export const apiBase = BASE;
+
+/** Lap totals per driver (one small request each; the API has no aggregate for this). */
+export function useLapCounts(session: number, drivers: number[]): Record<number, number> | null {
+  const key = drivers.join(",");
+  const [counts, setCounts] = useState<{ key: string; value: Record<number, number> } | null>(null);
+  useEffect(() => {
+    if (!drivers.length) return;
+    const ctl = new AbortController();
+    Promise.all(
+      drivers.map((d) =>
+        getJson<{ total: number }>(url(`/sessions/${session}/laps`, { driver: d, size: 1 }), ctl.signal)
+          .then((p) => [d, p.total] as const)
+          .catch((e: Error) => {
+            if (e.name === "AbortError") throw e;
+            return [d, 0] as const;
+          }),
+      ),
+    )
+      .then((rows) => setCounts({ key: `${session}:${key}`, value: Object.fromEntries(rows) }))
+      .catch(() => undefined);
+    return () => ctl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, key]);
+  return counts && counts.key === `${session}:${key}` ? counts.value : null;
+}

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { straightName } from "./types";
-import { url, useRemote } from "./api";
+import { url, useLapCounts, useRemote } from "./api";
+import { nameStraights } from "./straights";
 import { SeriesChart, type Series } from "./SeriesChart";
 import { SummaryTable } from "./SummaryTable";
 import { TrackMap } from "./TrackMap";
@@ -13,6 +14,7 @@ import type {
   RegimeBin,
   ResultRow,
   SessionRow,
+  SummaryDriver,
   Straight,
 } from "./types";
 import { Async, Card, Empty, fmt, label } from "./ui";
@@ -37,16 +39,59 @@ export function SessionView({ sessionKey }: { sessionKey: number }) {
     setOther(null);
     setLapNumber(null);
     setStraightId(null);
+    autoFor.current = null;
   }, [sessionKey]);
 
-  const driverList = drivers.data?.items ?? [];
+  const hasResults = session?.has_results ?? false;
+  const summary = useRemote<Page<SummaryDriver>>(session && hasResults ? url(`/sessions/${sessionKey}/summary`, { size: 1000 }) : null);
+  const rawDrivers = drivers.data?.items;
+  const lapCounts = useLapCounts(sessionKey, useMemo(() => (rawDrivers ?? []).map((d) => d.driver_number), [rawDrivers]));
+  const maxLaps = lapCounts ? Math.max(0, ...Object.values(lapCounts)) : 0;
+  // Drivers with at least one straight median in the summary.
+  const withResults = useMemo(
+    () => new Set((summary.data?.items ?? []).filter((r) => r.straights.some((s) => s.cutoff_distance_median_m !== null)).map((r) => r.driver_number)),
+    [summary.data],
+  );
+  const summaryReady = !hasResults || summary.data !== null || summary.error !== null;
+  // Picker order: most laps first, then driver number.
+  const driverList = useMemo(
+    () =>
+      [...(rawDrivers ?? [])].sort(
+        (a, b) => (lapCounts?.[b.driver_number] ?? 0) - (lapCounts?.[a.driver_number] ?? 0) || a.driver_number - b.driver_number,
+      ),
+    [rawDrivers, lapCounts],
+  );
   useEffect(() => {
-    if (driver === null && driverList.length) setDriver(driverList[0].driver_number);
-  }, [driver, driverList]);
-  const straightList = straights.data?.items ?? [];
+    // Default to the driver with the most laps among those that have results; wait for the data that decides it.
+    if (driver !== null || !driverList.length || !lapCounts || !summaryReady) return;
+    const pool = withResults.size ? driverList.filter((d) => withResults.has(d.driver_number)) : driverList;
+    setDriver((pool[0] ?? driverList[0]).driver_number);
+  }, [driver, driverList, lapCounts, summaryReady, withResults]);
+  const rawStraights = straights.data?.items;
+  const straightList = useMemo(
+    () => nameStraights(rawStraights ?? [], circuit, outline.data),
+    [rawStraights, circuit, outline.data],
+  );
+  const driverResults = useRemote<Page<ResultRow>>(
+    hasResults && driver !== null ? url("/results", { session: sessionKey, driver, variable: "cutoff_distance_m", size: 1000 }) : null,
+  );
+  const withCutoffs = useMemo(
+    () => (driverResults.data ? new Set(driverResults.data.items.filter((r) => r.value !== null && r.straight_id !== null).map((r) => r.straight_id as number)) : null),
+    [driverResults.data],
+  );
+  const autoFor = useRef<number | null>(null);
   useEffect(() => {
-    if (straightId === null && straightList.length) setStraightId(straightList[0].straight_id);
-  }, [straightId, straightList]);
+    if (!straightList.length) return;
+    if (!hasResults) {
+      if (straightId === null) setStraightId(straightList[0].straight_id);
+      return;
+    }
+    // On a driver change, jump to the first straight that driver has cut-offs for.
+    if (driver === null || !withCutoffs || driverResults.loading || autoFor.current === driver) return;
+    autoFor.current = driver;
+    const first = straightList.find((s) => withCutoffs.has(s.straight_id)) ?? straightList[0];
+    setStraightId(first.straight_id);
+  }, [straightList, hasResults, driver, withCutoffs, driverResults.loading, straightId]);
 
   const laps = useRemote<Page<Lap>>(driver !== null ? url(`/sessions/${sessionKey}/laps`, { driver, size: 1000 }) : null);
   const lapList = useMemo(() => laps.data?.items.filter((l) => l.lap_duration !== null) ?? [], [laps.data]);
@@ -73,7 +118,6 @@ export function SessionView({ sessionKey }: { sessionKey: number }) {
 
   const idx = Math.max(0, lapList.findIndex((l) => l.lap_number === lapNumber));
   const lap = lapList[idx];
-  const hasResults = session.has_results;
 
   return (
     <>
@@ -94,7 +138,7 @@ export function SessionView({ sessionKey }: { sessionKey: number }) {
           <select value={driver ?? ""} onChange={(e) => { setDriver(Number(e.target.value)); setLapNumber(null); }}>
             {driverList.map((d) => (
               <option key={d.driver_number} value={d.driver_number}>
-                {label(d)}{d.team_name ? ` (${d.team_name})` : ""}
+                {driverOption(d, lapCounts?.[d.driver_number], maxLaps, hasResults && summary.data !== null && !withResults.has(d.driver_number))}
               </option>
             ))}
           </select>
@@ -133,7 +177,8 @@ export function SessionView({ sessionKey }: { sessionKey: number }) {
         </Card>
 
         <Card title="Cut-off by lap" note="Where deployment ends on a straight, per lap, against the driver's median and confidence interval.">
-          <StraightPicker straights={straightList} value={straightId} onChange={setStraightId} />
+          <p className="note">A cut-off is the point on a straight where the car stops gaining from electrical deployment and settles at the engine-only plateau; estimated from speed, not measured.</p>
+          <StraightPicker straights={straightList} value={straightId} onChange={setStraightId} withCutoffs={hasResults ? withCutoffs : null} />
           <CutoffPanel session={sessionKey} driver={driver} straight={straightId} hasResults={hasResults} marker={lapNumber} />
         </Card>
       </div>
@@ -160,12 +205,27 @@ export function SessionView({ sessionKey }: { sessionKey: number }) {
   );
 }
 
-function StraightPicker({ straights, value, onChange }: { straights: Straight[]; value: number | null; onChange: (id: number) => void }) {
+/** "NOR (McLaren) · 2 laps · no results": the lap count shows only for drivers under 75 % of the session maximum. */
+function driverOption(d: Driver, laps: number | undefined, maxLaps: number, noResults: boolean): string {
+  let text = `${label(d)}${d.team_name ? ` (${d.team_name})` : ""}`;
+  if (laps !== undefined && maxLaps > 0 && laps < 0.75 * maxLaps) text += ` · ${laps} ${laps === 1 ? "lap" : "laps"}`;
+  if (noResults) text += " · no results";
+  return text;
+}
+
+function StraightPicker({ straights, value, onChange, withCutoffs }: { straights: Straight[]; value: number | null; onChange: (id: number) => void; withCutoffs: Set<number> | null }) {
   if (!straights.length) return <p className="note">No straights defined for this circuit yet.</p>;
   return (
     <div className="tabs" role="tablist" aria-label="Straight">
       {straights.map((s) => (
-        <button key={s.straight_id} role="tab" aria-selected={s.straight_id === value} onClick={() => onChange(s.straight_id)}>
+        <button
+          key={s.straight_id}
+          role="tab"
+          aria-selected={s.straight_id === value}
+          className={withCutoffs && !withCutoffs.has(s.straight_id) ? "no-data" : undefined}
+          title={withCutoffs && !withCutoffs.has(s.straight_id) ? "no cut-offs" : undefined}
+          onClick={() => onChange(s.straight_id)}
+        >
           {straightName(s)}
         </button>
       ))}
