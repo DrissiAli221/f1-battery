@@ -75,10 +75,45 @@ def get(path, file):
 
 def iso(t): return t.isoformat().replace("+00:00", "")
 
+VERIFY_WINDOW = timedelta(minutes=20)
+RATIO_MIN = 0.9
+
+def count_rows(d, ep, drv):
+    return sum(len(load(f)) for f in d.glob(f"{ep}_{drv}_w*_*.json.gz"))
+
+def verify_location(sk, s, d, m, drivers, t0, t_end):
+    """A session is only complete if each driver's location rows are within ~10 % of their car_data rows.
+    Drivers that fail get ONE re-fetch of location in VERIFY_WINDOW windows (files *_w20_*); if still short,
+    the session is marked complete_with_feed_gaps and the per-driver counts are recorded."""
+    check = {}
+    for drv in drivers:
+        car = count_rows(d, "car_data", drv); loc = sum(len(load(f)) for f in d.glob(f"location_{drv}_w180_*.json.gz"))
+        entry = {"car_data": car, "location": loc}
+        if car and loc < RATIO_MIN * car:
+            jobs = []; t = t0; i = 0
+            while t < t_end:
+                te = min(t + VERIFY_WINDOW, t_end)
+                jobs.append((f"/location?session_key={sk}&driver_number={drv}&date>={iso(t)}&date<{iso(te)}",
+                             d / f"location_{drv}_w{int(VERIFY_WINDOW.total_seconds() // 60)}_{i:02d}.json"))
+                t = te; i += 1
+            with ThreadPoolExecutor(max_workers=WORKERS) as ex:
+                refetched = sum(ex.map(lambda j: get(*j), jobs))
+            entry["location_refetched_w20"] = refetched
+            entry["ok"] = refetched >= RATIO_MIN * car
+            print(f"  verify {drv}: car {car} loc {loc} -> windowed re-fetch {refetched} {'OK' if entry['ok'] else 'STILL SHORT (feed gap)'}", flush=True)
+        else:
+            entry["ok"] = True
+        check[str(drv)] = entry
+    m["location_check"] = check
+    m["status"] = "complete" if all(v["ok"] for v in check.values()) else "complete_with_feed_gaps"
+    save_manifest()
+    return m["status"]
+
 def main():
     if "--summary" in sys.argv:
         for k, v in manifest["sessions"].items():
-            print(k, v.get("name"), v.get("status"), {e: c for e, c in v.get("rows", {}).items()})
+            bad = [dr for dr, c in v.get("location_check", {}).items() if not c.get("ok")]
+            print(k, v.get("name"), v.get("status"), {e: c for e, c in v.get("rows", {}).items()}, ("location gaps: " + ",".join(bad)) if bad else "")
         return
     now = datetime.now(timezone.utc)
     sessions = get("/sessions?year=2026", ROOT / "sessions_2026.json")
@@ -90,8 +125,17 @@ def main():
     for s in races:
         sk = s["session_key"]; d = ROOT / str(sk); d.mkdir(exist_ok=True)
         m = manifest["sessions"].setdefault(str(sk), {"name": f'{s["circuit_short_name"]} {s["session_name"]} {s["date_start"][:10]}', "rows": {}})
-        if m.get("status") == "complete":
-            print(f"{sk} {m['name']}: already complete", flush=True); continue
+        if m.get("status") in ("complete", "complete_with_feed_gaps"):
+            if "location_check" not in m and m.get("status") == "complete":
+                laps = load(d / "laps.json"); t0 = datetime.fromisoformat(s["date_start"]); t1 = datetime.fromisoformat(s["date_end"])
+                ends = [datetime.fromisoformat(l["date_start"]) + timedelta(seconds=l["lap_duration"] or 0) for l in laps if l.get("date_start")]
+                t_end = min(max(ends) + timedelta(minutes=5), t1 + timedelta(minutes=60)) if ends else t1
+                drivers = [x["driver_number"] for x in load(d / "drivers.json")]
+                print(f"{sk} {m['name']}: verifying location coverage", flush=True)
+                print(f"  -> {verify_location(sk, s, d, m, drivers, t0, t_end)}", flush=True)
+            else:
+                print(f"{sk} {m['name']}: already {m['status']}", flush=True)
+            continue
         print(f"== {sk} {m['name']}", flush=True)
         rows = m["rows"]
         t0 = datetime.fromisoformat(s["date_start"]); t1 = datetime.fromisoformat(s["date_end"])
@@ -120,8 +164,9 @@ def main():
                 total = sum(ex.map(lambda j: get(*j), jobs))
             rows[ep] = total
             print(f"  {ep}: {total} rows over {len(drivers)} drivers", flush=True)
-        m["status"] = "complete"; m["fetched"] = datetime.now(timezone.utc).isoformat(); m["drivers"] = len(drivers)
-        save_manifest()
+        m["fetched"] = datetime.now(timezone.utc).isoformat(); m["drivers"] = len(drivers)
+        m["status"] = "complete"; save_manifest()
+        verify_location(sk, s, d, m, drivers, t0, t_end)
         print(f"  done; rows {rows}; requests so far {requests_made}", flush=True)
     save_manifest()
     print("ALL DONE", flush=True)
