@@ -177,5 +177,32 @@ Ali owns this file. Agents propose entries, Ali confirms them.
 - **Rejected:** claiming the first-pass super-clip result; estimating SoC with
   an assumed engine curve (not identifiable from this data).
 
+## D11 — 2026-10-18 — Improvements adopted from the second review
+(docs/improvements-2026-10-18.md; Ali confirmed items 1 (corrected), 2, 3, 4, 5, 7)
+- **1, corrected:** OpenF1 `location` already has `z` (elevation) and all
+  cars share timestamps, so gap-to-car-ahead is computed from positions.
+  From TracingInsights/2026 take only the curated `sections/` and corner
+  files (standard straight definitions per circuit), not the 4.3 GB clone.
+  `z` is integer-quantised like speed: compute slope over 50–100 m, never
+  sample to sample.
+- **2:** Phase 3 compares at least three differentiation methods (PyNumDiff:
+  Kalman/RTS, total-variation; plus Savitzky–Golay) on a synthetic straight
+  with known truth before choosing one. The 1.5 s brake guard stays.
+- **3:** cut-off = ramp start, fitted per straight per lap with a hinge /
+  piecewise-linear model; bootstrap over laps for a confidence interval per
+  car per race.
+- **4:** `docs/spot-checks.md`: named real-world moments with the expected
+  sign written down before Phase 3 runs, frozen like HYPOTHESIS.md.
+- **5:** constants with sources in docs/regulations.md (768 kg minimum
+  without fuel; fuel burn as a linear mass decrease; CdA fitted per car per
+  event, never assumed); slope correction g·sinθ from `z` in the baseline.
+- **7:** backup tooling also saves weather, session_result, starting_grid,
+  team_radio, meetings; FIA race director's competition notes PDFs per event;
+  TracingInsights sections/corners files.
+- **Deferred:** item 6 (publishing in FastF1 #861, r/F1Technical, blog,
+  upstream PR) waits for a result and Ali's explicit OK; aggregates only.
+- **Rejected:** deep models (no labels), F1 TV tokens (terms), broadcast bar
+  as ground truth (FOM estimate).
+
 ## Gate results
 (date — gate — pass/fail — notes)

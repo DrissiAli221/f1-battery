@@ -54,6 +54,7 @@ def main():
         return
     now = datetime.now(timezone.utc)
     sessions = get("/sessions?year=2026", ROOT / "sessions_2026.json")
+    get("/meetings?year=2026", ROOT / "meetings_2026.json")
     names = sys.argv[sys.argv.index("--sessions") + 1].split(",") if "--sessions" in sys.argv else ["Race"]
     races = [s for s in json.load(open(ROOT / "sessions_2026.json"))
              if s["session_name"] in names and datetime.fromisoformat(s["date_start"]) < now]
@@ -67,7 +68,8 @@ def main():
         rows = m["rows"]
         t0 = datetime.fromisoformat(s["date_start"]); t1 = datetime.fromisoformat(s["date_end"])
         # whole-session endpoints
-        for ep in ("drivers", "laps", "stints", "pit", "overtakes", "race_control", "intervals", "position"):
+        for ep in ("drivers", "laps", "stints", "pit", "overtakes", "race_control", "intervals", "position",
+                   "weather", "session_result", "starting_grid", "team_radio"):
             rows[ep] = get(f"/{ep}?session_key={sk}", d / f"{ep}.json")
         if rows["laps"] == 0:
             m["status"] = "no_data"; save_manifest(); print("  no data (404)", flush=True); continue

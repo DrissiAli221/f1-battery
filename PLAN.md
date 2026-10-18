@@ -159,7 +159,13 @@ is a bonus for the Jan/Feb 2027 applications.
 
 ## Phase 3: physics baseline and regimes
 
-- Smoothed acceleration, with the method chosen in Phase S.
+- Smoothed acceleration: compare Savitzky–Golay, a Kalman/RTS smoother and
+  total-variation differentiation (PyNumDiff) on a synthetic straight with
+  known truth; pick by error, document the choice (D11). Brake guard stays.
+- Slope correction g·sinθ from `location.z`, computed over 50–100 m of
+  distance because `z` is integer-quantised (D11).
+- Mass falls linearly with laps from a sourced start mass; CdA fitted per
+  car per event and reported, never assumed (D11).
 - Per-car, per-event drag/rolling-resistance fit. **Caution:** in 2026,
   "coasting" may include MGU-K recharge, and the active-aero mode is unknown,
   so choose fit segments carefully and document the choice.

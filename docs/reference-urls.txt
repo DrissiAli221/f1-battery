@@ -1,0 +1,6 @@
+# Public reference files fetched by tools/fetch_reference_files.py into data/reference/ (gitignored).
+# FIA 2026 regulations (checked 2026-10-17)
+https://api.fia.com/system/files/documents/fia_2026_f1_regulations_-_section_c_technical_-_iss_20_-_2026-08-05.pdf
+# FIA race director's competition notes (straight-mode zones, Overtake detection zones). Add one line per event as found.
+https://www.fia.com/system/files/decision-document/2026_miami_grand_prix_-_race_directors_competition_notes_.pdf
+https://www.fia.com/system/files/decision-document/2026_canadian_grand_prix_-_race_directors_competition_notes_.pdf
