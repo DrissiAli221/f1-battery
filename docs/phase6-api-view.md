@@ -68,6 +68,8 @@ at phone width. Regime bins and straights are placed on the outline by their
 fraction of the lap (bin count and `start_pct/end_pct`), because outline
 distance is in position units, not metres.
 
+The view also has a static "Method log" page at `#/method` (linked from the header and the sessions page). It needs no API: it renders `web/src/content/method-log.json`, a curated record of what was tried, the pre-set check, what was found and what changed, with source links to the repo on GitHub. `docs/method-log.md` is generated from the same file with `node web/scripts/gen-method-log.mjs` (run from the repo root); edit the JSON, not the markdown.
+
 ## Running locally
 
 ```

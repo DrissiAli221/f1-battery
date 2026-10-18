@@ -416,3 +416,14 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   straights 2, 4 and 5 and Ferrari-powered earlier on 2 and 4; the bootstrap
   pools laps across cars and does not capture car-to-car spread.
 - `statsmodels` added to model/pyproject.toml.
+
+## D21 — 2026-10-18 — Method log kept and published in the view
+- A curated record of what was tried, what each pre-set check said, what was
+  found and what changed (docs/method-log.md, generated from
+  web/src/content/method-log.json; page `#/method` in the view). Eight
+  entries from the Phase S artifact to the frozen test, each citing its
+  source document or decision.
+- **Why:** the pre-set checks and their outcomes, including the ones that
+  failed, are the evidence that the results were not tuned; they stay
+  visible rather than being summarised away. Nothing in the log rewrites a
+  criterion; later status changes are separate decisions (D18, D19).

@@ -1,0 +1,125 @@
+{
+  "title": "Method log",
+  "intro": "A curated record of what was tried, what each pre-set check said, what was found, and what changed as a result. Several checks were fixed in advance: the Phase S exit conditions (numbers set in D7, 2026-10-17, before the spike result), the Phase 3 reproduction check (PLAN.md), and HYPOTHESIS.md and the spot checks, both frozen on 2026-10-18 before any Phase 3 or Phase 4 output existed. None of these criteria was rewritten after the results were seen; where a later decision changed the status of a method, it is recorded as a separate decision. Each entry cites its source document or decision id. Battery and energy quantities in this project are estimates under stated assumptions, never measurements.",
+  "entries": [
+    {
+      "id": "phase-s-super-clip",
+      "title": "Super-clip candidates in the Phase S spike",
+      "phase": "Phase S",
+      "date": "2026-10-17",
+      "tried": "A detector for harvest segments under throttle (full throttle, top gear, deceleration beyond drag) on Monza and Singapore race laps, using acceleration from a 9-sample Savitzky-Golay fit on a 0.25 s grid.",
+      "check": "Exit condition 2: super-clip segments on at least 80 % of green laps within +-50 m. The numeric condition was set in D7 before the spike result was recorded.",
+      "found": "First pass: segments on 80-98 % of Monza laps at -4 to -6 m/s^2. Every candidate sat 0.25-1.5 s before brake onset, inside the smoothing window, so the window was leaking the braking onset backwards. With a 1.5 s brake guard: 0-11 segments per car, none repeatable. Singapore: none. Exit condition 2 recorded as fail as written.",
+      "consequence": "The first-pass result was not claimed. The 1.5 s guard was kept in later phases. The project continued in energy-management proxy mode (regimes and cut-offs, no state-of-charge numbers), confirmed in D10.",
+      "sources": [
+        { "label": "spike/RESULT.md", "path": "spike/RESULT.md" },
+        { "label": "D7", "path": "DECISIONS.md#d7" },
+        { "label": "D10", "path": "DECISIONS.md#d10" }
+      ]
+    },
+    {
+      "id": "phase-s-taper",
+      "title": "Power taper above 290 kph (exit condition 1)",
+      "phase": "Phase S",
+      "date": "2026-10-17",
+      "tried": "Looked for the regulation taper (C5.2.8) as a slope break in the full-throttle power envelope between 290 and 345 kph.",
+      "check": "Exit condition 1: a slope break in the 290-345 kph envelope against a drag-only fit, as predicted by the regulation (-6.3 W/kg per kph). Fixed in D7 before the run.",
+      "found": "Monza envelope flat at 290-325 kph (about 650-700 W/kg), then rising to 340 kph, with the upper range populated by cars in a tow or Overtake mode; only 43-50 samples above 340 kph. Singapore cars do not exceed 314 kph. Not demonstrated.",
+      "consequence": "Overtake state and active aero are unobserved in race data, so the check was deferred to a qualifying-data check rather than reinterpreted. Recorded in D10 and in the spike's consequences.",
+      "sources": [
+        { "label": "spike/RESULT.md", "path": "spike/RESULT.md" },
+        { "label": "D10", "path": "DECISIONS.md#d10" }
+      ]
+    },
+    {
+      "id": "phase3-differentiation",
+      "title": "Differentiation method comparison",
+      "phase": "Phase 3",
+      "date": "2026-10-18",
+      "tried": "Kalman/RTS smoothing (orders 1 and 2) and total-variation differentiation (Chartrand) against Savitzky-Golay (window 9 and a wide window of 31) and plain finite differences, on 200 seeded synthetic straights with known truth. The first 50 tuned each method's one parameter; the other 150 were scored. A real Monza check on car 63 followed.",
+      "check": "D11 item 2: compare at least three methods on a synthetic straight with known truth before choosing one; the 1.5 s brake guard stays.",
+      "found": "Outside the leak region SG-9 had the lowest deploy and ramp error and the smallest ramp-start error against the true threshold crossing (mean 0.22 s, p90 0.41 s). Within 1.5 s before brake onset its RMSE is about 8.5 m/s^2; total-variation reduces that to about 1.0, but that region is discarded by the guard. Kalman/RTS was worse in the deploy and ramp regions. A wide SG window is biased late by about +75 m on real data. Real Monza car 63: SG-9 1475 m (std 31 m), TV 1501 m (39 m), wide SG 1550 m (25 m).",
+      "consequence": "Savitzky-Golay on a 0.25 s grid, window 9, polynomial 2, was kept, together with the 1.5 s brake guard. The note flags that the synthetic truth is idealised, and that the ramp-start definition matters more than the differentiator.",
+      "sources": [
+        { "label": "docs/phase3-differentiation.md", "path": "docs/phase3-differentiation.md" },
+        { "label": "D11", "path": "DECISIONS.md#d11" }
+      ]
+    },
+    {
+      "id": "phase3-hinge-detector",
+      "title": "Hinge derate detector and the reproduction check",
+      "phase": "Phase 3",
+      "date": "2026-10-18",
+      "tried": "A hinge model on specific excess power (deploy level, ramp, plateau) fitted per straight per lap, with the ramp start as the cut-off. Its output was compared with the spike's threshold-crossing cut-off, and checked for absence of a ramp at Singapore.",
+      "check": "Phase 3 reproduction check (PLAN.md): Monza cut-offs within +-60 m of the spike; at Singapore no detected ramp on at least 90 % of laps on every straight (share at most 10 %); regime agreement at least 0.80. The plateau condition was set before the run and not tuned afterwards. The detector had been changed once earlier, after a first version without a plateau condition detected ramps on 26 %, 93 % and 90 % of Singapore laps on straights 1, 3 and 6; that history is disclosed in the Phase 3 note.",
+      "found": "Monza passed: all ten cut-offs within 5.2 m of the spike. Regime agreement passed (minimum mean 0.905 at Monza, 0.981 at Singapore). Singapore straight 3 failed: ramp flagged on 27.5 % of laps against the 10 % limit (0 % on the other straights). Post-hoc sensitivity, not adopted: a plateau limit of 0.5 m/s^2 passes Singapore but cuts Monza Lesmo-Ascari detection to 0-54 % per car. Investigation (D19): the drop appears on 95.7 % of straight-3 laps whether flagged or not; the flag is a threshold cut through a smooth distribution of plateau acceleration (median 1.14 m/s^2 against a 1.0 limit); the fitted ramp start is pinned at the earliest allowed index on 62 % of Singapore straight-3 laps and 85 % of Monza T1-Roggia laps. Tow, Overtake windows, gearshifts, drag area and gradient were ruled out with numbers.",
+      "consequence": "D18: the Singapore criterion stands as written. The threshold-crossing estimator became the primary cut-off for Phases 4 and 5; the hinge ramp start is stored as experimental. D19: the hinge stays experimental and now requires an interior ramp start (at least 1 s of deploy level before the start), reporting 'not detected' otherwise. The plateau limit is not tuned.",
+      "sources": [
+        { "label": "docs/phase3-regimes.md", "path": "docs/phase3-regimes.md" },
+        { "label": "docs/investigations/singapore-straight3.md", "path": "docs/investigations/singapore-straight3.md" },
+        { "label": "D18", "path": "DECISIONS.md#d18" },
+        { "label": "D19", "path": "DECISIONS.md#d19" }
+      ]
+    },
+    {
+      "id": "drag-area-identifiability",
+      "title": "Drag area is not identifiable from full-throttle data",
+      "phase": "Phase 3",
+      "date": "2026-10-18",
+      "tried": "A per-car regression of m(a + g sin) v on v^3 over full-throttle, top-two-gear samples at 220-290 kph, to fit a drag area (CdA) for each car and session.",
+      "check": "The regression recipe was specified in the brief and implemented as written (D11 item 5: CdA fitted per car per event, never assumed). No numeric pass criterion; the note records whether the values are physically plausible.",
+      "found": "Per-car regression values run from -0.28 to 2.02 m^2 at Monza and -0.49 to 4.19 m^2 at Singapore, so the fit is poorly identified. A session-wide profile value was used instead (Monza 0.55 m^2, Singapore 0.94 m^2). It adds a systematic uncertainty of about +-50 m on the hinge ramp start. In the season-wide run the session-wide value sits at a grid bound in 16 of 45 sessions (13 at 0.4, 3 at 1.6).",
+      "consequence": "A session-wide value is used and flagged in D18; the per-car regression is reported but not used. Relative deploy energy inherits the limitation, and a sensitivity without it was run in Phase 5 (not pre-registered).",
+      "sources": [
+        { "label": "docs/phase3-regimes.md", "path": "docs/phase3-regimes.md" },
+        { "label": "docs/findings.md", "path": "docs/findings.md" },
+        { "label": "D18", "path": "DECISIONS.md#d18" }
+      ]
+    },
+    {
+      "id": "data-quality",
+      "title": "Data quality issues in the raw feed",
+      "phase": "Phases 1-2",
+      "date": "2026-10-18",
+      "tried": "Coverage checks on every backed-up session (location rows within 10 % of car_data rows per driver), and a per-session quality report in Phase 2 comparing lap and pit clocks with telemetry.",
+      "check": "D13 coverage rule, fixed before the backup ran: a session is complete only if each driver's location rows are within 10 % of car_data rows; failures get one windowed re-fetch.",
+      "found": "Kuala Lumpur race 11731: the backup window cap (scheduled end + 60 min) truncated the delayed race; 185 laps had no samples. After refetching, car_data went from 885,984 to 993,652 rows. Monaco race 11299: location stops at 14:00:14 for all 22 drivers and the re-fetch confirmed a feed gap. Hungary race 11342: lap and pit timestamps sit 3-6 min off the telemetry with a non-constant offset, and the location feed is frozen from about 13:25. 13 qualifying sessions: the last lap's recorded duration is an in-lap of up to 31 min, which explains the apparent 'last lap after telemetry' cases; not missing data.",
+      "consequence": "Kuala Lumpur was refetched with the cap set on observed lap times only. Monaco race has no track map or slope correction after 14:00. Hungary race is excluded from modelling (D17). The in-lap duration is never used as a session end.",
+      "sources": [
+        { "label": "docs/data-quality-notes.md", "path": "docs/data-quality-notes.md" },
+        { "label": "D13", "path": "DECISIONS.md#d13" },
+        { "label": "D17", "path": "DECISIONS.md#d17" }
+      ]
+    },
+    {
+      "id": "spot-checks",
+      "title": "Pre-registered spot checks",
+      "phase": "Phase 5",
+      "date": "2026-10-18",
+      "tried": "Five named real-world moments, each with the expected sign written down in advance, compared with the model's per-straight cut-offs.",
+      "check": "docs/spot-checks.md, frozen on 2026-10-18 before any Phase 3 or Phase 4 output existed; the expected signs were not changed afterwards. Each check is reported pass, fail or not testable.",
+      "found": "Three fail, one passes, one is not testable. (1) Norris, Suzuka laps 47-51: cut-off differences from his median of +51, +63, -41, -10 and -65 m against his own median of 240 m (std 34.5), lap 51 at 1.9 std against a 2 std bar. (2) Hamilton, Canada lap 62: cut-off -55 m (earlier, not later) against a back-straight std of 56 m. (3) Ferrari against Mercedes at Monza: straight 2 matches in direction (Hamilton 1458 m against Russell 1483 m) with intervals overlapping Antonelli's by 2 m; straight 4 is opposite. (4) Singapore has no derating: pass. (5) Harvest limit at Monza against Baku: not testable, as proxy-0.1 stores no harvest-under-throttle variable. A possible reading of the failures as a resolution floor (cut-off lap-to-lap std of 15-60 m) is labelled post-hoc in docs/findings.md, was not tested, and does not change the recorded outcomes.",
+      "consequence": "Results reported as recorded in D20 and docs/findings.md. No spot check was edited or reinterpreted.",
+      "sources": [
+        { "label": "docs/spot-checks.md", "path": "docs/spot-checks.md" },
+        { "label": "docs/findings.md", "path": "docs/findings.md" },
+        { "label": "D20", "path": "DECISIONS.md#d20" }
+      ]
+    },
+    {
+      "id": "frozen-hypothesis-test",
+      "title": "The frozen hypothesis test",
+      "phase": "Phase 5",
+      "date": "2026-10-18",
+      "tried": "A logistic model of being passed, with the defender's cut-off deviation on the approach straight (and related energy terms) as the variables of interest, controlling for pace difference, tyre age, lap number and Overtake availability. Run once as frozen in HYPOTHESIS.md, with a joint permutation control (1,000 permutations) and two cut-off band edges.",
+      "check": "HYPOTHESIS.md, frozen on 2026-10-18: smallest effect an odds ratio of at least 1.3 per SD earlier cut-off with the 95 % interval excluding 1 in all three runs, and the permutation control passing (observed coefficient more extreme than more than 95 % of permutations). Minimum sample 150 events and 300 non-events.",
+      "found": "830 events and 3,889 non-events were extracted; 364 events and 1,324 non-events in 19 sessions were analysed, mainly because 445 events had no detected defender cut-off on the approach straight on the previous lap. The test therefore applies only to straights where a cut-off exists (selection caveat). Odds ratios per 1 SD earlier cut-off: 0.92 [0.81, 1.04] (point), 0.85 [0.74, 0.99] (lower band), 0.94 [0.83, 1.07] (upper band). Permutation: the observed coefficient is less extreme than 79.2 % of permuted values (two-sided p = 0.208), so the control fails. Pace delta OR 0.63 per SD; Overtake availability OR 1.72 [1.22, 2.43]. The energy terms add nothing detectable beyond the controls (LR chi^2 3.69, 3 df, p = 0.30). Verdict in the frozen vocabulary: no effect, meaning none detectable with this estimator and sample, not proof of absence.",
+      "consequence": "Reported as D20. The sensitivities (without deploy energy, without the 16 drag-area-edge sessions, races only) were not pre-registered and do not change the verdict.",
+      "sources": [
+        { "label": "docs/findings.md", "path": "docs/findings.md" },
+        { "label": "D20", "path": "DECISIONS.md#d20" },
+        { "label": "HYPOTHESIS.md", "path": "HYPOTHESIS.md" }
+      ]
+    }
+  ]
+}

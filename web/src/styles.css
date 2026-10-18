@@ -113,3 +113,18 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { color: var(--muted); font-weight: 600; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.navlink { margin-right: auto; margin-left: 16px; font-size: 14px; color: var(--accent); }
+.navlink[aria-current="page"] { font-weight: 650; }
+p.note + .sessions { margin-top: 12px; }
+.ml-timeline { list-style: none; margin: 0; padding: 0 0 0 20px; border-left: 2px solid var(--line); }
+.ml-item { position: relative; }
+.ml-item::before { content: ""; position: absolute; left: -27px; top: 22px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+.ml-head { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: baseline; margin-bottom: 8px; }
+.ml-head h2 { font-size: 17px; }
+.ml-num { color: var(--muted); font-variant-numeric: tabular-nums; }
+.ml-meta { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 13px; }
+.ml-field h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 12px 0 2px; }
+.ml-field p { margin: 0; overflow-wrap: anywhere; }
+.ml-sources { margin: 14px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 520px) { .navlink { margin-left: 12px; } .ml-timeline { padding-left: 16px; } .ml-item::before { left: -23px; } }

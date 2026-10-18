@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { SessionsPage } from "./SessionsPage";
 import { SessionView } from "./SessionView";
+import { MethodLog } from "./MethodLog";
 import { apiBase } from "./api";
 
-/** Minimal hash router: "#/" lists sessions, "#/session/<key>" opens one. */
+/** Minimal hash router: "#/" lists sessions, "#/session/<key>" opens one, "#/method" is the method log. */
 function useRoute(): string {
   const [hash, setHash] = useState(window.location.hash || "#/");
   useEffect(() => {
@@ -24,9 +25,12 @@ export function App() {
           <span className="brand-mark" aria-hidden="true" />
           Deployment view
         </a>
+        <a className="navlink" href="#/method" aria-current={hash.startsWith("#/method") ? "page" : undefined}>Method log</a>
         <span className="tag">Estimates from public telemetry, not measured battery data</span>
       </header>
-      <main>{m ? <SessionView sessionKey={Number(m[1])} /> : <SessionsPage />}</main>
+      <main>
+        {m ? <SessionView sessionKey={Number(m[1])} /> : hash.startsWith("#/method") ? <MethodLog /> : <SessionsPage />}
+      </main>
       <footer className="foot">
         Data from OpenF1 (CC BY-NC-SA), non-commercial. Not affiliated with F1, FIA or FOM. API: {apiBase}
       </footer>

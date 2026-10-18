@@ -11,6 +11,9 @@ export function SessionsPage() {
         Pick a session to see where each car stops deploying electrical power along the straights. Sessions marked
         "no results" are ingested but the model has not published output for them yet.
       </p>
+      <p className="note">
+        How the method was checked, and what changed along the way: <a href="#/method">Method log</a>.
+      </p>
       <Async remote={sessions}>
         {(page) =>
           page.items.length === 0 ? (
