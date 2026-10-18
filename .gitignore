@@ -34,3 +34,6 @@ model/*.egg-info
 
 # Curated reference tables in docs/ are not data dumps
 !docs/*.csv
+
+# Model figures and intermediate results
+model/out/
