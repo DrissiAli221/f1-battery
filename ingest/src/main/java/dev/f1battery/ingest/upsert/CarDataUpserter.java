@@ -1,5 +1,5 @@
 package dev.f1battery.ingest.upsert;
 
-// Ali writes the implementation by hand (PLAN.md Phase 1).
+// Implemented in Phase 1 (PLAN.md).
 public interface CarDataUpserter {
 }

@@ -1,7 +1,7 @@
 # Ways to elevate the project (research, 2026-10-18)
 
-Researched by Claude. Proposals only: nothing here changes PLAN.md until Ali
-accepts an item and it gets a DECISIONS.md entry. Ranked by value/effort.
+Proposals only: nothing here changes PLAN.md until an item is accepted and
+gets a DECISIONS.md entry (D11). Ranked by value/effort.
 
 ## 1. Second data source: TracingInsights/2026 (high value, low effort)
 
@@ -43,9 +43,8 @@ Savitzky–Golay and others behind one API, with a single tuning parameter.
 - **Total-variation** differentiation keeps sharp changes sharp. That's
   what the braking edge needs, and it reduces the leak at its source (keep
   the brake guard anyway).
-- Interview value: "I compared three differentiation methods on a synthetic
-  straight with known truth and picked X because…" beats "I used a moving
-  average".
+- Rationale: a method chosen by measured error on a synthetic straight with
+  known truth is defensible; a moving average chosen by habit is not.
 
 ## 3. Ramp detection with uncertainty (medium value, medium effort)
 
@@ -68,7 +67,7 @@ model**:
 - Leclerc/Ferrari at Monza: reported to derate earlier than Mercedes
   (Scuderia Fans, from FP2).
 For each: expected sign, the lap and straight, pass or fail. A few named
-real-world checks make the write-up far more convincing than statistics alone.
+real-world checks make the write-up more convincing than statistics alone.
 
 ## 5. Physical constants with sources (low effort, needed anyway)
 
@@ -81,22 +80,7 @@ real-world checks make the write-up far more convincing than statistics alone.
   CdA per car per event from the data** and report it, instead of assuming it.
 - Add both to docs/regulations.md with sources.
 
-## 6. Visibility: where to publish once there's a result (career value)
-
-Only with Ali's explicit OK, and only aggregates (D5):
-- **[FastF1 discussion #861](https://github.com/theOehrly/Fast-F1/discussions/861)**,
-  the place where the community already asked for 2026 ERS data (FastF1 has
-  ~5.5k stars). A short post there reaches exactly the right people.
-- **r/F1Technical:** similar telemetry posts got 130–400 upvotes this
-  season (Monza clipping, the Australian hybrid model, Canada).
-- **A short write-up** (blog/Substack) plus a LinkedIn post linking it.
-  Recruiters see it, and the method story (fake clip → brake guard → test)
-  is the hook.
-- Optional, bigger: contribute a small, generic utility upstream (e.g. a
-  brake-guarded acceleration helper) to FastF1. A merged PR to a 5k-star repo
-  is a strong CV line. Ask the maintainer first; scope it tiny.
-
-## 7. Smaller ideas
+## 6. Smaller ideas
 
 - **Pre-season testing data** (in TracingInsights): teams ran deliberate
   energy programmes there. Good for exploring, but kept out of the hypothesis.

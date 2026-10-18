@@ -96,7 +96,7 @@ not an aero-mode change at a zone boundary. Caveat: a driver may close the
 wing early inside a zone; that cannot be seen in this data. Zone definitions
 with metres are an open item for Phase 2 (`docs/regulations.md`, per event).
 
-## Lessons for Gate S
+## Method notes
 
 1. The smoothing window leaks the braking onset backwards and fakes a
    "clip" at full throttle. Any decel-under-throttle detector needs a guard
@@ -111,7 +111,7 @@ with metres are an open item for Phase 2 (`docs/regulations.md`, per event).
    *relative* and *where* quantities are robust: cut-off distance, cut-off
    speed, excess energy over the ICE-only plateau per straight.
 
-## Proposed consequences (D10, Ali to confirm)
+## Consequences (D10)
 
 - Phase 3/4 output = per-straight deploy cut-off distance and speed, deploy
   energy above the plateau (relative units), regime maps. No SoC numbers.

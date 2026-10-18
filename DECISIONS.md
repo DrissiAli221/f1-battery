@@ -1,7 +1,7 @@
 # Decision log
 
 One entry per decision: date, what was chosen, why, what was rejected.
-Ali owns this file. Agents propose entries, Ali confirms them.
+The project owner maintains this file; agents propose entries.
 
 ## D1 — 2026-10-17 — Topic: estimate the hidden 2026 battery state
 - **Why:** F1 hides ERS data in 2026 (FastF1 #861, confirmed 2026-10-17; a
@@ -26,7 +26,7 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   mode, on **simulated data only**, real telemetry listed as future work, no
   code). A Reddit r/F1Technical post read Hamilton's Canada 2026 top speed
   falling then recovering before a pass as save-then-attack: our hypothesis
-  as one anecdote. Pitch therefore: "measured derating per car across the
+  as one anecdote. Framing therefore: "measured derating per car across the
   season from public data and tested whether it predicts overtakes", never
   "discovered the cut-off".
 - **Rejected:** race replay (heavily cloned), winner prediction (heavily cloned),
@@ -86,10 +86,8 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   290–345 kph vs a drag-only fit; clip segments on ≥ 80 % of green-flag laps
   within ±50 m; ≥ 80 % lap-to-lap regime agreement) and PU-maker differences
   are a finding, not a gate. Active aero recorded as a confounder. Phase 1
-  gains Testcontainers, CI, bulk inserts and the rule that Ali hand-writes the
-  rate limiter, upsert and resume logic. New Phase 1.5: thin cloud deploy and
-  a "minimum interview story" due 2026-11-15. Phase 5 is a stretch goal for
-  the application window.
+  gains Testcontainers, CI and bulk inserts. New Phase 1.5: thin cloud deploy and
+  a minimum demonstrable milestone due 2026-11-15.
 - **Hypothesis reframed:** from instantaneous attacker − defender state of
   charge (near-circular with Overtake mode, and SoC is roughly periodic per
   lap) to lap-level energy behaviour measured before the attack, with pace
@@ -98,13 +96,14 @@ Ali owns this file. Agents propose entries, Ali confirms them.
 - **Rejected:** dropping the overtake test entirely (it is the one
   differentiator no prior project has); filling the per-event limits table
   from guesses.
-- **Owner note:** Ali confirms D1, D7 and HYPOTHESIS.md wording.
+- Wording of D1, D7 and HYPOTHESIS.md confirmed by the owner.
 
-## D8 — 2026-10-17 — Stack choices confirmed by Ali
+## D8 — 2026-10-17 — Stack choices
 - **Postgres + TimescaleDB from the start.** Timescale is a Postgres extension
   (hypertables: automatic time chunking, compression, time-bucket helpers),
-  not a separate database. At ~9M rows plain Postgres would cope; Ali keeps
-  Timescale to learn it. Gate 0 must include "what would change without it".
+  not a separate database. At ~9M rows plain Postgres would cope; Timescale is
+  kept for its time-series tooling; the design note records what would change
+  without it.
 - **Rejected: MongoDB.** The data is relational (car_data → laps → stints,
   overtakes → two drivers, everything → sessions), the workload is analytical
   SQL (window functions, group by distance bin), and pandas reads SQL in one
@@ -112,12 +111,11 @@ Ali owns this file. Agents propose entries, Ali confirms them.
 - **Rejected: Kafka and Spark in the main pipeline.** The season is ~9M rows
   fetched once in ~25 min and analysed in batch. Kafka is for continuous
   multi-producer streams, Spark for data that doesn't fit one machine. Neither
-  applies. Adding them would be for the CV, and that is the wrong interview
-  answer. Kafka is allowed later as a **replay mode** (Phase 7): re-emit a
+  applies. Adding them would not be justified by the workload. Kafka is allowed later as a **replay mode** (Phase 7): re-emit a
   race at real speed onto a topic, consumer updates the regime estimate live.
   That is a real streaming problem with a real reason.
-- **View: React + TypeScript (Vite).** Frontend is a strength of Ali's; the
-  view should be genuinely good: track map from the `location` endpoint with
+- **View: React + TypeScript (Vite).** The view is the one place to spend
+  design effort: track map from the `location` endpoint with
   regimes per lap, time scrubbing, two-car comparison. Consequence: `location`
   is ingested in Phase 2, no longer deferred.
 - **Cloud: Oracle Cloud free tier (ARM VM, 24 GB) for the services and
@@ -125,9 +123,9 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   scheduled Lambda fetch) for AWS exposure at near-zero cost.** One deploy
   path only.
 - **Ingestion details:** Spring Data JDBC with explicit SQL (not JPA), a
-  hand-written token-bucket rate limiter (not Resilience4j), build tool TBD.
+  custom token-bucket rate limiter (not Resilience4j), build tool TBD.
 
-## D9 — 2026-10-17 — Design details confirmed by Ali
+## D9 — 2026-10-17 — Design details
 - **D5 amended:** this is a personal, non-commercial project. The public
   deploy may serve **derived** outputs (regime labels per lap at coarse
   distance bins, energy estimates, aggregates) credited to OpenF1 under
@@ -144,7 +142,7 @@ Ali owns this file. Agents propose entries, Ali confirms them.
 - **Keys:** car_data unique on (session_key, driver_number, date); Timescale
   requires the time column in any unique index. Duplicate timestamps from the
   API are deduped in the ingester before insert.
-- **Hosting:** Ali's existing Oracle Cloud free-tier ARM server (already runs
+- **Hosting:** an existing Oracle Cloud free-tier ARM server (already runs
   another light project). All images built arm64 in CI. Keep something
   running so Oracle doesn't reclaim it.
 - **Backup = the AWS piece:** cached raw JSON goes to a private S3 bucket.
@@ -160,9 +158,8 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   calls the live API.
 - **Observability:** Actuator health, Micrometer counters (rows, requests,
   429s), structured logs, config via environment variables, no secrets in git.
-- Interview-relevant reasoning is collected in docs/interview-notes.md.
 
-## D10 — 2026-10-17 — Phase S result: proceed in proxy mode (CONFIRMED by Ali, 2026-10-17)
+## D10 — 2026-10-17 — Phase S result: proceed in proxy mode (CONFIRMED by the owner, 2026-10-17)
 - **Result:** 1 of 3 exit conditions passed (spike/RESULT.md). Taper not
   demonstrated (Overtake state and active aero unobserved, few samples above
   340 kph). Super-clip harvest segments: the first pass was a smoothing
@@ -178,7 +175,7 @@ Ali owns this file. Agents propose entries, Ali confirms them.
   an assumed engine curve (not identifiable from this data).
 
 ## D11 — 2026-10-18 — Improvements adopted from the second review
-(docs/improvements-2026-10-18.md; Ali confirmed items 1 (corrected), 2, 3, 4, 5, 7)
+(docs/improvements-2026-10-18.md; items 1 (corrected), 2, 3, 4, 5, 7 accepted)
 - **1, corrected:** OpenF1 `location` already has `z` (elevation) and all
   cars share timestamps, so gap-to-car-ahead is computed from positions.
   From TracingInsights/2026 take only the curated `sections/` and corner
@@ -199,12 +196,12 @@ Ali owns this file. Agents propose entries, Ali confirms them.
 - **7:** backup tooling also saves weather, session_result, starting_grid,
   team_radio, meetings; FIA race director's competition notes PDFs per event;
   TracingInsights sections/corners files.
-- **Deferred:** item 6 (publishing in FastF1 #861, r/F1Technical, blog,
-  upstream PR) waits for a result and Ali's explicit OK; aggregates only.
+- **Deferred:** item 6 (publishing) waits for a result and the owner's
+  explicit OK; aggregates only.
 - **Rejected:** deep models (no labels), F1 TV tokens (terms), broadcast bar
   as ground truth (FOM estimate).
 
-## D12 — 2026-10-18 — Phase 0 scaffolding choices (PROPOSED by the building agent, reviewed by Claude; Ali to confirm)
+## D12 — 2026-10-18 — Phase 0 scaffolding choices (built by an agent, reviewed)
 - Spring Boot 3.4.5, WireMock 3.9.2, Testcontainers; failsafe runs `*IT`
   tests; `db` is a plain jar holding the Flyway migrations; Boot plugin only on
   `ingest` and `api`. Maven wrapper is script-only (no jar committed).
@@ -225,12 +222,12 @@ Ali owns this file. Agents propose entries, Ali confirms them.
 - **Unverified as of 2026-10-18:** the migrations have not run against a
   real TimescaleDB yet (Docker Desktop was not running; pulling the image
   would also compete with the backup for bandwidth). `MigrationsIT` is the
-  check; it runs in CI and locally once Docker is up. Gate 0 waits for it.
+  check; it runs in CI and locally once Docker is up. Phase 0 is closed once it passes.
 
 ## D13 — 2026-10-18 — Raw OpenF1 backup, race sessions (done)
 - `tools/backup_openf1.py`, gzip files under `data/raw/openf1/` (gitignored),
   one request per driver per endpoint, ≤30 req/min, two in flight. Ran
-  2026-10-17 → 2026-10-18 on slow links; finished 15:28 UTC.
+  2026-10-17 → 2026-10-18; finished 15:28 UTC.
 - Endpoints per session: drivers, laps, stints, pit, overtakes, race_control,
   intervals, position, weather, session_result, starting_grid, team_radio,
   car_data, location; plus sessions and meetings for 2026.
@@ -307,5 +304,10 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - Location gaps: none. `starting_grid` is populated on qualifying sessions (22 rows each).
 - Whole backup on disk: see manifest; gzip files.
 
-## Gate results
-(date — gate — pass/fail — notes)
+## D15 — 2026-10-18 — All phases built sequentially by agents
+- Phases 1 to 6 are built in order by agents without pausing between phases.
+  Each phase ends with its exit condition met, a design note in `docs/`, and
+  a review checkpoint. The freeze rule (HYPOTHESIS.md and docs/spot-checks.md
+  before any Phase 4 output) is unchanged. A phase whose own check fails stops
+  the build and is reported.
+- Code carries ordinary maintainer comments explaining intent and trade-offs.

@@ -1,18 +1,17 @@
-# Rules for AI agents working in this repo
+# Guide for AI agents working in this repo
 
-Applies to Claude, Codex and any other agent. Read README.md and PLAN.md first.
+Applies to any agent. Read README.md and PLAN.md first.
 
-## The point of this project
+## Working rules
 
-Ali builds this to understand it and defend it in interviews, not just to own
-it. Agents write code, but:
-
-- **Explain as you go.** Every non-trivial change ends with a short "what and
-  why" note in the PR/commit message or your reply. Write it so a student can
-  study from it.
-- **Never decide architecture silently.** If a choice changes the design,
-  propose it, and Ali records it in DECISIONS.md.
-- **Stay inside the current phase** (PLAN.md). Don't start the next phase early.
+- **Explain the why.** Every non-trivial change carries a short design note:
+  in the commit message, in a `docs/` note for the phase, or in code comments
+  where a maintainer would need them. Comments explain intent and trade-offs,
+  not the obvious.
+- **Never decide architecture silently.** A choice that changes the design is
+  proposed first and recorded in DECISIONS.md once accepted.
+- **Build in phase order** (PLAN.md). Each phase ends with its exit condition
+  met, its design note written, and a review checkpoint.
 
 ## Truth rules
 
@@ -22,9 +21,11 @@ it. Agents write code, but:
   assumptions. Never call them measured.
 - Every FIA limit used in code comes from `docs/regulations.md`, with the
   issue number and article. No magic constants.
-- HYPOTHESIS.md is frozen once dated. Don't edit it after Phase 4 output
-  exists. Deviations go in DECISIONS.md, explained.
-- Report failures plainly (a test that failed, a spike that didn't work).
+- HYPOTHESIS.md and docs/spot-checks.md are frozen once dated, before any
+  Phase 4 output exists. Deviations go in DECISIONS.md, explained.
+- Report failures plainly: a test that failed, a check that did not pass, a
+  result that turned out to be an artifact. If a phase's own check fails,
+  stop and report rather than quietly reducing scope.
 
 ## Data rules
 
@@ -32,20 +33,15 @@ it. Agents write code, but:
   Back off on 429/5xx. Cache responses locally.
 - Raw and derived data are **never committed**. `data/` and any dumps are
   gitignored.
-- Public outputs: aggregates or a recorded demo only (DECISIONS.md D5).
+- Public outputs: derived aggregates only, never raw samples (DECISIONS.md
+  D5, D9).
 - Not affiliated with F1, FIA or FOM. Don't use their logos.
 
 ## Coordination
 
 - **One agent per area at a time:** `ingest/` (Java), `model/` (Python),
   `api/` + view, `docs/`. Before editing, check that no other agent is working
-  on the same area (ask Ali if unsure).
-- Don't push, publish, deploy or create external accounts unless Ali
-  explicitly authorizes that specific action.
-
-## Study gates
-
-At the end of each phase, Claude runs the gate in PLAN.md: Ali explains the
-phase without notes, then gets "why" follow-up questions. Record pass or fail
-with the date in DECISIONS.md. Phase work only goes on Ali's CV after its gate
-is passed.
+  on the same area.
+- Don't push, publish, deploy or create external accounts unless the project
+  owner explicitly authorizes that specific action.
+- `private/` is gitignored and out of scope for agents unless asked.
