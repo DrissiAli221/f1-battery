@@ -311,3 +311,20 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   before any Phase 4 output) is unchanged. A phase whose own check fails stops
   the build and is reported.
 - Code carries ordinary maintainer comments explaining intent and trade-offs.
+
+## D16 — 2026-10-18 — Phase 1 ingestion loaded and verified
+- Full local-backup load, 50 sessions (48 with data, 2 no-data), 2,982 fetch
+  units, 0 failed, ~45 min on the laptop. Second run: 4 s, 2,702 complete
+  units skipped, 280 no-data units re-checked, **0 rows inserted**.
+- Row counts in the database: car_data 17,956,796 (equals the backup manifest
+  total, D13 + D14), location 17,571,268, interval_sample 490,321, lap 29,350,
+  overtake 4,837, session 50. Database size 3.7 GB before compression.
+- Design choices from the build (docs/phase1-ingestion.md): V3 adds text
+  columns for "+1 LAP" intervals, jsonb for per-segment qualifying results,
+  and `window_label` to the ingestion-log key; no-data units are re-checked
+  on every run; `brake` is stored as received (values 0, 100 and 104 occur).
+- Local Compose database on host port 55432 (5432 and 5433 are taken by
+  other local Postgres instances).
+- CI could not run (Actions billing); all tests, including Testcontainers
+  ITs, pass locally with Docker (`-Dapi.version=1.44` needed for the local
+  Docker Desktop).

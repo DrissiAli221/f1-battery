@@ -15,7 +15,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
-@SpringBootTest
+@SpringBootTest(properties = "ingest.run-on-startup=false")
 class MigrationsIT {
 
     @Container

@@ -1,0 +1,204 @@
+package dev.f1battery.ingest;
+
+import dev.f1battery.ingest.log.IngestionLog;
+import dev.f1battery.ingest.log.IngestionLog.Unit;
+import dev.f1battery.ingest.source.Endpoint;
+import dev.f1battery.ingest.source.FetchWindow;
+import dev.f1battery.ingest.source.OpenF1Records.DriverRecord;
+import dev.f1battery.ingest.source.OpenF1Records.SessionRecord;
+import dev.f1battery.ingest.source.OpenF1Source;
+import dev.f1battery.ingest.upsert.Upserter;
+import dev.f1battery.ingest.upsert.Upserters;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
+
+/**
+ * Drives one ingestion run. For each selected session: the session row, the
+ * drivers, the session-wide endpoints, then car_data and location per driver
+ * and window. Every fetch unit is checked against the ingestion log first and
+ * recorded after, so a rerun only does what is missing.
+ *
+ * <p>A unit's rows and its log entry are written in one transaction: a crash
+ * cannot leave a "complete" entry without its data. A failed unit is logged
+ * outside the transaction and does not stop the run; the exit status reports it.
+ */
+@Service
+public class IngestService {
+
+    private static final Logger log = LoggerFactory.getLogger(IngestService.class);
+    private static final OffsetDateTime EPOCH = OffsetDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+
+    enum Outcome { DONE, SKIPPED, FAILED, DRY_RUN }
+
+    /** Result of a whole run. */
+    public record Summary(int sessions, int unitsDone, int unitsSkipped, int unitsFailed) {
+        public boolean ok() {
+            return unitsFailed == 0;
+        }
+    }
+
+    private static final class Stats {
+        final Map<String, Long> rows = new LinkedHashMap<>();
+        int done;
+        int skipped;
+        int failed;
+        long changed;
+    }
+
+    private final List<OpenF1Source> sources;
+    private final IngestionLog ingestionLog;
+    private final Upserters up;
+    private final TransactionTemplate tx;
+    private final JdbcTemplate jdbc;
+    private final MeterRegistry metrics;
+
+    public IngestService(List<OpenF1Source> sources, IngestionLog ingestionLog, Upserters up,
+            TransactionTemplate tx, JdbcTemplate jdbc, MeterRegistry metrics) {
+        this.sources = sources;
+        this.ingestionLog = ingestionLog;
+        this.up = up;
+        this.tx = tx;
+        this.jdbc = jdbc;
+        this.metrics = metrics;
+    }
+
+    public Summary run(IngestOptions o) {
+        OpenF1Source source = sources.stream().filter(s -> s.name().equals(o.source())).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("no source named " + o.source()));
+        List<SessionRecord> sessions = source.sessions(o.year()).stream()
+                .filter(s -> s.sessionKey() != null && o.accepts(s.sessionName(), s.sessionKey()))
+                .toList();
+        log.info("event=run_start source={} year={} sessions={} dry_run={}", o.source(), o.year(), sessions.size(), o.dryRun());
+        int done = 0;
+        int skipped = 0;
+        int failed = 0;
+        for (SessionRecord s : sessions) {
+            Stats st = ingestSession(source, s, o.dryRun());
+            done += st.done;
+            skipped += st.skipped;
+            failed += st.failed;
+        }
+        Summary summary = new Summary(sessions.size(), done, skipped, failed);
+        log.info("event=run_end sessions={} units_done={} units_skipped={} units_failed={}", sessions.size(), done, skipped, failed);
+        return summary;
+    }
+
+    private Stats ingestSession(OpenF1Source src, SessionRecord s, boolean dry) {
+        Stats st = new Stats();
+        int sk = s.sessionKey();
+        OffsetDateTime start = s.dateStart() != null ? s.dateStart() : EPOCH;
+        OffsetDateTime end = s.dateEnd() != null ? s.dateEnd() : start;
+        log.info("event=session_start session={} name=\"{}\" date_start={}", sk, s.sessionName(), s.dateStart());
+
+        // The session row must exist before drivers (foreign key).
+        unit(src, st, dry, new Unit("sessions", sk, null, start, end, Unit.SESSION), () -> List.of(s), up.session);
+
+        List<DriverRecord> fetched = new ArrayList<>();
+        unit(src, st, dry, new Unit("drivers", sk, null, start, end, Unit.SESSION),
+                () -> {
+                    List<DriverRecord> rows = src.fetch(Endpoint.DRIVERS, s);
+                    fetched.addAll(rows);
+                    return rows;
+                }, up.driver);
+
+        whole(src, st, dry, s, Endpoint.LAPS, up.lap);
+        whole(src, st, dry, s, Endpoint.STINTS, up.stint);
+        whole(src, st, dry, s, Endpoint.PIT, up.pit);
+        whole(src, st, dry, s, Endpoint.OVERTAKES, up.overtake);
+        whole(src, st, dry, s, Endpoint.RACE_CONTROL, up.raceControl);
+        whole(src, st, dry, s, Endpoint.INTERVALS, up.interval);
+        whole(src, st, dry, s, Endpoint.POSITION, up.position);
+        whole(src, st, dry, s, Endpoint.WEATHER, up.weather);
+        whole(src, st, dry, s, Endpoint.SESSION_RESULT, up.sessionResult);
+        whole(src, st, dry, s, Endpoint.STARTING_GRID, up.startingGrid);
+        whole(src, st, dry, s, Endpoint.TEAM_RADIO, up.teamRadio);
+
+        // If the drivers unit was skipped as complete, the numbers come from the table.
+        List<Integer> drivers = !fetched.isEmpty()
+                ? fetched.stream().map(DriverRecord::driverNumber).filter(java.util.Objects::nonNull).distinct().sorted().toList()
+                : jdbc.queryForList("SELECT driver_number FROM driver WHERE session_key = ? ORDER BY driver_number", Integer.class, sk);
+        for (int d : drivers) {
+            telemetry(src, st, dry, s, d, Endpoint.CAR_DATA, up.carData);
+            telemetry(src, st, dry, s, d, Endpoint.LOCATION, up.location);
+        }
+
+        log.info("event=session_summary session={} name=\"{}\" units_done={} units_skipped={} units_failed={} rows_fetched={} rows_changed={}",
+                sk, s.sessionName(), st.done, st.skipped, st.failed, st.rows, st.changed);
+        return st;
+    }
+
+    private <T> void whole(OpenF1Source src, Stats st, boolean dry, SessionRecord s, Endpoint<T> ep, Upserter<T> upserter) {
+        OffsetDateTime start = s.dateStart() != null ? s.dateStart() : EPOCH;
+        OffsetDateTime end = s.dateEnd() != null ? s.dateEnd() : start;
+        unit(src, st, dry, new Unit(ep.name(), s.sessionKey(), null, start, end, Unit.SESSION), () -> src.fetch(ep, s), upserter);
+    }
+
+    private <T> void telemetry(OpenF1Source src, Stats st, boolean dry, SessionRecord s, int driver,
+            Endpoint<T> ep, Upserter<T> upserter) {
+        for (FetchWindow w : src.windows(ep, s, driver)) {
+            unit(src, st, dry, new Unit(ep.name(), s.sessionKey(), driver, w.start(), w.end(), w.label()),
+                    () -> src.fetch(ep, s, driver, w), upserter);
+        }
+    }
+
+    private <T> Outcome unit(OpenF1Source src, Stats st, boolean dry, Unit u, Supplier<List<T>> fetch,
+            Upserter<T> upserter) {
+        Outcome outcome;
+        int rows = 0;
+        String status = null;
+        try {
+            if (ingestionLog.isComplete(u)) {
+                outcome = Outcome.SKIPPED;
+            } else if (dry) {
+                rows = fetch.get().size();
+                outcome = Outcome.DRY_RUN;
+            } else {
+                List<T> data = fetch.get();
+                rows = data.size();
+                status = statusOf(data);
+                int changed = tx.execute(t -> {
+                    int n = upserter.upsert(data);
+                    ingestionLog.record(u, src.name(), data.size(), statusOf(data));
+                    return n;
+                });
+                st.changed += changed;
+                outcome = Outcome.DONE;
+            }
+        } catch (RuntimeException e) {
+            outcome = Outcome.FAILED;
+            status = IngestionLog.FAILED;
+            log.error("event=unit_failed endpoint={} session={} driver={} window_start={} error=\"{}\"",
+                    u.endpoint(), u.sessionKey(), u.driverNumber(), u.windowStart(), e.toString());
+            try {
+                ingestionLog.record(u, src.name(), 0, IngestionLog.FAILED);
+            } catch (RuntimeException logError) {
+                log.error("event=log_write_failed endpoint={} session={} error=\"{}\"", u.endpoint(), u.sessionKey(), logError.toString());
+            }
+        }
+        switch (outcome) {
+            case DONE, DRY_RUN -> st.done++;
+            case SKIPPED -> st.skipped++;
+            case FAILED -> st.failed++;
+        }
+        st.rows.merge(u.endpoint(), (long) rows, Long::sum);
+        metrics.counter("ingest.fetch.units", "status", outcome.name().toLowerCase()).increment();
+        log.debug("event=unit endpoint={} session={} driver={} window_start={} rows={} outcome={} status={}",
+                u.endpoint(), u.sessionKey(), u.driverNumber(), u.windowStart(), rows, outcome, status);
+        return outcome;
+    }
+
+    private static String statusOf(List<?> data) {
+        return data.isEmpty() ? IngestionLog.NO_DATA : IngestionLog.COMPLETE;
+    }
+}
