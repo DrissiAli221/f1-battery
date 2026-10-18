@@ -2,7 +2,9 @@ import log from "./content/method-log.json";
 
 const REPO = "https://github.com/DrissiAli221/f1-battery/blob/main/";
 
-type Entry = (typeof log.entries)[number];
+type Entry = (typeof log.entries)[number] & {
+  figure?: { src: string; alt: string; caption: string };
+};
 
 function Field({ name, children }: { name: string; children: string }) {
   return (
@@ -28,6 +30,12 @@ function EntryCard({ e, n }: { e: Entry; n: number }) {
         <Field name="Tried">{e.tried}</Field>
         <Field name="Check">{e.check}</Field>
         <Field name="Found">{e.found}</Field>
+        {e.figure && (
+          <figure className="ml-figure">
+            <img src={`${import.meta.env.BASE_URL}${e.figure.src}`} alt={e.figure.alt} loading="lazy" style={{ maxWidth: "100%", height: "auto" }} />
+            <figcaption className="muted">{e.figure.caption}</figcaption>
+          </figure>
+        )}
         <Field name="Consequence">{e.consequence}</Field>
         <p className="ml-sources">
           Sources:{" "}

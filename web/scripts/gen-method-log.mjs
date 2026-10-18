@@ -14,7 +14,7 @@ const rel = (p) => "../" + p;
 let md = `# ${log.title}\n\n<!-- Generated from web/src/content/method-log.json by web/scripts/gen-method-log.mjs. Edit the JSON, then re-run the script. -->\n\n${log.intro}\n`;
 log.entries.forEach((e, i) => {
   md += `\n## ${i + 1}. ${e.title}\n\n*${e.phase}, ${e.date}*\n\n`;
-  md += `**Tried.** ${e.tried}\n\n**Check.** ${e.check}\n\n**Found.** ${e.found}\n\n**Consequence.** ${e.consequence}\n\n`;
+  md += `**Tried.** ${e.tried}\n\n**Check.** ${e.check}\n\n**Found.** ${e.found}\n\n${e.figure ? `![${e.figure.alt}](${e.figure.src.replace(/^figures\//, "figures/")})\n\n*${e.figure.caption}*\n\n` : ""}**Consequence.** ${e.consequence}\n\n`;
   md += `Sources: ${e.sources.map((s) => `[${s.label}](${rel(s.path)})`).join(", ")}\n`;
 });
 writeFileSync(out, md);

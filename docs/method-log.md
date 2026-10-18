@@ -14,6 +14,10 @@ A curated record of what was tried, what each pre-set check said, what was found
 
 **Found.** First pass: segments on 80-98 % of Monza laps at -4 to -6 m/s^2. Every candidate sat 0.25-1.5 s before brake onset, inside the smoothing window, so the window was leaking the braking onset backwards. With a 1.5 s brake guard: 0-11 segments per car, none repeatable. Singapore: none. Exit condition 2 recorded as fail as written.
 
+![Two stacked panels of smoothed acceleration against lap distance on the Monza T1 to Roggia straight for six laps. Before the guard, red marks sit on the falling edge just ahead of each brake-onset point; after the 1.5 s guard, that region is shaded and no red marks remain.](figures/phase-s-fake-clip.png)
+
+*The red marks are samples that meet the clip rule (full throttle, gear 7 or higher, acceleration below -1.5 m/s^2); they all fall within 1.5 s before brake onset, where the smoothing window leaks braking backwards, so the guard removes every one of them.*
+
 **Consequence.** The first-pass result was not claimed. The 1.5 s guard was kept in later phases. The project continued in energy-management proxy mode (regimes and cut-offs, no state-of-charge numbers), confirmed in D10.
 
 Sources: [spike/RESULT.md](../spike/RESULT.md), [D7](../DECISIONS.md#d7), [D10](../DECISIONS.md#d10)
@@ -56,7 +60,7 @@ Sources: [docs/phase3-differentiation.md](../docs/phase3-differentiation.md), [D
 
 **Found.** Monza passed: all ten cut-offs within 5.2 m of the spike. Regime agreement passed (minimum mean 0.905 at Monza, 0.981 at Singapore). Singapore straight 3 failed: ramp flagged on 27.5 % of laps against the 10 % limit (0 % on the other straights). Post-hoc sensitivity, not adopted: a plateau limit of 0.5 m/s^2 passes Singapore but cuts Monza Lesmo-Ascari detection to 0-54 % per car. Investigation (D19): the drop appears on 95.7 % of straight-3 laps whether flagged or not; the flag is a threshold cut through a smooth distribution of plateau acceleration (median 1.14 m/s^2 against a 1.0 limit); the fitted ramp start is pinned at the earliest allowed index on 62 % of Singapore straight-3 laps and 85 % of Monza T1-Roggia laps. Tow, Overtake windows, gearshifts, drag area and gradient were ruled out with numbers.
 
-**Consequence.** D18: the Singapore criterion stands as written and Phase 4 was not started on the hinge. The threshold-crossing estimator became the primary cut-off; the hinge ramp start is stored as experimental. D19: the hinge stays experimental and now requires an interior ramp start (at least 1 s of deploy level before the start), reporting 'not detected' otherwise. The plateau limit is not tuned.
+**Consequence.** D18: the Singapore criterion stands as written. The threshold-crossing estimator became the primary cut-off for Phases 4 and 5; the hinge ramp start is stored as experimental. D19: the hinge stays experimental and now requires an interior ramp start (at least 1 s of deploy level before the start), reporting 'not detected' otherwise. The plateau limit is not tuned.
 
 Sources: [docs/phase3-regimes.md](../docs/phase3-regimes.md), [docs/investigations/singapore-straight3.md](../docs/investigations/singapore-straight3.md), [D18](../DECISIONS.md#d18), [D19](../DECISIONS.md#d19)
 
@@ -96,7 +100,7 @@ Sources: [docs/data-quality-notes.md](../docs/data-quality-notes.md), [D13](../D
 
 **Check.** docs/spot-checks.md, frozen on 2026-10-18 before any Phase 3 or Phase 4 output existed; the expected signs were not changed afterwards. Each check is reported pass, fail or not testable.
 
-**Found.** Three fail, one passes, one is not testable. (1) Norris, Suzuka laps 47-51: cut-off differences from his median of +51, +63, -41, -10 and -65 m (median 240 m, std 34.5), lap 51 at 1.9 std against a 2 std bar. (2) Hamilton, Canada lap 62: cut-off -55 m (earlier, not later) against a back-straight std of 56 m. (3) Ferrari against Mercedes at Monza: straight 2 matches in direction (Hamilton 1458 m against Russell 1483 m) with intervals overlapping Antonelli's by 2 m; straight 4 is opposite. (4) Singapore has no derating: pass. (5) Harvest limit at Monza against Baku: not testable, as proxy-0.1 stores no harvest-under-throttle variable. A possible reading of the failures as a resolution floor (cut-off lap-to-lap std of 15-60 m) is labelled post-hoc in docs/findings.md, was not tested, and does not change the recorded outcomes.
+**Found.** Three fail, one passes, one is not testable. (1) Norris, Suzuka laps 47-51: cut-off differences from his median of +51, +63, -41, -10 and -65 m against his own median of 240 m (std 34.5), lap 51 at 1.9 std against a 2 std bar. (2) Hamilton, Canada lap 62: cut-off -55 m (earlier, not later) against a back-straight std of 56 m. (3) Ferrari against Mercedes at Monza: straight 2 matches in direction (Hamilton 1458 m against Russell 1483 m) with intervals overlapping Antonelli's by 2 m; straight 4 is opposite. (4) Singapore has no derating: pass. (5) Harvest limit at Monza against Baku: not testable, as proxy-0.1 stores no harvest-under-throttle variable. A possible reading of the failures as a resolution floor (cut-off lap-to-lap std of 15-60 m) is labelled post-hoc in docs/findings.md, was not tested, and does not change the recorded outcomes.
 
 **Consequence.** Results reported as recorded in D20 and docs/findings.md. No spot check was edited or reinterpreted.
 
