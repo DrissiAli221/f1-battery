@@ -10,8 +10,8 @@ import json, sys, time, pathlib, urllib.request, urllib.error, gzip
 from datetime import datetime, timedelta, timezone
 
 BASE = "https://api.openf1.org/v1"
-SLEEP = 2.2
-WINDOW = timedelta(minutes=30)
+SLEEP = 2.0
+WINDOW = timedelta(hours=3)   # one request per driver per endpoint covers a whole session; gzip keeps it ~600 KB
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "data" / "raw" / "openf1"
 ROOT.mkdir(parents=True, exist_ok=True)
 MANIFEST = ROOT / "manifest.json"
