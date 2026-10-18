@@ -393,3 +393,26 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   of deploy level before the start) and reports "not detected" when pinned.
   The plateau limit is not tuned. The primary cut-off remains the
   threshold-crossing estimator (D18).
+
+## D20 — 2026-10-18 — Phase 5 result: no effect (frozen test, run as written)
+- Test run exactly as frozen in HYPOTHESIS.md (docs/findings.md). Analysis
+  frame: 364 events and 1,324 non-events in 19 sessions after dropping rows
+  with no detected defender cut-off on the approach straight (the main drop,
+  445 events), which makes the test a selection on straights where a cut-off
+  exists.
+- Odds of being passed per 1 SD earlier defender cut-off: 0.92 [0.81, 1.04]
+  (point), 0.85 [0.74, 0.99] (lower band), 0.94 [0.83, 1.07] (upper band).
+  Opposite sign to the hypothesis in all three runs; permutation control
+  fails (observed coefficient less extreme than 79 % of permutations).
+  Verdict in the frozen vocabulary: **no effect**.
+- Pace delta dominates (OR 0.63 per SD, p < 1e-9); Overtake availability
+  OR 1.72 [1.22, 2.43]. The energy terms add nothing detectable beyond the
+  controls (LR chi² 3.69, 3 df, p = 0.30).
+- Sensitivities (not pre-registered: without deploy energy, without the 16
+  drag-area-edge sessions, races only) do not change the verdict.
+- Spot checks reported as-is: 3 fail, 1 pass, 1 not testable; the
+  resolution-floor explanation is labelled post-hoc.
+- Power-unit comparison: at Monza, Mercedes-powered cars cut latest on
+  straights 2, 4 and 5 and Ferrari-powered earlier on 2 and 4; the bootstrap
+  pools laps across cars and does not capture car-to-car spread.
+- `statsmodels` added to model/pyproject.toml.

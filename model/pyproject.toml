@@ -9,6 +9,7 @@ dependencies = [
     "matplotlib",
     "psycopg[binary]",
     "pynumdiff",
+    "statsmodels>=0.14",
 ]
 
 [build-system]

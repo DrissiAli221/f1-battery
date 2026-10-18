@@ -4,9 +4,11 @@ F1 does not publish battery (ERS) data in 2026. This project estimates each
 car's energy management from public telemetry, then tests one pre-registered
 question against real overtakes.
 
-Status: **Phase S done** (1 of 3 exit conditions; continuing as an
-energy-management proxy, see [spike/RESULT.md](spike/RESULT.md) and D10).
-Next: Phase 0. See [PLAN.md](PLAN.md).
+Status: **Phases 0–6 built; findings written** (2026-10-18). The
+pre-registered test returned **no effect**: a defender's derating cut-off
+does not predict being passed once pace difference is controlled. See
+[docs/findings.md](docs/findings.md), DECISIONS.md D20, and
+[PLAN.md](PLAN.md). Not deployed yet (Phase 1.5).
 
 ## Why this exists
 
