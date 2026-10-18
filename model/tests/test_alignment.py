@@ -131,3 +131,19 @@ def test_length_outlier_rule():
 
 def test_path_length_in_decimetres():
     assert np.isclose(al.path_length_m(np.array([0, 30, 30]), np.array([0, 0, 40])), 7.0)
+
+
+def test_crossings_and_telemetry_laps():
+    # A car on a 100 s loop passing the line (x=0, heading +x) every 100 s; one pass is
+    # 40 m off the line (pit lane) and one repeats within 10 s, both ignored or merged.
+    t = np.arange(0, 400.0, 1.0)
+    x = ((t % 100) - 50) * 100.0          # decimetres, crosses x=0 at t=50, 150, ...
+    y = np.where((t > 140) & (t < 160), 600.0, 0.0)   # 60 m off the line at the second pass
+    ns = al.to_ns([ts(s) for s in t])
+    cr = al.detect_crossings(ns, x, y, np.array([0.0, 0.0]), np.array([1.0, 0.0]))
+    assert (cr * 1e-9 - ns[0] * 1e-9).round().tolist() == [50.0, 250.0, 350.0]
+    laps = make_laps([(1, 0, 90.0, False), (2, 50, 100.0, False), (3, 250, 100.0, False), (4, 350, None, False)])
+    tl = al.telemetry_laps(laps, cr)
+    assert tl is not None
+    assert (to_s := (al.to_ns(tl["date_start"]) - ns[0]) * 1e-9).round().tolist()[1:] == [50.0, 250.0, 350.0]
+    assert al.telemetry_laps(laps, cr[:1]) is None

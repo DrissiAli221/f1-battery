@@ -8,7 +8,7 @@ tests in `model/tests/`, schema in `db/.../V4__compression_and_lap_quality.sql`.
 
 * `lap_quality` (29,350 rows, one per lap): green flag, first excluding reason,
   sample count, integrated lap length, largest telemetry gap, rule flags.
-* `straight` (99 rows, 15 circuits) and `straight_windows()` for absolute
+* `straight` (see Follow-ups: 15 mapped plus 4 derived circuits) and `straight_windows()` for absolute
   distance windows.
 * `regulation_event` (46 rows) loaded from `docs/regulation-events.csv`.
 * A per-session quality report, `model/out/quality/<session>.json` (gitignored).
@@ -153,9 +153,10 @@ over drivers, green laps with at least 80 % location coverage), 46 sessions:
 * The length rule also removes 121 of 813 laps in Shanghai race 11245, 94 of 295
   in Shanghai sprint 11240 and 101 of 925 in Suzuka race 11253; cause not
   investigated.
-* Kuala Lumpur race 11731: `car_data` stops at 09:59:59 while laps continue to
-  10:18, and `session.date_start` (07:00) is 1.5 h before the first lap. 76 laps
-  have no samples (`sparse`); green fraction 0.50.
+* Kuala Lumpur race 11731: the first backup cut `car_data` at 09:59:59; it was
+  refetched (993,652 rows to 10:21:45) and `quality --all` rerun: no `sparse`
+  laps, green fraction 0.565. `session.date_start` (07:00) is 1.5 h before the
+  first lap, so 458 k samples are `before_first_lap`.
 
 `quality --all` (46 sessions with data; Sakhir 11257/11261 and Jeddah 11265/11269
 have no telemetry or laps and report zero drivers):
@@ -207,3 +208,57 @@ upsert. A full run takes about a minute.
    small).
 8. Kuala Lumpur race telemetry truncation is a Phase 1 ingest-window question
    (`ingest/` not touched here).
+
+## Follow-ups (second pass)
+
+**1. Telemetry boundaries (`boundary_source`, V5).** `alignment.detect_crossings`
+finds start/finish-line crossings in `location` (line point and heading are the
+median of lap-start positions of a trusted session on the same circuit, qualifying
+first; a candidate is trusted if its lap-start positions cluster within 30 m);
+`telemetry_laps` numbers them by order and matches the lap rows by count (N-1 or
+N crossings, else the driver keeps the lap table). `process_session` runs the lap
+table first; if the location/speed ratio is off by > 2 % or the length rule removes
+> 10 % of the candidate laps it re-runs with telemetry boundaries and keeps that
+result only if it yields more green laps. Result: it was never kept, so all 29,350
+`lap_quality` rows have `boundary_source = 'laps'`; the telemetry pass is recorded
+in each report under `telemetry_pass`.
+
+| Session | green, lap table | green, telemetry | drivers matched by count |
+|---|---|---|---|
+| Hungary race 11342 | 526 | 525 | 1 of 22 |
+| Shanghai race 11245 | 692 | 681 | 16 of 20 |
+| Suzuka race 11253 | 824 | 823 | 2 of 22 |
+| Shanghai sprint 11240 | 201 | 186 | 15 of 22 |
+
+Findings: in Hungary the `location` feed is frozen for the rest of the race from
+about 13:25 (about 90 % of samples are stationary for every driver), so
+line crossings cannot be detected for most laps; the lap clock cannot be repaired
+from location there. For Shanghai the telemetry boundaries reproduce the same
+length outliers (laps 2-3 off by +-10 %), so those losses are not a lap-clock
+problem; cause unknown. Suzuka mostly fails the count match.
+
+**2. No-lap flag** now uses moving samples only (speed > 30 km/h, share of moving
+samples). It fires in 24 of 46 sessions (cool-down laps and Hungary/Kuala Lumpur
+style truncation), versus 46 before.
+
+**3. Straights without a sections file** (Shanghai, Suzuka, Madring, Kuala
+Lumpur): `derive_straights` takes the circuit's fastest green lap in
+`lap_quality` and keeps full-throttle (>= 98 %) runs above 200 km/h of >= 4 s;
+positions are percent of that lap's integrated length; label `derived`.
+
+| Circuit | reference (session, driver, lap) | straights |
+|---|---|---|
+| Shanghai | 11236, 63, 10 | 5 |
+| Suzuka | 11249, 12, 14 | 4 |
+| Madring | 11365, 1, 18 | 4 |
+| Kuala Lumpur | 11730, 3, 11 | 5 |
+
+A straight crossing the start/finish line is one entry with start_pct > end_pct and
+is id 1 (file circuits: Monza now has 5 straights, T1 to Roggia still id 2). Counts
+in the table above drop by one for every circuit where the file had a first and
+last straight touching the line. `straight_windows` returns `end_m` beyond the lap
+length for a wrapping straight; `window_mask(dist, start_m, end_m, lap_length_m)`
+tests distances against it.
+
+**4. Kuala Lumpur** rerun included (see Validation). Run `straights` after
+`quality --all`, since derivation reads `lap_quality`.

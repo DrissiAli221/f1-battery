@@ -331,3 +331,91 @@ def location_crosscheck(loc_ts_ns: np.ndarray, x: np.ndarray, y: np.ndarray,
             used += 1
     return {"laps_used": used, "loc_len_m": loc_len, "speed_len_m": spd_len,
             "loc_samples": loc_n, "car_samples": car_n}
+
+
+# ------------------------------------------- telemetry-derived lap boundaries
+
+LINE_PERP_TOL_DM = 250      # crossing must be within 25 m of the reference line point, across the track
+LINE_MAX_STEP_DM = 1500     # consecutive location samples further apart than this (150 m) cannot bracket a crossing
+LINE_MIN_GAP_S = 30.0       # two crossings closer than this are one crossing (pit lane and track lines)
+LINE_MAX_SPREAD_DM = 300    # median spread of the reference points; wider means the source lap clock is unreliable
+
+
+def locate_at(loc_ts_ns: np.ndarray, x: np.ndarray, y: np.ndarray, t_ns: np.ndarray):
+    """Interpolated (x, y) of a driver at the given times; NaN outside the location record."""
+    t = t_ns.astype(float)
+    ok = (t_ns >= loc_ts_ns[0]) & (t_ns <= loc_ts_ns[-1]) if len(loc_ts_ns) else np.zeros(len(t_ns), bool)
+    xi = np.where(ok, np.interp(t, loc_ts_ns.astype(float), x), np.nan)
+    yi = np.where(ok, np.interp(t, loc_ts_ns.astype(float), y), np.nan)
+    return xi, yi
+
+
+def line_reference(points: np.ndarray, headings: np.ndarray):
+    """Start/finish line point and unit direction from lap-start positions.
+
+    ``points`` (n, 2) are car positions at trusted lap starts and ``headings``
+    (n, 2) the travel direction there. Returns ``(P, u, spread_dm)`` with the
+    median point, the normalised median heading, and the median distance of the
+    points from the median point; None when fewer than 5 points are available.
+    """
+    ok = ~(np.isnan(points).any(axis=1) | np.isnan(headings).any(axis=1))
+    points, headings = points[ok], headings[ok]
+    if len(points) < 5:
+        return None
+    P = np.median(points, axis=0)
+    u = np.median(headings, axis=0)
+    u = u / np.hypot(*u)
+    return P, u, float(np.median(np.hypot(*(points - P).T)))
+
+
+def detect_crossings(loc_ts_ns: np.ndarray, x: np.ndarray, y: np.ndarray, P: np.ndarray, u: np.ndarray) -> np.ndarray:
+    """Times (ns) at which the car crosses the start/finish line in the travel direction.
+
+    Along-track coordinate s = (pos - P).u changes from negative to non-negative
+    between two location samples that are close together, and the interpolated
+    cross-track offset is within LINE_PERP_TOL_DM. Crossings closer than
+    LINE_MIN_GAP_S to the previous kept one are dropped.
+    """
+    x = x.astype(float)
+    y = y.astype(float)
+    s = (x - P[0]) * u[0] + (y - P[1]) * u[1]
+    w = -(x - P[0]) * u[1] + (y - P[1]) * u[0]
+    out: list[int] = []
+    for i in np.flatnonzero((s[:-1] < 0) & (s[1:] >= 0)):
+        if np.hypot(x[i + 1] - x[i], y[i + 1] - y[i]) > LINE_MAX_STEP_DM:
+            continue
+        f = -s[i] / (s[i + 1] - s[i])
+        if abs(w[i] + f * (w[i + 1] - w[i])) > LINE_PERP_TOL_DM:
+            continue
+        t = int(loc_ts_ns[i] + f * (loc_ts_ns[i + 1] - loc_ts_ns[i]))
+        if out and (t - out[-1]) * 1e-9 < LINE_MIN_GAP_S:
+            continue
+        out.append(t)
+    return np.array(out, dtype=np.int64)
+
+
+def telemetry_laps(laps: pd.DataFrame, crossings_ns: np.ndarray) -> pd.DataFrame | None:
+    """Replace ``date_start`` and ``lap_duration`` by line-crossing times, matched by count.
+
+    Crossing j ends lap j and starts lap j+1 (laps in number order). With N lap
+    rows there must be N-1 crossings (the last lap was not finished) or N (it was);
+    any other count is ambiguous and returns None. Lap 1 keeps its own
+    ``date_start`` (a grid or pit-exit start, not a line crossing). The
+    ``is_pit_out_lap`` flags are kept by lap number.
+    """
+    laps = laps.sort_values("lap_number").reset_index(drop=True)
+    n, c = len(laps), len(crossings_ns)
+    if n < 2 or c not in (n - 1, n):
+        return None
+    out = laps.copy()
+    starts = to_ns(out["date_start"])
+    starts[1:] = crossings_ns[:n - 1]
+    out["date_start"] = pd.to_datetime(starts.astype("datetime64[ns]"), utc=True)
+    if is_nat(to_ns(laps["date_start"])[:1]).any():
+        out.loc[0, "date_start"] = pd.NaT
+    ends = np.append(starts[1:], crossings_ns[n - 1] if c == n else _NAT)
+    dur = np.where(ends == _NAT, np.nan, (ends - starts) * 1e-9)
+    if is_nat(to_ns(laps["date_start"])[:1]).any():
+        dur[0] = np.nan
+    out["lap_duration"] = dur
+    return out
