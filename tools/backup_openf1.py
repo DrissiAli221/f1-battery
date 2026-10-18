@@ -3,7 +3,7 @@ Usage: python tools/backup_openf1.py [--summary] [--sessions "Race"]  (comma-sep
 - Requests gzip transfer (~29x smaller payloads; the API honours Accept-Encoding).
 - Rate limit: sleeps 2.2 s between requests (<=27/min, under the 30/min and 3/s free-tier caps).
 - Resumable: a request whose file exists is skipped. Retries with exponential backoff on 429/5xx.
-- Layout: data/raw/openf1/<session_key>/<endpoint>[_<driver>][_<window>].json.gz (gzip bytes exactly as the API sent them), one file per request,
+- Layout: data/raw/openf1/<session_key>/<endpoint>[_<driver>_w<window-minutes>_<index>].json.gz (gzip bytes exactly as the API sent them), one file per request,
   plus data/raw/openf1/manifest.json with dates and row counts. Phase 1 can ingest from these files.
 """
 import json, sys, time, pathlib, urllib.request, urllib.error, gzip
@@ -97,7 +97,7 @@ def main():
                 while t < t_end:
                     te = min(t + WINDOW, t_end)
                     total += get(f"/{ep}?session_key={sk}&driver_number={drv}&date>={iso(t)}&date<{iso(te)}",
-                                 d / f"{ep}_{drv}_{i:02d}.json")
+                                 d / f"{ep}_{drv}_w{int(WINDOW.total_seconds() // 60)}_{i:02d}.json")
                     t = te; i += 1
             rows[ep] = total
             print(f"  {ep}: {total} rows over {len(drivers)} drivers", flush=True)
