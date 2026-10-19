@@ -71,9 +71,12 @@ export function useSessionData(key: number): SessionData {
     [drivers.data, medians],
   );
 
-  const defaultDriver = useMemo(() => pickDefault(session, withResults.length ? withResults : drivers.data ?? [], lapsBy), [session, withResults, drivers.data, lapsBy]);
-
   const summaryReady = !session?.has_results || summary.data !== null || summary.error !== null;
+  // Wait for the summary before choosing, so the page does not load (and animate) a provisional driver.
+  const defaultDriver = useMemo(
+    () => (summaryReady ? pickDefault(session, withResults.length ? withResults : drivers.data ?? [], lapsBy) : null),
+    [summaryReady, session, withResults, drivers.data, lapsBy],
+  );
   return {
     session,
     sessionsError: sessions.error,

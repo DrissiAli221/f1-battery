@@ -97,7 +97,7 @@ export function useLoad<T>(key: string | null, load: () => Promise<T>, keepPrevi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   // Between a key change and the effect, don't hand out the previous key's result as current.
-  if (state.key !== key && key !== null) return { data: keepPrevious ? state.data : null, error: null, loading: true };
+  if (state.key !== key) return key === null ? { data: null, error: null, loading: false } : { data: keepPrevious ? state.data : null, error: null, loading: true };
   return state;
 }
 
