@@ -19,7 +19,8 @@ public final class OpenF1Records {
             OffsetDateTime dateStart, OffsetDateTime dateEnd, Integer year) {}
 
     public record DriverRecord(Integer sessionKey, Integer driverNumber, String nameAcronym,
-            String fullName, String teamName) {}
+            String fullName, String teamName, String headshotUrl, String teamColour, String firstName,
+            String lastName, String broadcastName, String countryCode) {}
 
     public record LapRecord(Integer sessionKey, Integer driverNumber, Integer lapNumber,
             OffsetDateTime dateStart, Double lapDuration,

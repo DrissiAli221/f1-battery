@@ -14,8 +14,14 @@ public class DriverUpserter extends BatchUpserter<DriverRecord> {
 
     public DriverUpserter(JdbcTemplate jdbc, MeterRegistry metrics, int batchSize) {
         super(jdbc, metrics, "driver",
-                List.of("session_key", "driver_number", "name_acronym", "full_name", "team_name"),
-                "session_key, driver_number", List.of("name_acronym", "full_name", "team_name"), Set.of(), batchSize);
+                List.of("session_key", "driver_number", "name_acronym", "full_name", "team_name", "headshot_url",
+                        "team_colour", "first_name", "last_name", "broadcast_name", "country_code"),
+                "session_key, driver_number",
+                // DO UPDATE (guarded by IS DISTINCT FROM) so re-ingesting fills the detail columns of rows
+                // that were stored before they existed.
+                List.of("name_acronym", "full_name", "team_name", "headshot_url", "team_colour", "first_name",
+                        "last_name", "broadcast_name", "country_code"),
+                Set.of(), batchSize);
     }
 
     @Override
@@ -25,6 +31,7 @@ public class DriverUpserter extends BatchUpserter<DriverRecord> {
 
     @Override
     Object[] values(DriverRecord r) {
-        return new Object[] {r.sessionKey(), r.driverNumber(), r.nameAcronym(), r.fullName(), r.teamName()};
+        return new Object[] {r.sessionKey(), r.driverNumber(), r.nameAcronym(), r.fullName(), r.teamName(),
+                r.headshotUrl(), r.teamColour(), r.firstName(), r.lastName(), r.broadcastName(), r.countryCode()};
     }
 }

@@ -142,7 +142,8 @@ public class ResultsController {
     private Page<Map<String, Object>> summaryFor(int key, ModelRuns.Run run, int page, int size) {
         Object[] runArgs = {run.modelVersion(), run.runId(), key};
         List<Map<String, Object>> drivers = jdbc.query(
-                "select d.driver_number, d.name_acronym, d.full_name, d.team_name from driver d "
+                "select d.driver_number, d.name_acronym, d.full_name, d.team_name, "
+                        + Schema.DRIVER_DETAILS_D + " from driver d "
                         + "where d.session_key = ? and exists (select 1 from model_result m "
                         + "where m.model_version = ? and m.run_id = ? and m.session_key = d.session_key "
                         + "and m.driver_number = d.driver_number) order by d.driver_number",
@@ -265,12 +266,15 @@ public class ResultsController {
             Map<String, Object> d = new LinkedHashMap<>();
             d.put("driver_number", n);
             List<Map<String, Object>> names = jdbc.query(
-                    "select name_acronym, team_name from driver where session_key = ? and driver_number = ?",
+                    "select name_acronym, team_name, headshot_url, " + Schema.TEAM_COLOUR + " from driver "
+                            + "where session_key = ? and driver_number = ?",
                     Rows.MAP,
                     session,
                     n);
             d.put("name_acronym", names.isEmpty() ? null : names.get(0).get("name_acronym"));
             d.put("team_name", names.isEmpty() ? null : names.get(0).get("team_name"));
+            d.put("team_colour", names.isEmpty() ? null : names.get(0).get("team_colour"));
+            d.put("headshot_url", names.isEmpty() ? null : names.get(0).get("headshot_url"));
             List<Map<String, Object>> series = List.of();
             if (run.isPresent()) {
                 List<Object> args = new ArrayList<>(

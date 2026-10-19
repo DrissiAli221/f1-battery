@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +85,7 @@ public class IngestService {
         int skipped = 0;
         int failed = 0;
         for (SessionRecord s : sessions) {
-            Stats st = ingestSession(source, s, o.dryRun());
+            Stats st = ingestSession(source, s, o.dryRun(), o.refresh());
             done += st.done;
             skipped += st.skipped;
             failed += st.failed;
@@ -94,7 +95,7 @@ public class IngestService {
         return summary;
     }
 
-    private Stats ingestSession(OpenF1Source src, SessionRecord s, boolean dry) {
+    private Stats ingestSession(OpenF1Source src, SessionRecord s, boolean dry, Set<String> refresh) {
         Stats st = new Stats();
         int sk = s.sessionKey();
         OffsetDateTime start = s.dateStart() != null ? s.dateStart() : EPOCH;
@@ -102,35 +103,35 @@ public class IngestService {
         log.info("event=session_start session={} name=\"{}\" date_start={}", sk, s.sessionName(), s.dateStart());
 
         // The session row must exist before drivers (foreign key).
-        unit(src, st, dry, new Unit("sessions", sk, null, start, end, Unit.SESSION), () -> List.of(s), up.session);
+        unit(src, st, dry, refresh, new Unit("sessions", sk, null, start, end, Unit.SESSION), () -> List.of(s), up.session);
 
         List<DriverRecord> fetched = new ArrayList<>();
-        unit(src, st, dry, new Unit("drivers", sk, null, start, end, Unit.SESSION),
+        unit(src, st, dry, refresh, new Unit("drivers", sk, null, start, end, Unit.SESSION),
                 () -> {
                     List<DriverRecord> rows = src.fetch(Endpoint.DRIVERS, s);
                     fetched.addAll(rows);
                     return rows;
                 }, up.driver);
 
-        whole(src, st, dry, s, Endpoint.LAPS, up.lap);
-        whole(src, st, dry, s, Endpoint.STINTS, up.stint);
-        whole(src, st, dry, s, Endpoint.PIT, up.pit);
-        whole(src, st, dry, s, Endpoint.OVERTAKES, up.overtake);
-        whole(src, st, dry, s, Endpoint.RACE_CONTROL, up.raceControl);
-        whole(src, st, dry, s, Endpoint.INTERVALS, up.interval);
-        whole(src, st, dry, s, Endpoint.POSITION, up.position);
-        whole(src, st, dry, s, Endpoint.WEATHER, up.weather);
-        whole(src, st, dry, s, Endpoint.SESSION_RESULT, up.sessionResult);
-        whole(src, st, dry, s, Endpoint.STARTING_GRID, up.startingGrid);
-        whole(src, st, dry, s, Endpoint.TEAM_RADIO, up.teamRadio);
+        whole(src, st, dry, refresh, s, Endpoint.LAPS, up.lap);
+        whole(src, st, dry, refresh, s, Endpoint.STINTS, up.stint);
+        whole(src, st, dry, refresh, s, Endpoint.PIT, up.pit);
+        whole(src, st, dry, refresh, s, Endpoint.OVERTAKES, up.overtake);
+        whole(src, st, dry, refresh, s, Endpoint.RACE_CONTROL, up.raceControl);
+        whole(src, st, dry, refresh, s, Endpoint.INTERVALS, up.interval);
+        whole(src, st, dry, refresh, s, Endpoint.POSITION, up.position);
+        whole(src, st, dry, refresh, s, Endpoint.WEATHER, up.weather);
+        whole(src, st, dry, refresh, s, Endpoint.SESSION_RESULT, up.sessionResult);
+        whole(src, st, dry, refresh, s, Endpoint.STARTING_GRID, up.startingGrid);
+        whole(src, st, dry, refresh, s, Endpoint.TEAM_RADIO, up.teamRadio);
 
         // If the drivers unit was skipped as complete, the numbers come from the table.
         List<Integer> drivers = !fetched.isEmpty()
                 ? fetched.stream().map(DriverRecord::driverNumber).filter(java.util.Objects::nonNull).distinct().sorted().toList()
                 : jdbc.queryForList("SELECT driver_number FROM driver WHERE session_key = ? ORDER BY driver_number", Integer.class, sk);
         for (int d : drivers) {
-            telemetry(src, st, dry, s, d, Endpoint.CAR_DATA, up.carData);
-            telemetry(src, st, dry, s, d, Endpoint.LOCATION, up.location);
+            telemetry(src, st, dry, refresh, s, d, Endpoint.CAR_DATA, up.carData);
+            telemetry(src, st, dry, refresh, s, d, Endpoint.LOCATION, up.location);
         }
 
         log.info("event=session_summary session={} name=\"{}\" units_done={} units_skipped={} units_failed={} rows_fetched={} rows_changed={}",
@@ -138,27 +139,27 @@ public class IngestService {
         return st;
     }
 
-    private <T> void whole(OpenF1Source src, Stats st, boolean dry, SessionRecord s, Endpoint<T> ep, Upserter<T> upserter) {
+    private <T> void whole(OpenF1Source src, Stats st, boolean dry, Set<String> refresh, SessionRecord s, Endpoint<T> ep, Upserter<T> upserter) {
         OffsetDateTime start = s.dateStart() != null ? s.dateStart() : EPOCH;
         OffsetDateTime end = s.dateEnd() != null ? s.dateEnd() : start;
-        unit(src, st, dry, new Unit(ep.name(), s.sessionKey(), null, start, end, Unit.SESSION), () -> src.fetch(ep, s), upserter);
+        unit(src, st, dry, refresh, new Unit(ep.name(), s.sessionKey(), null, start, end, Unit.SESSION), () -> src.fetch(ep, s), upserter);
     }
 
-    private <T> void telemetry(OpenF1Source src, Stats st, boolean dry, SessionRecord s, int driver,
+    private <T> void telemetry(OpenF1Source src, Stats st, boolean dry, Set<String> refresh, SessionRecord s, int driver,
             Endpoint<T> ep, Upserter<T> upserter) {
         for (FetchWindow w : src.windows(ep, s, driver)) {
-            unit(src, st, dry, new Unit(ep.name(), s.sessionKey(), driver, w.start(), w.end(), w.label()),
+            unit(src, st, dry, refresh, new Unit(ep.name(), s.sessionKey(), driver, w.start(), w.end(), w.label()),
                     () -> src.fetch(ep, s, driver, w), upserter);
         }
     }
 
-    private <T> Outcome unit(OpenF1Source src, Stats st, boolean dry, Unit u, Supplier<List<T>> fetch,
+    private <T> Outcome unit(OpenF1Source src, Stats st, boolean dry, Set<String> refresh, Unit u, Supplier<List<T>> fetch,
             Upserter<T> upserter) {
         Outcome outcome;
         int rows = 0;
         String status = null;
         try {
-            if (ingestionLog.isComplete(u)) {
+            if (!refresh.contains(u.endpoint()) && ingestionLog.isComplete(u)) {
                 outcome = Outcome.SKIPPED;
             } else if (dry) {
                 rows = fetch.get().size();
