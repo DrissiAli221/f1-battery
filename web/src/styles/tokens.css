@@ -1,0 +1,106 @@
+/*
+ * Design tokens. Single source for colour, type, spacing and radius; tailwind.config.ts
+ * maps its theme onto these custom properties, so changing a value here restyles the
+ * whole view.
+ *
+ * Primitive and mode values follow the PRNDL design system (unofficial, non-commercial,
+ * credited in the footer; DECISIONS.md D27). Names are kept from PRNDL where they exist.
+ * The data layer (regime colours, chart ink) is this project's own. Team colours are never
+ * tokens: they come from the API (`team_colour`).
+ *
+ * Dark is the only mode for now; a light mode later redefines the alias block under
+ * [data-theme="light"].
+ */
+:root {
+  /* ---- Primitive (PRNDL) ---- */
+  --color-red-900: #170100;
+  --color-red-700: #710300;
+  --color-red-600: #a90500;
+  --color-red-500: #e10600;
+  --color-grey-950: #0b0b0b;
+  --color-grey-900: #15151d;
+  --color-grey-850: #1a1a24;
+  --color-grey-800: #1c1c24;
+  --color-grey-700: #26262b;
+  --color-grey-600: #303037;
+  --color-grey-500: #606066;
+  --color-grey-400: #aaabb1;
+  --color-grey-300: #d0d0d5;
+  --color-grey-200: #f7f4f1;
+  --color-grey-100: #fefefe;
+  --color-navy-700: #0e0c16;
+  --color-navy-300: #97959e;
+  --color-hot-pink-500: #e51073;
+  --color-green-500: #27983e;
+  --color-yellow-500: #ffd100;
+
+  /* ---- Modes: Dark (PRNDL) ---- */
+  --color-text-body: var(--color-grey-200);
+  --color-text-headings: var(--color-grey-100);
+  --color-surface-page-bg: var(--color-grey-850);
+  --color-surface-primary--default: var(--color-grey-900);
+  --color-surface-primary--pressed: var(--color-grey-950);
+  --color-surface-header-bg: var(--color-grey-900);
+  --color-surface-btn-primary--default: var(--color-red-500);
+  --color-surface-btn-primary--pressed: var(--color-red-700);
+  --color-surface-btn-other--default: var(--color-grey-900);
+  --color-surface-btn-other--pressed: var(--color-grey-800);
+  --color-border-btn-other--default: var(--color-grey-100);
+  --color-border-btn-other--pressed: var(--color-grey-300);
+  --color-text-on-color: var(--color-grey-100);
+  --color-text-on-color-inverse: var(--color-grey-950);
+  --color-surface-badge: var(--color-hot-pink-500);
+  --color-surface-success: var(--color-green-500);
+  --color-surface-warning: var(--color-yellow-500);
+  --color-surface-disabled: var(--color-grey-400);
+  --color-border-stroke-brand: var(--color-red-500);
+  --color-border-focus-state: var(--color-red-600);
+
+  /* ---- Project aliases (what components use) ---- */
+  /* Page background: the one line to change to restyle the canvas. */
+  --page-bg: var(--color-surface-page-bg);
+  --surface: var(--color-surface-primary--default);
+  --surface-deep: var(--color-surface-primary--pressed);
+  --frame: var(--color-navy-700);
+  --line: var(--color-grey-600);
+  --line-2: var(--color-grey-700);
+  --ink: var(--color-text-body);
+  --ink-head: var(--color-text-headings);
+  --ink-2: var(--color-grey-300);
+  --ink-3: var(--color-navy-300);
+  --ink-4: var(--color-grey-500);
+  --brand: var(--color-border-stroke-brand);
+  --brand-hover: var(--color-red-600);
+  --brand-pressed: var(--color-surface-btn-primary--pressed);
+  --brand-deep: var(--color-red-900);
+
+  /* Track and data layer (D26). Regime hues never reuse the brand red. */
+  --track-edge: #2b2b37;
+  --track-body: var(--surface);
+  --regime-deploy: #a8f04a;
+  --regime-plateau: #ffd84d;
+  --regime-lift: #9e5bff;
+  --regime-brake: #ff8ae0;
+  --regime-other: #4a4a57;
+
+  /* ---- Type ---- */
+  --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  /* Orbitron: uppercase short titles and labels only; never dates, numbers or sentences. */
+  --font-display: "Orbitron", "Geist", sans-serif;
+
+  /* ---- Spacing (PRNDL 4 px step) and radii ---- */
+  --spacing-01: 4px;
+  --radius-xxs: 4px;
+  --radius-xs: 8px;
+  --radius-s: 12px;
+  --radius-m: 16px;
+  --radius-l: 20px;
+  --radius-xl: 24px;
+
+  /* ---- Layout ---- */
+  --container: 1600px;
+  --header-h: 64px;
+
+  color-scheme: dark;
+}

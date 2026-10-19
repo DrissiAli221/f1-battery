@@ -1,0 +1,278 @@
+@import "./tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background: var(--page-bg);
+    scroll-padding-top: calc(var(--header-h) + 16px);
+  }
+  body {
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a {
+    color: inherit;
+  }
+  ::selection {
+    background: var(--brand);
+    color: #fff;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-border-focus-state);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  /* Page container: wide, with 16 px gutters on phones growing to 64 px. */
+  .wrap {
+    @apply mx-auto w-full max-w-container px-4 sm:px-8 xl:px-16;
+  }
+  /* Vertical rhythm between sections. */
+  .section {
+    @apply py-24 lg:py-28 xl:py-36;
+  }
+
+  /* ---- Type ---- */
+  .display {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    line-height: 0.98;
+    color: var(--ink-head);
+    text-wrap: balance;
+  }
+  .h-section {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    color: var(--ink-head);
+    @apply text-[26px] leading-[1.15] md:text-[40px];
+  }
+  .h-card {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--ink-head);
+    @apply text-[18px] leading-6 md:text-[20px] md:leading-7;
+  }
+  .cap {
+    font-family: var(--font-display);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    @apply text-[12px] leading-4;
+  }
+  .label {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    @apply text-[12px] leading-4;
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .big {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    color: var(--ink-head);
+  }
+  .lede {
+    color: var(--ink-2);
+    @apply text-[18px] leading-[1.6] md:text-[20px];
+  }
+  .prose-link {
+    @apply underline decoration-line underline-offset-4 transition-colors hover:text-ink-head hover:decoration-brand;
+  }
+
+  /* ---- PRNDL pill buttons ---- */
+  .btn {
+    @apply inline-flex h-11 items-center gap-2 rounded-xl px-6 text-[15px] font-bold transition-colors;
+  }
+  .btn-primary {
+    background: var(--color-surface-btn-primary--default);
+    color: var(--color-text-on-color);
+  }
+  .btn-primary:hover {
+    background: var(--brand-hover);
+  }
+  .btn-primary:active {
+    background: var(--brand-pressed);
+  }
+  .btn-secondary {
+    background: var(--color-surface-btn-other--default);
+    color: var(--ink-head);
+    box-shadow: inset 0 0 0 2px var(--color-border-btn-other--default);
+  }
+  .btn-secondary:hover {
+    background: var(--color-surface-btn-other--pressed);
+  }
+  .btn-sm {
+    @apply h-9 px-4 text-[14px];
+  }
+
+  /* ---- PRNDL selector pills: 2 px outline, selected = white fill ---- */
+  .sel-btn {
+    @apply inline-flex h-9 items-center gap-2 rounded-[28px] px-4 text-[14px] font-bold transition-colors;
+    color: var(--ink-head);
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+  .sel-btn:hover {
+    box-shadow: inset 0 0 0 2px var(--color-border-btn-other--pressed);
+  }
+  .sel-btn[aria-pressed="true"] {
+    background: var(--color-grey-100);
+    color: var(--color-text-on-color-inverse);
+    box-shadow: inset 0 0 0 2px var(--color-grey-100);
+  }
+
+  /* ---- Underline tabs ---- */
+  .tab {
+    @apply relative px-1 pb-3 pt-2 text-center transition-colors;
+    color: var(--ink-3);
+  }
+  .tab::after {
+    content: "";
+    @apply absolute inset-x-0 bottom-0 h-0.5;
+    background: var(--line);
+  }
+  .tab[aria-selected="true"] {
+    color: var(--ink-head);
+  }
+  .tab[aria-selected="true"]::after {
+    height: 3px;
+    background: var(--brand);
+  }
+  .tab:hover:not([aria-selected="true"]) {
+    color: var(--ink);
+  }
+  .tab.is-empty {
+    color: var(--ink-4);
+  }
+
+  /* ---- PRNDL badges: radius 4, bold 12, uppercase ---- */
+  .badge {
+    @apply inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-xxs px-2 text-[12px] font-bold uppercase leading-4 tracking-[0.02em];
+  }
+  .badge-pink {
+    background: var(--color-surface-badge);
+    color: var(--color-text-on-color);
+  }
+  .badge-warn {
+    background: var(--color-surface-warning);
+    color: var(--color-text-on-color-inverse);
+  }
+  .badge-ok {
+    background: var(--color-surface-success);
+    color: var(--color-text-on-color);
+  }
+  .badge-muted {
+    background: var(--line-2);
+    color: var(--ink-2);
+  }
+  .badge-line {
+    box-shadow: inset 0 0 0 1.5px currentColor;
+  }
+
+  .card {
+    background: var(--surface);
+    @apply rounded-xs;
+  }
+
+  /* Livery stripes: the PRNDL header motif, drawn, no logo. */
+  .livery {
+    @apply pointer-events-none absolute inset-y-0 flex gap-2.5;
+    transform: skewX(-32deg);
+  }
+  .livery i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(180deg, transparent, rgba(170, 171, 177, 0.22) 40%, rgba(255, 255, 255, 0.04));
+  }
+  .slash {
+    @apply inline-flex gap-[3px];
+    transform: skewX(-24deg);
+  }
+  .slash i {
+    display: block;
+    height: 100%;
+  }
+  /* Double red rule ending in a cut, after section eyebrows. */
+  .stripe-rule {
+    @apply relative h-2 min-w-[40px] flex-1;
+  }
+  .stripe-rule::before,
+  .stripe-rule::after {
+    content: "";
+    @apply absolute left-0 h-0.5;
+    background: var(--brand);
+  }
+  .stripe-rule::before {
+    top: 1px;
+    right: 6px;
+  }
+  .stripe-rule::after {
+    top: 5px;
+    right: 3px;
+  }
+
+  /* Faint measurement grid, only behind the track map. */
+  .grid-bg {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 128px 128px, 128px 128px, 32px 32px, 32px 32px;
+    background-position: -1px -1px;
+    mask-image: radial-gradient(120% 110% at 50% 45%, #000 50%, transparent 100%);
+  }
+
+  /* Lap scrubber cells. */
+  .lap-cell {
+    @apply h-7 min-w-[2px] flex-1 cursor-pointer rounded-[1px] transition-[background-color,transform];
+  }
+  .lap-cell.is-green {
+    background: #2e2e3a;
+  }
+  .lap-cell.is-cut {
+    background: #5e5e6e;
+  }
+  .lap-cell.is-excluded {
+    background: repeating-linear-gradient(135deg, #2a2a34 0 2px, transparent 2px 5px);
+  }
+  .lap-cell.is-selected {
+    background: var(--brand);
+    transform: scaleY(1.3);
+  }
+  .lap-cell:hover:not(.is-selected) {
+    background: #8a8a9a;
+  }
+
+  .row-hover:hover {
+    background: rgba(255, 255, 255, 0.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
