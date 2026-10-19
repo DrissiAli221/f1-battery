@@ -1,6 +1,7 @@
 # Frontend rebuild: design brief (draft, 2026-10-19)
 
-Status: preparation. No code until the direction is chosen.
+Status: direction chosen (D26), a hybrid of Broadcast and Telemetry lab.
+One more static mockup validates it before the React build.
 
 ## What the reference set says
 
@@ -233,3 +234,46 @@ Navbar spec: 64 px, sticky, canvas colour at 85 % with backdrop blur,
 Explorer, Method log, Live; far right: theme toggle and one pill CTA
 ("Open the explorer" on the landing, "Sessions" elsewhere). Collapses to
 a sheet menu under 720 px.
+
+## Chosen direction (D26): Broadcast shell, Telemetry instruments
+
+Three mockups were built (Broadcast, Editorial, Telemetry lab). Editorial is
+dropped. None was good enough as built; the two kept are the most workable
+starting points.
+
+### Taken from Broadcast
+- Navbar, footer, section headers and the timing-tower row grammar: 44 px
+  rows, team-colour bar, Saira three-letter codes, flag-style pills.
+- The track: neon regime-segmented line on near-black, DrawSVG draw-in, lead
+  dot on MotionPath, cut-off ticks landing in order of travel.
+- Driver cards with headshot, number and team colour; compare card with the
+  median delta.
+- One red accent, never used for data.
+
+### Taken from Telemetry lab
+- Geist Mono for every number, tabular figures.
+- The linear distance strip under the map (regimes, straights, corner
+  numbers on a distance axis), linked to the map by one cursor.
+- Lap scrubber with a play button; cursor readout panel; scale bar and
+  corner badges outside the track.
+- The measurement grid only behind the map, faint; not page-wide.
+
+### What made all three look bad, and the rules that fix it
+1. **Too much per screen.** One idea per section. The session view is an
+   app-style screen of one viewport height: map as hero (at least 60 % of
+   the width on desktop), a side panel with the two drivers and the selected
+   straight, the distance strip and scrubber under it. Everything else is
+   below the fold or behind tabs.
+2. **Text too small and too uniform.** Minimum 13 px body, 11 px mono
+   labels; a real scale (display 64–96, h2 32, h3 20, body 15, label 11),
+   with weight and colour doing the hierarchy, not more pills.
+3. **Pill and chip inflation.** Pills only for state (verdict, flag,
+   selected). Labels are plain text.
+4. **Spaghetti chart.** Cut-off by lap shows the selected and compare
+   drivers as points with a median line and range band; no 21-line
+   overlays.
+5. **The table dominates.** Summary table shows ten rows with an expand;
+   per-straight columns become one sparkline-style range bar per straight.
+6. **Dead space.** No trailing empty page height; sections end on content.
+7. **Landing.** One headline, the verdict, three stats, one call to action.
+   The three page cards stay but smaller.

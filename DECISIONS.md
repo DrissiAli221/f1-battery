@@ -485,3 +485,11 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   TypeScript stay. The project name and wordmark are decided later.
 - Before any page is built, three static mockup directions are produced
   with real Monza data, and one is chosen.
+
+## D26 — 2026-10-19 — Frontend direction: Broadcast with Telemetry instruments
+- The rebuild uses the Broadcast mockup's shell, track and timing-tower
+  grammar with the Telemetry lab's mono numbers, linear distance strip,
+  scrubber and cursor readout. The Editorial direction is dropped.
+- None of the three mockups met the bar as built; the brief lists the
+  density, type-scale and chart problems and the rules that fix them. One
+  hybrid mockup validates those rules before the React build starts.
