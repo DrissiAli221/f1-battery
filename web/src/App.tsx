@@ -1,41 +1,66 @@
-import { useEffect, useState } from "react";
-import { SessionsPage } from "./SessionsPage";
-import { SessionView } from "./SessionView";
-import { MethodLog } from "./MethodLog";
-import { LivePage } from "./LivePage";
-import { apiBase } from "./api";
+import { lazy, Suspense, useEffect } from "react";
+import { MotionConfig } from "motion/react";
+import { Shell } from "./components/Shell";
+import { Empty, Loading } from "./components/ui";
+import { LandingPage } from "./pages/LandingPage";
+import { href, useLocation, type Route } from "./lib/router";
 
-/** Minimal hash router: "#/" lists sessions, "#/session/<key>" opens one, "#/live/<key>" follows a replay, "#/method" is the method log. */
-function useRoute(): string {
-  const [hash, setHash] = useState(window.location.hash || "#/");
-  useEffect(() => {
-    const on = () => setHash(window.location.hash || "#/");
-    window.addEventListener("hashchange", on);
-    return () => window.removeEventListener("hashchange", on);
-  }, []);
-  return hash;
+// The landing page ships in the main bundle; the rest load on first visit.
+const SessionsPage = lazy(() => import("./pages/SessionsPage").then((m) => ({ default: m.SessionsPage })));
+const SessionPage = lazy(() => import("./pages/SessionPage").then((m) => ({ default: m.SessionPage })));
+const FindingsPage = lazy(() => import("./pages/FindingsPage").then((m) => ({ default: m.FindingsPage })));
+const MethodLogPage = lazy(() => import("./pages/MethodLogPage").then((m) => ({ default: m.MethodLogPage })));
+const LivePage = lazy(() => import("./pages/LivePage").then((m) => ({ default: m.LivePage })));
+
+const TITLES: Record<Route["name"], string> = {
+  landing: "Energy/26",
+  sessions: "Sessions · Energy/26",
+  session: "Explorer · Energy/26",
+  findings: "Findings · Energy/26",
+  method: "Method log · Energy/26",
+  live: "Live · Energy/26",
+  missing: "Not found · Energy/26",
+};
+
+function Page({ route }: { route: Route }) {
+  switch (route.name) {
+    case "landing":
+      return <LandingPage />;
+    case "sessions":
+      return <SessionsPage />;
+    case "session":
+      return <SessionPage key={route.key} sessionKey={route.key} />;
+    case "findings":
+      return <FindingsPage />;
+    case "method":
+      return <MethodLogPage />;
+    case "live":
+      return <LivePage key={route.key ?? "index"} sessionKey={route.key} />;
+    case "missing":
+      return (
+        <div className="wrap section">
+          <Empty title="Page not found">
+            Nothing lives at {route.path}. <a className="prose-link" href={href.landing}>Go to the start</a>.
+          </Empty>
+        </div>
+      );
+  }
 }
 
 export function App() {
-  const hash = useRoute();
-  const m = /^#\/session\/(\d+)/.exec(hash);
-  const live = /^#\/live\/(\d+)/.exec(hash);
+  const { route, path } = useLocation();
+  // New page: start at the top. Query-only changes (explorer state) keep the scroll position.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    document.title = TITLES[route.name];
+  }, [path, route.name]);
   return (
-    <div className="shell">
-      <header className="top">
-        <a className="brand" href="#/">
-          <span className="brand-mark" aria-hidden="true" />
-          Deployment view
-        </a>
-        <a className="navlink" href="#/method" aria-current={hash.startsWith("#/method") ? "page" : undefined}>Method log</a>
-        <span className="tag">Estimates from public telemetry, not measured battery data</span>
-      </header>
-      <main>
-        {m ? <SessionView sessionKey={Number(m[1])} /> : live ? <LivePage sessionKey={Number(live[1])} /> : hash.startsWith("#/method") ? <MethodLog /> : <SessionsPage />}
-      </main>
-      <footer className="foot">
-        Data from OpenF1 (CC BY-NC-SA), non-commercial. Not affiliated with F1, FIA or FOM. API: {apiBase}
-      </footer>
-    </div>
+    <MotionConfig reducedMotion="user">
+      <Shell route={route}>
+        <Suspense fallback={<Loading className="h-[60vh]" />}>
+          <Page route={route} />
+        </Suspense>
+      </Shell>
+    </MotionConfig>
   );
 }
