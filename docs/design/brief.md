@@ -277,3 +277,35 @@ starting points.
 6. **Dead space.** No trailing empty page height; sections end on content.
 7. **Landing.** One headline, the verdict, three stats, one call to action.
    The three page cards stay but smaller.
+
+## Design system: PRNDL (D27)
+
+The visual foundation is PRNDL, an unofficial, student-made Formula 1 design
+system published on the Figma Community and used with its author's
+permission. Its own terms: unofficial, not affiliated with or endorsed by
+Formula 1, not for commercial use. This project meets all three. Credited in
+the footer.
+
+Taken from PRNDL:
+- Colour tokens (Primitive, Alias, Semantic, Modes with Dark and Light):
+  background `#1a1a24`, surface `#15151d`, text `#f7f4f1`, brand red
+  `#e10600` (pressed `#710300`), accent pink `#e51073`, success `#27983e`,
+  warning `#ffd100`.
+- Spacing on a 4 px step; radii 4 / 8 / 12 / 16 / 20 / 24 plus full pills.
+- Type ramp: headings 32/40, 24/32, 20/28, 18/24, caption 14/20; body 24,
+  20, 16, 12.
+- Components: header with livery stripes, pill buttons and selectors,
+  underline tabs, ranking tables, badges, toasts, team-colour-filled driver
+  cards, section headings, accordions.
+- Orbitron (uppercase) for headings and labels, replacing Saira as the F1
+  accent face.
+
+Not taken:
+- F1, TAG Heuer and other third-party logos, driver photos and car renders
+  in the file.
+- Team colours: PRNDL's are pre-2026 and incomplete; OpenF1's
+  `team_colour` stays the source.
+- Body face: Geist and Geist Mono stay for body text and numbers (D24);
+  PRNDL's Titillium Web is the drop-in alternative.
+- PRNDL is mobile-first (393 px, 5 columns). Desktop layout, the track map,
+  charts and the cut-off marker remain this brief's own.

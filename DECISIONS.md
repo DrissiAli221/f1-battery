@@ -493,3 +493,12 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - None of the three mockups met the bar as built; the brief lists the
   density, type-scale and chart problems and the rules that fix them. One
   hybrid mockup validates those rules before the React build starts.
+
+## D27 — 2026-10-19 — Adopt the PRNDL design system
+- The frontend's tokens and components come from PRNDL, an unofficial,
+  student-made F1 design system on the Figma Community, used with its
+  author's permission and credited. Its terms (unofficial, no F1
+  affiliation, non-commercial) match this project.
+- Orbitron replaces Saira as the accent face; Geist and Geist Mono stay for
+  body and numbers. Logos, photos and renders in the file are not reused;
+  team colours still come from OpenF1.
