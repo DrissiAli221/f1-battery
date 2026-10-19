@@ -4,7 +4,7 @@ import { gsap } from "gsap";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { int } from "../lib/format";
-import { along, project, wrap, type Pose, type Projection, type RegimeRun, type TrackStraight } from "../lib/track";
+import { beforeEnd, project, wrap, type Pose, type Projection, type RegimeRun, type TrackStraight } from "../lib/track";
 import type { Outline } from "../lib/types";
 import type { Median } from "./data";
 
@@ -111,6 +111,8 @@ export function TrackMap(props: Props) {
       gsap.set([...lines, ...q("[data-run]")], { clearProps: "strokeDasharray,strokeDashoffset" });
     });
     return () => {
+      // Interrupted (StrictMode re-run, or a quick navigation): allow the entrance to replay.
+      if (tl.progress() < 1) animated.current = null;
       tl.progress(1).kill();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,8 +151,8 @@ export function TrackMap(props: Props) {
   const label = useMemo(() => {
     if (!T || !sel || !selMedian) return null;
     const q = T.pose(selMedian.m);
-    const before = sel.len - along(sel, selMedian.m, T.lap);
-    const txt = md ? `${int(selMedian.m)} m · ${int(before)} m before ${sel.into ?? "braking"}` : `${int(selMedian.m)} m`;
+    const before = beforeEnd(sel, selMedian.m, T.lap);
+    const txt = md && before !== null ? `${int(selMedian.m)} m · ${int(before)} m before ${sel.into ?? "braking"}` : `${int(selMedian.m)} m`;
     const fs = md ? 13 : 12;
     const cw = 44;
     const w = cw + 10 + txt.length * fs * 0.6 + 10;

@@ -170,9 +170,13 @@ until Phase 4 writes `model_result`).
 
 1. Page numbering is zero-based; the contract does not say.
 2. `summary` and `regimes` use the pagination envelope; `compare` does not.
-3. Regime bins and cut-offs are placed on the outline at their metre value; a
-   driver's lap that is longer or shorter than the reference outline shifts
-   them slightly. Lap length per lap would allow scaling.
+3. Regime bins and cut-offs are placed on the outline at their metre value,
+   while straights are placed by fraction of the outline. The model measures
+   both on each driver's own integrated lap, so a 1-2 % length difference moves
+   marks by 60-100 m against their straight. The view treats a mark just before
+   a straight's start as outside it (no "metres before" text) rather than
+   wrapping. Exposing `lap_quality.lap_length_m` on `/laps` would let the view
+   scale model metres to the outline exactly.
 4. Outline spacing is in stored units and assumes 1/10 m; confirm against the
    OpenF1 documentation before quoting metres publicly.
 5. Where the view is hosted (static bucket vs served by the API) and the CORS

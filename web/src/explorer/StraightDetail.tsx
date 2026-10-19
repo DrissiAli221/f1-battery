@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { scaleLinear } from "d3-scale";
 import { int, signed } from "../lib/format";
 import { driverCode } from "../lib/teams";
-import { along, type TrackStraight } from "../lib/track";
+import { along, beforeEnd, type TrackStraight } from "../lib/track";
 import { useSize } from "../lib/useSize";
 import type { Driver } from "../lib/types";
 import type { Cutoffs, Median } from "./data";
@@ -33,7 +33,7 @@ function lapCuts(dr: StraightDriver, sid: number): { lap: number; d: number }[] 
   return out.sort((a, b) => a.lap - b.lap);
 }
 
-function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
+function Stat({ label, value, sub }: { label: ReactNode; value: ReactNode; sub?: ReactNode }) {
   return (
     <div className="border-t-2 border-line pt-4">
       <dt className="cap">{label}</dt>
@@ -51,7 +51,7 @@ export function StraightDetail({ straight, lap, selectedLap, primary, compare, o
   const pCuts = lapCuts(primary, sid);
   const cCuts = compare ? lapCuts(compare, sid) : [];
   const thisLap = pCuts.find((c) => c.lap === selectedLap);
-  const before = mp ? straight.len - along(straight, mp.m, lap) : null;
+  const before = mp ? beforeEnd(straight, mp.m, lap) : null;
 
   return (
     <div>
@@ -65,9 +65,15 @@ export function StraightDetail({ straight, lap, selectedLap, primary, compare, o
                 <span className="ml-2 text-[28px] tracking-normal text-ink-3 md:text-[36px]">m</span>
               </p>
               <p className="mt-6 max-w-[40ch] text-[17px] leading-relaxed text-ink-2">
-                from the start/finish line,{" "}
-                <span className="num text-ink-head">{int(before)} m</span> before {straight.into ?? "the end of the straight"}. The
-                straight is <span className="num text-ink-head">{int(straight.len)} m</span> long.
+                from the start/finish line
+                {before !== null ? (
+                  <>
+                    , <span className="num text-ink-head">{int(before)} m</span> before {straight.into ?? "the end of the straight"}
+                  </>
+                ) : (
+                  ", just outside this straight's window on the reference outline"
+                )}
+                . The straight is <span className="num text-ink-head">{int(straight.len)} m</span> long.
               </p>
             </>
           ) : (
@@ -78,9 +84,13 @@ export function StraightDetail({ straight, lap, selectedLap, primary, compare, o
           )}
         </div>
         <dl className="grid grid-cols-2 gap-x-8 gap-y-10 self-end md:grid-cols-3 lg:col-span-7">
-          <Stat label="Range (95 %)" value={mp && mp.lo !== null ? `${int(mp.lo)}–${int(mp.hi)}` : "–"} sub="bootstrap over laps" />
+          <Stat label="Range" value={mp && mp.lo !== null ? `${int(mp.lo)}–${int(mp.hi)}` : "–"} sub="95 % bootstrap interval over laps" />
           <Stat
-            label={`Lap ${selectedLap ?? "–"}`}
+            label={
+              <>
+                Lap <span className="num">{selectedLap ?? "–"}</span>
+              </>
+            }
             value={thisLap ? int(thisLap.d) : <span className="text-ink-3">no cut</span>}
             sub={thisLap && mp ? `${signed(thisLap.d - mp.m)} m vs median` : "the scrubber's lap"}
           />
@@ -166,7 +176,7 @@ function LapDots({ straight, lap, rows, selectedLap, onLap }: { straight: TrackS
   const hi = Math.max(...vals);
   const pad = Math.max(10, (hi - lo) * 0.08);
   const x = scaleLinear()
-    .domain([Math.max(0, lo - pad), Math.min(straight.len, hi + pad)])
+    .domain([Math.min(lo - pad, Math.max(0, lo - pad)), Math.max(hi + pad, Math.min(straight.len, hi + pad))])
     .range([left, Math.max(left + 50, W - 24)])
     .nice();
   const ov = scaleLinear().domain([0, straight.len]).range([left, Math.max(left + 50, W - 24)]);
@@ -180,7 +190,7 @@ function LapDots({ straight, lap, rows, selectedLap, onLap }: { straight: TrackS
             whole
           </text>
           <line x1={ov(0)} x2={ov(straight.len)} y1={14} y2={14} stroke="var(--line)" strokeWidth={4} strokeLinecap="round" />
-          <rect x={ov(z0)} y={8} width={Math.max(3, ov(z1) - ov(z0))} height={12} rx={2} fill="var(--ink-head)" opacity={0.85} />
+          <rect x={ov(Math.max(0, z0))} y={8} width={Math.max(3, ov(Math.min(straight.len, z1)) - ov(Math.max(0, z0)))} height={12} rx={2} fill="var(--ink-head)" opacity={0.85} />
           <text x={ov(0)} y={36} fontFamily="var(--font-mono)" fontSize={11} fill="var(--ink-4)">
             start
           </text>

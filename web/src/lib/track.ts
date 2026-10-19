@@ -54,13 +54,28 @@ export function trackStraights(straights: Straight[], lap: number): TrackStraigh
   });
 }
 
-/** Distance along a straight from its start, for a lap distance. */
+/**
+ * Signed distance along a straight from its start. A point shortly before the start comes out
+ * negative rather than wrapping to almost a full lap: model distances are measured on each
+ * driver's own lap, so a cut-off near the start of a straight can land a few metres before the
+ * outline's straight window.
+ */
 export function along(s: TrackStraight, d: number, lap: number): number {
-  return wrap(d - s.d0, lap);
+  const a = wrap(d - s.d0, lap);
+  return a > s.len + (lap - s.len) / 2 ? a - lap : a;
+}
+
+/** Metres from d to the end of the straight, or null when d is outside the straight window. */
+export function beforeEnd(s: TrackStraight, d: number, lap: number): number | null {
+  const a = along(s, d, lap);
+  return a >= 0 && a <= s.len ? s.len - a : null;
 }
 
 export function straightAt(straights: TrackStraight[], d: number, lap: number): TrackStraight | null {
-  return straights.find((s) => along(s, d, lap) <= s.len) ?? null;
+  return straights.find((s) => {
+    const a = along(s, d, lap);
+    return a >= 0 && a <= s.len;
+  }) ?? null;
 }
 
 /** Closed Catmull-Rom densification of the outline in metres, 8 points per source segment. */
