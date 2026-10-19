@@ -147,7 +147,9 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
         </nav>
         <div className="grid gap-12 xl:grid-cols-12 xl:items-end">
           <div className="xl:col-span-6">
-            <Eyebrow>Explorer · session {sessionKey}</Eyebrow>
+            <Eyebrow>
+              Explorer · session <span className="num">{sessionKey}</span>
+            </Eyebrow>
             <h1 className="mt-5 break-words font-display text-[36px] font-bold uppercase leading-[1.05] text-ink-head sm:text-[48px] md:text-[64px]">
               {session.circuit_short_name}
               <span className="block text-ink-3">{session.session_name}</span>
@@ -315,7 +317,9 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
             eyebrow="Selected straight"
             title={
               <>
-                {straightTag} · {straight.label}
+                {straightTag} ·{" "}
+                {/* Generated names carry distances; numbers stay out of Orbitron. */}
+                {/\d/.test(straight.label ?? "") ? <span className="font-sans normal-case tracking-[-0.03em]">{straight.label}</span> : straight.label}
               </>
             }
           >
@@ -373,7 +377,14 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
       {/* ---------- Session summary ---------- */}
       {has && data.summary && lapLen && (
         <section id="summary" className="wrap section">
-          <SectionHead eyebrow={`Session summary · ${withResults.length} drivers with a cut-off`} title="Median cut-off per straight">
+          <SectionHead
+            eyebrow={
+              <>
+                Session summary · <span className="num">{withResults.length}</span> drivers with a cut-off
+              </>
+            }
+            title="Median cut-off per straight"
+          >
             Ranked by the selected straight, latest cut-off first. The regime bar is the share of each green lap spent deploying, on the
             plateau, lifting and braking.
           </SectionHead>
@@ -429,7 +440,15 @@ function MapLegend({
 }) {
   return (
     <div>
-      <p className="cap">{hasRegimes ? `Regimes · ${code} lap ${regimeLap}` : "Regimes not available"}</p>
+      <p className="cap">
+        {hasRegimes ? (
+          <>
+            Regimes · {code} lap <span className="num">{regimeLap}</span>
+          </>
+        ) : (
+          "Regimes not available"
+        )}
+      </p>
       <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-ink-2">
         {(["deploy", "plateau", "lift", "brake"] as const).map((k) => (
           <li key={k} className="flex items-center gap-2">
@@ -482,7 +501,16 @@ function Readout({
 }) {
   return (
     <div className="hidden min-w-[220px] md:block md:text-right" aria-live="polite">
-      <p className="cap">Cursor · {live ? "hover" : `lap ${lapNo ?? "–"} cut`}</p>
+      <p className="cap">
+        Cursor ·{" "}
+        {live ? (
+          "hover"
+        ) : (
+          <>
+            lap <span className="num">{lapNo ?? "–"}</span> cut
+          </>
+        )}
+      </p>
       <p className="mt-2 flex items-baseline gap-4 md:justify-end">
         <span className="num text-[26px] leading-none text-ink-head">{int(d)} m</span>
         <span className="num text-[13px] text-ink-3">{((d / lap) * 100).toFixed(1)} %</span>

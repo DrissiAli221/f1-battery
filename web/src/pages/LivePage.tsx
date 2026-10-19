@@ -186,7 +186,9 @@ function LiveSession({ sessionKey }: { sessionKey: number }) {
             {session?.circuit_short_name ?? `Session ${sessionKey}`}
           </a>
         </nav>
-        <Eyebrow>Live replay · session {sessionKey}</Eyebrow>
+        <Eyebrow>
+          Live replay · session <span className="num">{sessionKey}</span>
+        </Eyebrow>
         <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
           <h1 className="font-display text-[40px] font-bold uppercase leading-none text-ink-head md:text-[64px]">
             {session?.circuit_short_name ?? "…"} <span className="text-ink-3">{session?.session_name}</span>
@@ -216,7 +218,7 @@ function LiveSession({ sessionKey }: { sessionKey: number }) {
                     return (
                       <g key={s.driver_number} style={{ transition: "transform 100ms linear" }} transform={`translate(${p.x},${p.y})`}>
                         <circle r={9} fill={COLORS[s.regime] ?? COLORS.other} stroke={d ? teamColour(d) : "var(--ink-head)"} strokeWidth={3} />
-                        <text y={-16} textAnchor="middle" fontFamily="var(--font-display)" fontWeight={700} fontSize={11} fill="var(--ink-head)">
+                        <text y={-16} textAnchor="middle" fontFamily={d ? "var(--font-display)" : "var(--font-mono)"} fontWeight={700} fontSize={11} fill="var(--ink-head)">
                           {d ? driverCode(d) : s.driver_number}
                         </text>
                       </g>
@@ -249,7 +251,7 @@ function LiveSession({ sessionKey }: { sessionKey: number }) {
                     <li key={s.driver_number} className="flex h-16 items-center gap-4 border-b border-line-2">
                       <span className="h-8 w-1 rounded-full" style={{ background: d ? teamColour(d) : "var(--line)" }} />
                       {d && <Avatar d={d} size={36} />}
-                      <span className="w-14 font-display text-[15px] font-bold uppercase text-ink-head">{d ? driverCode(d) : s.driver_number}</span>
+                      <span className="w-14 font-display text-[15px] font-bold uppercase text-ink-head">{d ? driverCode(d) : <span className="num">{s.driver_number}</span>}</span>
                       <span className="flex flex-1 items-center gap-2 text-[14px] text-ink-2">
                         <i className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: COLORS[s.regime] ?? COLORS.other }} />
                         {s.regime}
