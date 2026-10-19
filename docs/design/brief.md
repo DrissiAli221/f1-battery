@@ -102,8 +102,23 @@ driver tags, not as a widget in a card.
   three-letter code is the fallback when an image fails.
 - **Team logos** on summary rows, the compare header, the sessions list
   grouped by team, and the power-unit comparison. Same rule: runtime URLs
-  from the source, not committed. Source being confirmed (formula1.com team
-  pages first).
+  from the source, not committed.
+- **Confirmed sources (checked 2026-10-19; all 200, `Access-Control-Allow-Origin: *`,
+  no referer check, one-year cache headers):**
+  - Headshots: OpenF1 `headshot_url`, with size chosen by swapping the
+    transform segment: `1col` 93 px, `2col` 206 px, `2col-retina` 412 px
+    (default for UI), `4col` 432 px, or no transform for the 840 px original.
+  - Team logos: `https://media.formula1.com/image/upload/q_auto/v1740000001/common/f1/2026/{slug}/2026{slug}logo{variant}.webp`
+    with variant `` (colour), `white` (for dark surfaces) or `black`; slugs
+    alpine, astonmartin, audi, cadillac, ferrari, haasf1team, mclaren,
+    mercedes, racingbulls, redbullracing, williams. **They are 96 × 96 px
+    and cannot be upscaled**, so logos are only used at 16–48 px (rows,
+    chips, compare header), never as large artwork.
+  - Car side views for decoration: same CDN, 3840 × 845 px original
+    (~370 KB) or a 224 px-tall transform (~46 KB); use the transform on
+    pages and lazy-load.
+  - The slug map lives in one front-end constant keyed by OpenF1
+    `team_name`, so a renamed team is a one-line change.
 - **What stays out:** the Formula 1, FIA and FOM logos and wordmark, and the
   proprietary F1 typeface. The site states it is not affiliated, and the
   footer credits image sources.
