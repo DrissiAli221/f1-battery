@@ -1,33 +1,37 @@
 import type { Config } from "tailwindcss";
 
 // Every value points at a custom property in src/styles/tokens.css, so tokens stay in one file.
+// Colours go through color-mix so opacity modifiers (bg-surface/90) still work on variables.
+const v = (name: string) => ({ opacityValue }: { opacityValue?: string }) =>
+  opacityValue === undefined ? `var(${name})` : `color-mix(in srgb, var(${name}) calc(${opacityValue} * 100%), transparent)`;
+
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        page: "var(--page-bg)",
-        surface: "var(--surface)",
-        deep: "var(--surface-deep)",
-        frame: "var(--frame)",
-        line: { DEFAULT: "var(--line)", 2: "var(--line-2)" },
+        page: v("--page-bg"),
+        surface: v("--surface"),
+        deep: v("--surface-deep"),
+        frame: v("--frame"),
+        line: { DEFAULT: v("--line"), 2: v("--line-2") },
         ink: {
-          DEFAULT: "var(--ink)",
-          head: "var(--ink-head)",
-          2: "var(--ink-2)",
-          3: "var(--ink-3)",
-          4: "var(--ink-4)",
+          DEFAULT: v("--ink"),
+          head: v("--ink-head"),
+          2: v("--ink-2"),
+          3: v("--ink-3"),
+          4: v("--ink-4"),
         },
-        brand: { DEFAULT: "var(--brand)", hover: "var(--brand-hover)", pressed: "var(--brand-pressed)", deep: "var(--brand-deep)" },
-        badge: "var(--color-surface-badge)",
-        ok: "var(--color-surface-success)",
-        warn: "var(--color-surface-warning)",
+        brand: { DEFAULT: v("--brand"), hover: v("--brand-hover"), pressed: v("--brand-pressed"), deep: v("--brand-deep") },
+        badge: v("--color-surface-badge"),
+        ok: v("--color-surface-success"),
+        warn: v("--color-surface-warning"),
         regime: {
-          deploy: "var(--regime-deploy)",
-          plateau: "var(--regime-plateau)",
-          lift: "var(--regime-lift)",
-          brake: "var(--regime-brake)",
-          other: "var(--regime-other)",
+          deploy: v("--regime-deploy"),
+          plateau: v("--regime-plateau"),
+          lift: v("--regime-lift"),
+          brake: v("--regime-brake"),
+          other: v("--regime-other"),
         },
       },
       fontFamily: {

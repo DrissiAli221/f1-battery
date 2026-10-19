@@ -48,39 +48,40 @@ export function DriverCard({
   const [failed, setFailed] = useState(false);
   const src = headshot(d.headshot_url, "2col-retina");
   return (
-    <div className="relative h-[176px] overflow-hidden rounded-xs md:h-[196px]" style={{ background: bg }}>
-      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(115deg, rgba(255,255,255,.09), transparent 45%)" }} />
-      {src && !failed && (
-        <img
-          src={src}
-          alt=""
-          className="pointer-events-none absolute -right-2 bottom-0 h-[160px] w-[160px] object-cover object-top md:h-[184px] md:w-[184px]"
-          onError={() => setFailed(true)}
-        />
-      )}
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-[62%]" style={{ background: `linear-gradient(90deg, ${bg} 0%, transparent 50%)` }} />
-      <div className="relative flex h-full flex-col p-4 text-white md:p-5">
-        <div className="flex items-center gap-2">
-          <span className={`badge ${role === "Selected" ? "badge-pink" : "badge-line"}`}>{role}</span>
-          <span className="num text-[13px] font-semibold text-white/80">{d.driver_number}</span>
-          <TeamLogo team={d.team_name} size={18} />
-        </div>
-        <div className="mt-2 font-display text-[28px] font-extrabold uppercase leading-none md:text-[32px]">{driverCode(d)}</div>
-        <div className="mt-1 text-[13px] leading-tight text-white/85">
-          {driverName(d)}
-          <br />
-          {d.team_name}
-        </div>
-        <div className="mt-auto flex items-end justify-between gap-3">
+    // The picker sits outside the clipped card so its popover is not cut off.
+    <div className="relative">
+      <div className="relative h-[176px] overflow-hidden rounded-xs md:h-[196px]" style={{ background: bg }}>
+        <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(115deg, rgba(255,255,255,.09), transparent 45%)" }} />
+        {src && !failed && (
+          <img
+            src={src}
+            alt=""
+            className="pointer-events-none absolute -right-2 bottom-0 h-[160px] w-[160px] object-cover object-top md:h-[184px] md:w-[184px]"
+            onError={() => setFailed(true)}
+          />
+        )}
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-[62%]" style={{ background: `linear-gradient(90deg, ${bg} 0%, transparent 50%)` }} />
+        <div className="relative flex h-full flex-col p-4 text-white md:p-5">
+          <div className="flex items-center gap-2">
+            <span className={`badge ${role === "Selected" ? "badge-pink" : "badge-line"}`}>{role}</span>
+            <span className="num text-[13px] font-semibold text-white/80">{d.driver_number}</span>
+            <TeamLogo team={d.team_name} size={18} />
+          </div>
+          <div className="mt-2 font-display text-[28px] font-extrabold uppercase leading-none md:text-[32px]">{driverCode(d)}</div>
+          <div className="mt-1 text-[13px] leading-tight text-white/85">
+            {driverName(d)}
+            <br />
+            {d.team_name}
+          </div>
           {stat && (
-            <div>
+            <div className="mt-auto">
               <div className="text-[11px] font-bold uppercase tracking-[0.05em] text-white/75">{stat.label}</div>
               <div className="num text-[22px] font-medium leading-none">{stat.value}</div>
             </div>
           )}
-          {action}
         </div>
       </div>
+      {action && <div className="absolute right-3 top-3 z-10 rounded-[28px] bg-black/50 backdrop-blur">{action}</div>}
     </div>
   );
 }

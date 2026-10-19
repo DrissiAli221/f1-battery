@@ -47,7 +47,7 @@ function Header({ route }: { route: Route }) {
   useEffect(() => setOpen(false), [route]);
   const cta = route.name === "landing" ? { label: "Open the explorer", to: href.sessions() } : { label: "Sessions", to: href.sessions() };
   return (
-    <header className="sticky top-0 z-40 h-header border-b border-line-2 bg-[var(--color-surface-header-bg)]/90 backdrop-blur">
+    <header className="sticky top-0 z-40 h-header border-b border-line-2 bg-surface/90 backdrop-blur">
       <nav className="wrap relative flex h-full items-center justify-between" aria-label="Primary">
         <div className="livery hidden lg:flex" style={{ right: 260 }} aria-hidden="true">
           <i style={{ width: 22 }} />
