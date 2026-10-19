@@ -449,3 +449,14 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   local-only because the feed carries near-raw speed values (D9).
 - Found while building: `car_data` and `location` do not share timestamps
   across feeds (docs/data-quality-notes.md).
+
+## D23 — 2026-10-19 — Backend audit accepted
+- docs/backend-audit-2026-10-19.md records the review after Phases 0–7.
+  Headline findings: Dockerfiles broken by the `replay` module, CI never
+  run (Actions billing), the API source truncates sessions at the
+  scheduled end, the API serves the newest model run so a partial or
+  single-session run hides the others, unbounded SSE streams, raw fields in
+  the live feed, superuser DB role for the API, floating image tag.
+- Fixes 1–9 are accepted and built now; fix 10 (Phase 1.5 deploy) waits
+  for server access. Exit conditions in PLAN.md are not changed; the audit's
+  "partly" rows stay partly until the fixes land.
