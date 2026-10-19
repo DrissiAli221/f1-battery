@@ -157,7 +157,9 @@ export function FindingsPage() {
   return (
     <>
       <section className="wrap pb-20 pt-16 md:pb-28 md:pt-24">
-        <Eyebrow>Findings · {findings.source.model_version}</Eyebrow>
+        <Eyebrow>
+          Findings · model <span className="num normal-case">{findings.source.model_version}</span>
+        </Eyebrow>
         <h1 className="display mt-8 max-w-[18ch] text-[44px] md:text-[80px]">{notes.question}</h1>
         <div className="mt-12 flex flex-wrap items-center gap-4">
           <span className="badge badge-warn">{findings.verdict}</span>
@@ -225,7 +227,7 @@ export function FindingsPage() {
           <div className="lg:col-span-5">
             <SectionHead full eyebrow="Permutation control" title="Indistinguishable from shuffled data">
               The three energy variables were shuffled within each session {int(findings.permutation.n)} times and the model refitted. The
-              observed coefficient is less extreme than {fixed(findings.permutation.pct_abs, 1)} % of the shuffled ones; the frozen
+              observed coefficient is more extreme than only {fixed(findings.permutation.pct_abs, 1)} % of the shuffled ones; the frozen
               requirement was more than 95 %. Two-sided p = {fixed(findings.permutation.p_two_sided, 2)}.
             </SectionHead>
           </div>

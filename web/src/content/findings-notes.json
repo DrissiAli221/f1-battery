@@ -8,7 +8,7 @@
     "cutoff_dev_defender": "Defender cut-off deviation",
     "deploy_rel_diff": "Relative deploy energy, defender minus attacker",
     "defender_lift": "Defender lifted on the approach",
-    "pace_delta": "Pace delta (defender minus attacker)",
+    "pace_delta": "Pace delta (attacker minus defender lap time)",
     "tyre_age_diff": "Tyre age difference",
     "lap_number": "Lap number",
     "overtake_available": "Overtake available to the attacker"
