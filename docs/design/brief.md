@@ -72,6 +72,8 @@ driver tags, not as a widget in a card.
 
 ### Pages and what each must show
 
+(The session page's hero is the track map with the cut-off markers below.)
+
 1. **Landing:** the question in one line, the hidden-data fact, the result
    in one sentence with its caveat, three entry points (Findings, Explorer,
    Method log), the honest banner.
@@ -90,6 +92,64 @@ driver tags, not as a widget in a card.
 - Charts: keep hand-written SVG or adopt visx for the bump chart and the
   cut-off chart.
 - Project wordmark.
+
+## Signature element: the cut-off marker on the track
+
+The one visual specific to this project: where the selected driver's
+electrical deployment stops on each straight, drawn on the track map.
+
+**References that informed it** (collected and viewed 2026-10-19; nothing
+published marks battery cut-offs on a map, so this borrows proven
+grammars):
+- FIA 2026 circuit maps (Canada, Albert Park): straight-mode zones as a thin
+  coloured stripe hugging one edge of the track, a short tick across the
+  track where the zone starts, a short rotated code label ("SM A1"), and a
+  table of exact positions ("100m after T14"). Fans already read this.
+- MultiViewer's dark track map: corner numbers as small badges pushed
+  outside the line on leaders; a partial-line overlay for a zone.
+- Cycling route profiles: point events as a tick with a badge, labels
+  lifted into a row clear of the data.
+- Hurricane-forecast cones: uncertainty as a band along a path.
+
+**Encoding**
+1. **Median cut-off:** a white tick across the track with a dark casing,
+   on every straight where the driver has a cut-off. Neutral colour, so it
+   never clashes with the regime colours already on the line.
+2. **Uncertainty:** the bootstrap interval as a thin band hugging the
+   *inner* edge of the track from `ci_low` to `ci_high`, minimum 6 px
+   visible so a ±20 m interval still reads, labelled "range" in the legend
+   (not a hazard area).
+3. **Selected lap:** a small filled chevron on the inner edge pointing in
+   the direction of travel, at that lap's cut-off. When the lap has no
+   cut-off, no chevron. The scrubber moves it.
+4. **Second driver (compare):** the same tick, hollow, on the *outer* edge
+   with a thin ring in that driver's team colour; its range band on the
+   outer edge. Shape (filled vs hollow) and side separate the two drivers,
+   not colour alone.
+5. **Label:** a compact badge beside the tick on the selected straight
+   only, e.g. "CUT 1,458 m · 470 m before Roggia"; other straights show the
+   tick alone. Corner numbers sit outside the track, cut-off marks inside,
+   so they never collide.
+6. **No cut-off on a straight:** no tick; the straight's name in the
+   selector is greyed (already in the current view).
+
+**Companions**
+- **Straight strip:** selecting a straight opens a one-dimensional strip
+  under the map: distance along that straight, the range bracket, the
+  median tick, one dot per lap (the selected lap highlighted), and a second
+  row for the compared driver. Exact numbers live here, not on the map.
+- **Cut-off table** (FIA-style): per straight, median cut, range, selected
+  lap, metres before the braking zone, for one or two drivers.
+
+**Data.** Already served: per-lap `cutoff_distance_m` per straight
+(`/api/results`) and the per-driver median with CI (`/api/sessions/{key}/summary`).
+Distances are mapped onto the outline by fraction of lap length.
+
+**Pitfalls to avoid** (seen in the references): labels crowding at
+chicanes and hairpins (only straights get marks, and only the selected
+straight gets a label); offsets computed along the normal near high
+curvature (straights only, so none); reusing a regime hue for a marker;
+range bands so thin they read as a point.
 
 ## Imagery
 
