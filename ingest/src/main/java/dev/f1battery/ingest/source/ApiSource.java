@@ -2,6 +2,7 @@ package dev.f1battery.ingest.source;
 
 import dev.f1battery.ingest.ratelimit.RateLimiter;
 import dev.f1battery.ingest.ratelimit.Sleeper;
+import dev.f1battery.ingest.source.OpenF1Records.LapRecord;
 import dev.f1battery.ingest.source.OpenF1Records.SessionRecord;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.ByteArrayInputStream;
@@ -13,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -31,6 +33,21 @@ import org.slf4j.LoggerFactory;
  * limits. 429, 5xx and transport errors are retried with exponential backoff and
  * jitter (honouring Retry-After); 404 means "no data" and returns an empty list;
  * any other status fails the fetch.
+ *
+ * <p><b>Session end.</b> The scheduled {@code date_end} is not the end of the data: after a red
+ * flag or a delayed finish the cars keep running past it. Telemetry windows therefore end at
+ * {@code max(date_end, last lap end + 5 min)}, where the last lap end comes from the session's own
+ * laps (fetched first; the laps unit reuses that response). Sessions that ended less than six
+ * hours ago are skipped as provisional: results and late corrections are still being revised and a
+ * unit marked complete is never refetched.
+ *
+ * <p><b>Wire format of the time filter.</b> OpenF1 documents comparison filters as
+ * {@code date>=2026-03-08T04:10:00Z&date<2026-03-08T04:20:00Z}. {@code java.net.URI} rejects a
+ * literal {@code <} or {@code >}, so those two characters are sent percent-encoded while the
+ * {@code =} of {@code >=} stays raw: {@code date%3E=2026-03-08T04%3A10%3A00Z&date%3C2026-03-08T04%3A20%3A00Z}.
+ * After percent-decoding this is byte for byte the documented form (an earlier version sent
+ * {@code date%3E%3D=...}, which decodes to {@code date>==...}). It has not been exercised against
+ * the live service; see docs/phase1-ingestion.md.
  */
 public class ApiSource implements OpenF1Source {
 
@@ -38,6 +55,12 @@ public class ApiSource implements OpenF1Source {
 
     /** Telemetry window length (DECISIONS.md D9: about ten minutes). */
     public static final int WINDOW_MINUTES = 10;
+
+    /** Telemetry keeps flowing for a while after the last lap ends (in-lap, parc ferme). */
+    static final Duration OVERRUN_MARGIN = Duration.ofMinutes(5);
+
+    /** Sessions that ended more recently than this are provisional and skipped. */
+    static final Duration MIN_AGE = Duration.ofHours(6);
 
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
@@ -53,10 +76,21 @@ public class ApiSource implements OpenF1Source {
     private final Sleeper sleeper;
     private final DoubleSupplier jitter;
     private final MeterRegistry metrics;
+    private final Clock wallClock;
+
+    /** The last laps response: the laps unit and the window computation share one request. */
+    private int lapsSession = -1;
+    private List<LapRecord> lapsCache = List.of();
 
     /** @param jitter returns a value in [0,1); the delay is scaled into [50%, 100%] of the backoff ceiling. */
     public ApiSource(Config config, HttpClient client, RateLimiter limiter, Sleeper sleeper,
             DoubleSupplier jitter, MeterRegistry metrics) {
+        this(config, client, limiter, sleeper, jitter, metrics, Clock.systemUTC());
+    }
+
+    public ApiSource(Config config, HttpClient client, RateLimiter limiter, Sleeper sleeper,
+            DoubleSupplier jitter, MeterRegistry metrics, Clock wallClock) {
+        this.wallClock = wallClock;
         this.config = config;
         this.client = client;
         this.limiter = limiter;
@@ -76,19 +110,66 @@ public class ApiSource implements OpenF1Source {
 
     @Override
     public List<SessionRecord> sessions(int year) {
-        return parse(get("/v1/sessions", Map.of("year", String.valueOf(year))), SessionRecord.class);
+        OffsetDateTime cutoff = OffsetDateTime.now(wallClock).minus(MIN_AGE);
+        List<SessionRecord> out = new ArrayList<>();
+        for (SessionRecord s : parse(get("/v1/sessions", Map.of("year", String.valueOf(year))), SessionRecord.class)) {
+            if (s.dateEnd() == null || s.dateEnd().isAfter(cutoff)) {
+                log.info("event=session_skipped session={} name=\"{}\" date_end={} reason=\"too recent, provisional\"",
+                        s.sessionKey(), s.sessionName(), s.dateEnd());
+                continue;
+            }
+            out.add(s);
+        }
+        return out;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> List<T> fetch(Endpoint<T> endpoint, SessionRecord session) {
+        if (endpoint == Endpoint.LAPS) {
+            return (List<T>) loadLaps(session);
+        }
         return parse(get("/v1/" + endpoint.name(), Map.of("session_key", String.valueOf(session.sessionKey()))),
                 endpoint.type());
+    }
+
+    /** Always requests; the response is kept so that the window computation can reuse it. */
+    private List<LapRecord> loadLaps(SessionRecord session) {
+        int key = session.sessionKey();
+        lapsCache = parse(get("/v1/laps", Map.of("session_key", String.valueOf(key))), LapRecord.class);
+        lapsSession = key;
+        return lapsCache;
+    }
+
+    private List<LapRecord> laps(SessionRecord session) {
+        return lapsSession == session.sessionKey() ? lapsCache : loadLaps(session);
+    }
+
+    /** End of the telemetry to fetch: the later of the scheduled end and the last lap end plus a margin. */
+    OffsetDateTime effectiveEnd(SessionRecord session) {
+        OffsetDateTime scheduled = LocalBackupSource.end(session);
+        OffsetDateTime lastLapEnd = null;
+        for (LapRecord lap : laps(session)) {
+            if (lap.dateStart() == null) {
+                continue;
+            }
+            long millis = lap.lapDuration() == null ? 0 : Math.round(lap.lapDuration() * 1000);
+            OffsetDateTime end = lap.dateStart().plus(Duration.ofMillis(millis));
+            if (lastLapEnd == null || end.isAfter(lastLapEnd)) {
+                lastLapEnd = end;
+            }
+        }
+        if (lastLapEnd == null) {
+            return scheduled;
+        }
+        OffsetDateTime extended = lastLapEnd.plus(OVERRUN_MARGIN);
+        return extended.isAfter(scheduled) ? extended : scheduled;
     }
 
     @Override
     public List<FetchWindow> windows(Endpoint<?> endpoint, SessionRecord session, int driverNumber) {
         OffsetDateTime start = LocalBackupSource.start(session);
-        OffsetDateTime end = LocalBackupSource.end(session);
+        OffsetDateTime end = effectiveEnd(session);
         List<FetchWindow> out = new ArrayList<>();
         for (int i = 0; !start.plusMinutes((long) WINDOW_MINUTES * i).isAfter(end); i++) {
             out.add(FetchWindow.nominal(WINDOW_MINUTES + "_" + String.format("%02d", i), start, end, WINDOW_MINUTES, i));
@@ -99,12 +180,14 @@ public class ApiSource implements OpenF1Source {
     @Override
     public <T> List<T> fetch(Endpoint<T> endpoint, SessionRecord session, int driverNumber, FetchWindow window) {
         OffsetDateTime from = window.start();
+        // Operator parameters are appended verbatim (see the class comment); only the values are encoded.
         Map<String, String> q = new LinkedHashMap<>();
         q.put("session_key", String.valueOf(session.sessionKey()));
         q.put("driver_number", String.valueOf(driverNumber));
-        q.put("date>=", ISO.format(from));
-        q.put("date<", ISO.format(from.plusMinutes(WINDOW_MINUTES)));
-        return parse(get("/v1/" + endpoint.name(), q), endpoint.type());
+        String query = query(q)
+                + "&date%3E=" + encode(ISO.format(from))
+                + "&date%3C" + encode(ISO.format(from.plusMinutes(WINDOW_MINUTES)));
+        return parse(getRaw("/v1/" + endpoint.name(), query), endpoint.type());
     }
 
     private <T> List<T> parse(byte[] body, Class<T> type) {
@@ -120,7 +203,11 @@ public class ApiSource implements OpenF1Source {
 
     /** Returns the decoded body, or null for 404. */
     byte[] get(String path, Map<String, String> params) {
-        URI uri = URI.create(config.baseUrl() + path + "?" + query(params));
+        return getRaw(path, query(params));
+    }
+
+    private byte[] getRaw(String path, String rawQuery) {
+        URI uri = URI.create(config.baseUrl() + path + "?" + rawQuery);
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofSeconds(90))
                 .header("Accept-Encoding", "gzip")
@@ -200,9 +287,12 @@ public class ApiSource implements OpenF1Source {
             if (!sb.isEmpty()) {
                 sb.append('&');
             }
-            sb.append(URLEncoder.encode(k, StandardCharsets.UTF_8)).append('=')
-                    .append(URLEncoder.encode(v, StandardCharsets.UTF_8));
+            sb.append(encode(k)).append('=').append(encode(v));
         });
         return sb.toString();
+    }
+
+    private static String encode(String s) {
+        return URLEncoder.encode(s, StandardCharsets.UTF_8);
     }
 }
