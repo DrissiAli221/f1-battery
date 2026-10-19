@@ -477,3 +477,11 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   `team_colour`, `first_name`, `last_name`, `broadcast_name` and
   `country_code` from `drivers`; a migration and upserter change add them,
   and the API exposes them (separate pull request).
+
+## D25 — 2026-10-19 — Frontend rebuild stack
+- Dark first, light mode later. Tailwind for layout and styling only; GSAP
+  (MotionPath, DrawSVG) for track-map animations; Motion for UI
+  transitions; charts as hand-written SVG with d3-scale. React, Vite and
+  TypeScript stay. The project name and wordmark are decided later.
+- Before any page is built, three static mockup directions are produced
+  with real Monza data, and one is chosen.

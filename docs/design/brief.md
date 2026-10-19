@@ -86,12 +86,18 @@ driver tags, not as a widget in a card.
    (pass / fail / not demonstrated / explained).
 5. **Live replay:** the map as hero with driver tags, a tower on the side.
 
-### Open decisions for the owner
-- Dark-first with a poster-style light mode, or dark only.
-- Tailwind or CSS variables (the current build is CSS variables).
-- Charts: keep hand-written SVG or adopt visx for the bump chart and the
-  cut-off chart.
-- Project wordmark.
+### Technical stack (decided 2026-10-19, D25)
+- **Theme:** dark first; light mode later, tokens prepared for it.
+- **Tailwind** for layout and styling only (tokens from this brief as the
+  Tailwind theme: colours, type scale, tracking, radii, spacing).
+- **GSAP** (MotionPath, DrawSVG) for track-map animations: the outline
+  drawing in, cut-off ticks and range bands appearing along the line,
+  driver dots following the path in the live replay.
+- **Motion** for UI transitions: page and panel enter/exit, layout
+  animations on tables and pills, hover and focus states.
+- **Charts:** hand-written SVG with d3-scale for scales and ticks, so GSAP
+  can animate every path directly and there is one rendering model.
+- **Name/wordmark:** later.
 
 ## Signature element: the cut-off marker on the track
 
