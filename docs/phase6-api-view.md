@@ -82,18 +82,59 @@ and runs before the limiter so 429s are readable by the browser.
 
 ## View
 
-Hash-routed: sessions list, then a session page with the track map (outline,
-straights highlighted, selected lap's regimes per bin), driver selector and lap
-scrubber, per-straight cut-off chart (driver median and interval as a band),
-two-driver comparison and the summary table. Sessions without results show a
-banner and empty states instead of charts. Light/dark via CSS variables, usable
-at phone width. Regime bins and straights are placed on the outline by their
-fraction of the lap (bin count and `start_pct/end_pct`), because outline
-distance is in position units, not metres.
+The view was rebuilt on the D25 stack (React 18, Vite, TypeScript, Tailwind for
+layout and styling, GSAP 3.13 with DrawSVG and MotionPath for the track map,
+Motion for UI transitions, d3-scale with hand-written SVG charts) and the PRNDL
+look (D27). Every dependency is pinned to an exact version.
 
-Driver selection and straight names: the picker is sorted by lap count (descending, then driver number) and opens on the driver with the most laps that has a straight median in `/summary`; drivers under 75 % of the session maximum are labelled with their lap count and drivers without summary results with "no results". The API labels every curated straight "Straight", so the view takes names from `web/src/content/straight-names.json` (circuit_key, then straight_id; Monza and the Singapore pit straight only) and otherwise shows "Straight N · a–b km", derived from `start_pct`/`end_pct` and the outline length (last outline distance, in decimetres). Straight buttons for which the selected driver has no cut-off rows in `/results` are greyed (still clickable); changing driver selects the first straight that has cut-offs.
+**Routes.** Hash routing is kept (`web/src/lib/router.ts`): the bundle can sit on
+any static host without rewrite rules, and there are only a few routes. `#/`
+landing, `#/sessions` index (filter `?type=`), `#/session/<key>` explorer,
+`#/findings`, `#/method`, `#/live` and `#/live/<key>`. Explorer state lives in
+the query string (`?driver=&compare=&straight=&lap=`) so a view can be shared;
+updates use `replaceState`, so scrubbing laps does not fill the history. Pages
+other than the landing are code-split.
 
-The view also has a static "Method log" page at `#/method` (linked from the header and the sessions page). It needs no API: it renders `web/src/content/method-log.json`, a curated record of what was tried, the pre-set check, what was found and what changed, with source links to the repo on GitHub. `docs/method-log.md` is generated from the same file with `node web/scripts/gen-method-log.mjs` (run from the repo root); edit the JSON, not the markdown.
+**Tokens.** All colours, fonts, radii and the container width are custom
+properties in `web/src/styles/tokens.css`; `web/tailwind.config.ts` maps the
+Tailwind theme onto them. The page background is the `--page-bg` alias (one line
+to change). Regime colours: deploy `#A8F04A`, plateau `#FFD84D`, lift `#9E5BFF`,
+brake `#FF8AE0`. Team colours are never tokens; they come from `team_colour` in
+the API. Fonts: Geist and Geist Mono (body, every number), Orbitron only for short
+uppercase titles and labels, never for dates or numbers.
+
+**Explorer.** Header with session meta and team-filled driver cards (headshots
+load at runtime from `headshot_url`; the code shows if an image fails). The
+primary driver is chosen from drivers with a median in `/summary`; the default is
+the race or sprint winner (most laps, then earliest end of the last lap, from the
+lap table, since the API has no classification) or the fastest lap in qualifying.
+Below it, in separate full-width sections: the track map (outline rotated to fill
+the frame; regimes of the shown lap along the line; per straight the primary
+driver's median tick and range band on the inner edge and the compared driver's
+hollow tick on the outer edge; a chevron at the shown lap's cut; one label on the
+selected straight), the distance strip sharing the map's cursor, the lap
+scrubber with play, the selected straight's numbers and every-lap strip, cut-off
+by lap, and the ranked summary (ten rows, expandable; click a row to select the
+driver). Model distances (cut-offs, regime bins) are placed on the outline at the
+same metre value from the start/finish line; the outline length is its last
+distance in decimetres / 10, closed back to the first point.
+
+**Requests.** All drivers' laps come from one paged `/laps` request rather than
+one per driver; each driver's cut-offs from one `/results` request. GET responses
+are kept in memory for the page's lifetime (they are immutable per model run).
+While the scrubber plays, regime requests wait for the pause so playback stays
+inside the per-IP rate limit; the map label says which lap its colours belong to.
+
+**Findings.** `web/src/content/findings.json` is generated from the outputs of
+`model/f1battery_model/hypothesis_test.py` with
+`node web/scripts/gen-findings.mjs <run_id> <model_version>` (from the repo root,
+after the test has run); it holds aggregates only. The spot checks, limits and
+wording live in `web/src/content/findings-notes.json`, curated from
+`docs/findings.md`.
+
+Straight names: the API labels every curated straight "Straight", so the view takes names from `web/src/content/straight-names.json` (circuit_key, then straight_id; Monza and the Singapore pit straight only) and otherwise shows "Straight N · a–b km", derived from `start_pct`/`end_pct` and the outline length.
+
+The "Method log" page at `#/method` needs no API: it renders `web/src/content/method-log.json`, a curated record of what was tried, the pre-set check, what was found and what changed, with source links to the repo on GitHub. `docs/method-log.md` is generated from the same file with `node web/scripts/gen-method-log.mjs` (run from the repo root); edit the JSON, not the markdown.
 
 ## Running locally
 
@@ -129,8 +170,9 @@ until Phase 4 writes `model_result`).
 
 1. Page numbering is zero-based; the contract does not say.
 2. `summary` and `regimes` use the pagination envelope; `compare` does not.
-3. Regime bins are located on the map by lap fraction; if Phase 4 stores lap
-   length per lap, the view could use true distance.
+3. Regime bins and cut-offs are placed on the outline at their metre value; a
+   driver's lap that is longer or shorter than the reference outline shifts
+   them slightly. Lap length per lap would allow scaling.
 4. Outline spacing is in stored units and assumes 1/10 m; confirm against the
    OpenF1 documentation before quoting metres publicly.
 5. Where the view is hosted (static bucket vs served by the API) and the CORS
