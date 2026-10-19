@@ -1,4 +1,4 @@
-import names from "./content/straight-names.json";
+import names from "../content/straight-names.json";
 import type { Outline, Straight } from "./types";
 
 const CURATED = names as Record<string, Record<string, string>>;
