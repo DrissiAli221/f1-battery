@@ -9,7 +9,7 @@ type DriverLike = Pick<Driver, "driver_number" | "name_acronym" | "team_colour" 
 /** Circular headshot on the team colour; the three-letter code shows if the image fails. */
 export function Avatar({ d, size = 36 }: { d: DriverLike; size?: number }) {
   const [failed, setFailed] = useState(false);
-  const src = headshot(d.headshot_url, size > 60 ? "2col-retina" : "2col");
+  const src = headshot(d.headshot_url, size > 60 ? "2col-retina" : size > 46 ? "2col" : "1col");
   return (
     <span
       className="relative grid shrink-0 place-items-center overflow-hidden rounded-full"
@@ -19,7 +19,7 @@ export function Avatar({ d, size = 36 }: { d: DriverLike; size?: number }) {
         <span className="font-display text-[10px] font-bold text-white/70">{driverCode(d)}</span>
       )}
       {src && !failed && (
-        <img src={src} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" onError={() => setFailed(true)} />
+        <img src={src} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover object-top" onError={() => setFailed(true)} />
       )}
     </span>
   );
