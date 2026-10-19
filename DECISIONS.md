@@ -502,3 +502,14 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - Orbitron replaces Saira as the accent face; Geist and Geist Mono stay for
   body and numbers. Logos, photos and renders in the file are not reused;
   team colours still come from OpenF1.
+
+## D28 — 2026-10-19 — Spacious layout; hash routing kept
+- The rebuild drops D26 rule 1 (session explorer in one viewport with a
+  side panel). After the PRNDL mockup the layout was judged too condensed:
+  pages now use a wide container, large section spacing and one idea per
+  section, with the track map full width as the explorer's hero. Mockups
+  end here; work continues in `web/`.
+- Hash routing stays (static hosting needs no server rewrites); explorer
+  state is kept in the query string so views can be shared.
+- The page background stays PRNDL's for now and is to be revisited; it is
+  a single token.
