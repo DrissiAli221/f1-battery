@@ -5,6 +5,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,9 +18,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * Per-client-address token bucket. The bucket holds {@code perMinute} tokens and refills
  * continuously at {@code perMinute / 60} tokens per second; a request that finds the bucket
- * empty gets 429 with a Retry-After header. The client address is the socket peer: behind a
- * reverse proxy the proxy must be configured to hand over the real address (for example via
- * server.forward-headers-strategy) or every client shares one bucket.
+ * empty gets 429 with a Retry-After header.
+ *
+ * <p>The client address is the socket peer, unless the peer is a configured trusted proxy
+ * ({@code api.trusted-proxies}: addresses or CIDR ranges). Then X-Forwarded-For is read from the
+ * right, skipping trusted hops, and the first untrusted address is the client. Nothing is trusted by
+ * default, so a client cannot choose its own bucket by sending the header.
  */
 public class RateLimitFilter extends OncePerRequestFilter {
 
@@ -31,14 +38,82 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final int perMinute;
     private final LongSupplier nanoClock;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final List<Cidr> trusted;
 
     public RateLimitFilter(int perMinute) {
-        this(perMinute, System::nanoTime);
+        this(perMinute, System::nanoTime, "");
+    }
+
+    public RateLimitFilter(int perMinute, String trustedProxies) {
+        this(perMinute, System::nanoTime, trustedProxies);
     }
 
     RateLimitFilter(int perMinute, LongSupplier nanoClock) {
+        this(perMinute, nanoClock, "");
+    }
+
+    RateLimitFilter(int perMinute, LongSupplier nanoClock, String trustedProxies) {
         this.perMinute = perMinute;
         this.nanoClock = nanoClock;
+        this.trusted = Arrays.stream(trustedProxies.split(","))
+                .map(String::trim).filter(x -> !x.isEmpty()).map(Cidr::parse).toList();
+    }
+
+    /** Address used as the bucket key for a request from {@code peer} carrying the given X-Forwarded-For. */
+    String clientAddress(String peer, String forwardedFor) {
+        if (trusted.isEmpty() || forwardedFor == null || !isTrusted(peer)) {
+            return peer;
+        }
+        String[] hops = forwardedFor.split(",");
+        for (int i = hops.length - 1; i >= 0; i--) {
+            String hop = hops[i].trim();
+            if (hop.isEmpty()) {
+                continue;
+            }
+            if (!isTrusted(hop)) {
+                return hop;
+            }
+        }
+        return peer;
+    }
+
+    private boolean isTrusted(String address) {
+        try {
+            byte[] a = InetAddress.getByName(address).getAddress();
+            return trusted.stream().anyMatch(c -> c.contains(a));
+        } catch (UnknownHostException | SecurityException e) {
+            return false;
+        }
+    }
+
+    /** An address with a prefix length; a bare address is a host route. */
+    private record Cidr(byte[] network, int bits) {
+        static Cidr parse(String text) {
+            try {
+                int slash = text.indexOf('/');
+                byte[] net = InetAddress.getByName(slash < 0 ? text : text.substring(0, slash)).getAddress();
+                int bits = slash < 0 ? net.length * 8 : Integer.parseInt(text.substring(slash + 1));
+                if (bits < 0 || bits > net.length * 8) {
+                    throw new IllegalArgumentException("bad prefix length in trusted proxy '" + text + "'");
+                }
+                return new Cidr(net, bits);
+            } catch (UnknownHostException | NumberFormatException e) {
+                throw new IllegalArgumentException("bad trusted proxy '" + text + "'", e);
+            }
+        }
+
+        boolean contains(byte[] address) {
+            if (address.length != network.length) {
+                return false;
+            }
+            for (int i = 0; i < bits; i++) {
+                int mask = 0x80 >> (i % 8);
+                if ((address[i / 8] & mask) != (network[i / 8] & mask)) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     /** Returns 0 if the request is allowed, otherwise the whole seconds to wait. */
@@ -85,7 +160,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
             throws ServletException, IOException {
-        long wait = tryAcquire(req.getRemoteAddr());
+        long wait = tryAcquire(clientAddress(req.getRemoteAddr(), req.getHeader("X-Forwarded-For")));
         if (wait > 0) {
             res.setStatus(429);
             res.setHeader("Retry-After", Long.toString(wait));

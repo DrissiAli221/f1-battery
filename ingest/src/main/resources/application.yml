@@ -8,6 +8,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    placeholders:
+      # Password of the read-only f1_api role created by V7 (dev default; set API_DB_PASSWORD elsewhere).
+      api_db_password: ${API_DB_PASSWORD:f1api}
 
 ingest:
   run-on-startup: true

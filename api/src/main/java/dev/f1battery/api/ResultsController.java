@@ -45,6 +45,17 @@ public class ResultsController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + Page.DEFAULT_SIZE) int size) {
         Page.validate(page, size);
+        if (runs.tracksRuns()) {
+            // Published runs only; no scan of model_result.
+            long published = jdbc.queryForObject("select count(*) from model_run where published", Long.class);
+            List<Map<String, Object>> rows = jdbc.query(
+                    "select model_version, run_id, coalesce(finished_at, started_at) as created_at from model_run "
+                            + "where published order by finished_at desc nulls last, started_at desc limit ? offset ?",
+                    Rows.MAP,
+                    size,
+                    (long) page * size);
+            return new Page<>(rows, page, size, published);
+        }
         long total = jdbc.queryForObject(
                 "select count(*) from (select 1 from model_result group by model_version, run_id) t", Long.class);
         List<Map<String, Object>> items = jdbc.query(
