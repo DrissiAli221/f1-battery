@@ -13,11 +13,34 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      # Docker is preinstalled on ubuntu-latest; Testcontainers uses it.
+      # Docker is preinstalled on the runner; Testcontainers uses it. Testcontainers 1.21.x (pinned in
+      # the root pom) negotiates the Docker API version, so no -Dapi.version workaround is needed.
       - run: mvn -B verify
 
-  image-arm64:
+  python:
     runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: model/pyproject.toml
+      # Tests that need a database carry the `db` marker and are deselected; DB_URL stays unset.
+      # TODO: switch to `pip install -e "model[dev]"` once model/pyproject.toml declares pytest and
+      # the marker (being added with the Python side of the model_run change).
+      - run: pip install -e model pytest
+      - run: pytest model/tests -m "not db"
+        env:
+          DB_URL: ""
+
+  images:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [ingest, api, replay]
+        platform: [linux/arm64, linux/amd64]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -25,6 +48,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: ingest/Dockerfile
-          platforms: linux/arm64
+          file: ${{ matrix.module }}/Dockerfile
+          platforms: ${{ matrix.platform }}
           push: false
+          cache-from: type=gha,scope=${{ matrix.module }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.module }}-${{ matrix.platform }}
