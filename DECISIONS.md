@@ -460,3 +460,20 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - Fixes 1–9 are accepted and built now; fix 10 (Phase 1.5 deploy) waits
   for server access. Exit conditions in PLAN.md are not changed; the audit's
   "partly" rows stay partly until the fixes land.
+
+## D24 — 2026-10-19 — Frontend rebuild: typography and imagery
+- Base typeface Geist with Geist Mono for numbers (Inter as the drop-in
+  alternative), tracking −5 % on display sizes scaling to −1 % on body;
+  Saira as a sparing F1-style accent for labels, codes and the wordmark.
+  All three under the SIL Open Font License. The proprietary F1 typeface is
+  not used.
+- Driver headshots and team logos are used in the view for this personal,
+  non-commercial project. They are loaded at runtime from their source URLs
+  (OpenF1's `headshot_url`; team logos from the confirmed source), credited
+  in the footer, and never committed or redistributed. The F1, FIA and FOM
+  logos and wordmark stay out, as before. Team colours come from OpenF1's
+  `team_colour` at runtime.
+- Consequence for the backend: the ingester currently drops `headshot_url`,
+  `team_colour`, `first_name`, `last_name`, `broadcast_name` and
+  `country_code` from `drivers`; a migration and upserter change add them,
+  and the API exposes them (separate pull request).

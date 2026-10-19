@@ -39,15 +39,22 @@ driver tags, not as a widget in a card.
 - Canvas light: #F7F5F2 off-white (poster mode). Surface: #FFFFFF. Lines: #E6E2DC.
 - Accent: F1 red #E10600 (used sparingly: brand, active state, the hero curves). Never for data.
 - Data semantics: regime deploy #3FD0B0, plateau #F2C94C, lift #9B8CFF, brake #FF5A5F, other #6B7280; sector semantics purple #B255FF (best), green #2ECC71 (improvement), yellow #FFD60A (slower).
-- Team colours as data (2026 grid): Mercedes #27F4D2, Ferrari #E80020, McLaren #FF8000, Red Bull #3671C6, Racing Bulls #6692FF, Aston Martin #229971, Alpine #0093CC, Williams #64C4FF, Haas #B6BABD, Audi #9DFF00 (placeholder until verified), Cadillac #D4AF37 (placeholder). Verify each against the official 2026 palette before use.
+- Team colours as data, taken from the OpenF1 `drivers.team_colour` field for 2026 (the broadcast's own values, so no guessing): Alpine #00A1E8, Aston Martin #229971, Audi #F50537, Cadillac #909090, Ferrari #ED1131, Haas #9C9FA2, McLaren #F47600, Mercedes #00D7B6, Racing Bulls #6C98FF, Red Bull Racing #4781D7, Williams #1868DB. Read from the database at runtime, never hard-coded.
 
 ### Type
 
-- Display and labels: a condensed, wide-set geometric sans in uppercase for
-  headers, 3-letter codes and pills. Numbers tabular.
-- Body: a clean humanist sans at 15–16 px, generous line height, for the
-  findings and method log.
-- Font choice depends on the licence check (see "Fonts" below).
+- **Base face for the whole site: Geist** (Vercel, SIL OFL), with Geist
+  Mono for lap times, gaps and every tabular number. Inter (also OFL) is the
+  fallback if Geist is rejected after the mockups; the two are close and the
+  token setup makes swapping a one-line change.
+- **Tracking:** −5 % (−0.05 em) on display sizes (32 px and up), −3 % on
+  section headings, −1 % on body text and 0 on small caps labels. A flat −5 %
+  on 15 px body text hurts legibility, so the tightening scales with size.
+- **F1-looking accent, used sparingly on top:** Saira (OFL) at 700–800,
+  uppercase, wide, for the wordmark, eyebrow labels, three-letter driver
+  codes, position numbers and pills. Nothing longer than a short label is
+  set in it.
+- The official Formula 1 typeface stays out (proprietary, see Fonts).
 
 ### Layout rules
 
@@ -83,6 +90,24 @@ driver tags, not as a widget in a card.
 - Charts: keep hand-written SVG or adopt visx for the bump chart and the
   cut-off chart.
 - Project wordmark.
+
+## Imagery
+
+- **Driver headshots everywhere a driver appears prominently:** session
+  header for the selected driver, the compare view, the summary rows, the
+  radio quote cards in Findings, driver tags on the live map (small circular
+  crop on a team-colour ring). Source: the `headshot_url` OpenF1 returns for
+  every 2026 driver (22 of 22 present), loaded at runtime from the source
+  URL, never copied into the repository. A neutral silhouette with the
+  three-letter code is the fallback when an image fails.
+- **Team logos** on summary rows, the compare header, the sessions list
+  grouped by team, and the power-unit comparison. Same rule: runtime URLs
+  from the source, not committed. Source being confirmed (formula1.com team
+  pages first).
+- **What stays out:** the Formula 1, FIA and FOM logos and wordmark, and the
+  proprietary F1 typeface. The site states it is not affiliated, and the
+  footer credits image sources.
+- Images are decorative support; every number and chart reads without them.
 
 ## Fonts
 
