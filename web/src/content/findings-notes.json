@@ -1,0 +1,56 @@
+{
+  "question": "Does a defender’s energy management before an attack predict being passed?",
+  "frozen": "2026-10-18",
+  "hidden_fact": "F1 does not publish battery or active-aero data for 2026. Everything here is estimated from public speed, throttle and position telemetry, under stated assumptions.",
+  "verdict_sentence": "An earlier cut-off on the approach straight did not predict being passed. Pace difference and Overtake availability did.",
+  "caveat": "“No effect” means none detectable with this estimator and sample, not proof of absence. The test covers only passes whose approach straight carried a detectable defender cut-off.",
+  "terms": {
+    "cutoff_dev_defender": "Defender cut-off deviation",
+    "deploy_rel_diff": "Relative deploy energy, defender minus attacker",
+    "defender_lift": "Defender lifted on the approach",
+    "pace_delta": "Pace delta (defender minus attacker)",
+    "tyre_age_diff": "Tyre age difference",
+    "lap_number": "Lap number",
+    "overtake_available": "Overtake available to the attacker"
+  },
+  "spot_checks": [
+    {
+      "n": 1,
+      "moment": "Norris, Suzuka, laps 47–51",
+      "result": "fail",
+      "detail": "Main-straight cut-off not far earlier than his median (+51, +63, −41, −10, −65 m); lap 51 is 1.9 std, below the 2 std bar."
+    },
+    {
+      "n": 2,
+      "moment": "Hamilton vs Verstappen, Canada lap 62",
+      "result": "fail",
+      "detail": "Hamilton’s cut-off on lap 62 is earlier (−55 m), not later; Verstappen within noise."
+    },
+    {
+      "n": 3,
+      "moment": "Ferrari earlier than Mercedes at Monza",
+      "result": "fail",
+      "detail": "Straight 2 matches in direction but intervals overlap Antonelli’s by 2 m; straight 4 is opposite; Leclerc retired early."
+    },
+    {
+      "n": 4,
+      "moment": "Singapore has no derating",
+      "result": "pass",
+      "detail": "Confirmed in the feasibility spike (2026-10-17)."
+    },
+    {
+      "n": 5,
+      "moment": "Piastri, harvest limit at Monza vs Baku",
+      "result": "not testable",
+      "detail": "proxy-0.1 stores no harvest-under-throttle regime."
+    }
+  ],
+  "limits": [
+    ["No ground truth", "No public battery data exists; spot checks are the only external anchors, and three of four testable ones failed."],
+    ["Drag area not identifiable", "A session-wide value is used and sits at a grid bound in 16 of 45 sessions; relative deploy energy inherits this."],
+    ["Coarse data", "3.7 Hz telemetry with integer speeds: cut-off distances carry tens of metres of lap-to-lap scatter."],
+    ["Selection", "Only passes whose approach straight has a detected defender cut-off on the previous lap enter the test."],
+    ["Unknown limits", "Per-event energy limits for races are not public; the 100 kW/s derate rate is an assumption."],
+    ["Excluded data", "Hungary is excluded (D17); Sakhir and Jeddah have no usable data."]
+  ]
+}

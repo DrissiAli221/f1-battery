@@ -1,0 +1,199 @@
+{
+  "source": {
+    "script": "model/f1battery_model/hypothesis_test.py",
+    "run_id": "6f9df732-b7d1-42b5-b084-a2dc08f91662",
+    "model_version": "proxy-0.1"
+  },
+  "verdict": "no effect",
+  "min_sample_ok": true,
+  "perm_ok": false,
+  "per_run_pass": {
+    "point": false,
+    "lower_edge": false,
+    "upper_edge": false
+  },
+  "sample": {
+    "events_extracted": 830,
+    "non_events_extracted": 3889,
+    "events_tested": 364,
+    "non_events_tested": 1324,
+    "sessions_in_model": 19
+  },
+  "runs": {
+    "point": {
+      "or": 0.9173,
+      "lo": 0.807,
+      "hi": 1.0426
+    },
+    "lower_edge": {
+      "or": 0.8537,
+      "lo": 0.736,
+      "hi": 0.9902
+    },
+    "upper_edge": {
+      "or": 0.9382,
+      "lo": 0.8264,
+      "hi": 1.065
+    }
+  },
+  "terms": [
+    {
+      "term": "cutoff_dev_defender",
+      "unit": "per 1 SD",
+      "or": 1.0902,
+      "lo": 0.9592,
+      "hi": 1.2392,
+      "p": 0.18623407383630897,
+      "sd": 121.094
+    },
+    {
+      "term": "deploy_rel_diff",
+      "unit": "per 1 SD",
+      "or": 1.0667,
+      "lo": 0.9293,
+      "hi": 1.2244,
+      "p": 0.3586296976240413,
+      "sd": 1416.746
+    },
+    {
+      "term": "defender_lift",
+      "unit": "binary (1 vs 0)",
+      "or": 1.4223,
+      "lo": 0.5972,
+      "hi": 3.3872,
+      "p": 0.4262553716764791,
+      "sd": null
+    },
+    {
+      "term": "pace_delta",
+      "unit": "per 1 SD",
+      "or": 0.6332,
+      "lo": 0.5503,
+      "hi": 0.7287,
+      "p": 1.7770250271652554e-10,
+      "sd": 0.633
+    },
+    {
+      "term": "tyre_age_diff",
+      "unit": "per 1 SD",
+      "or": 0.8529,
+      "lo": 0.7434,
+      "hi": 0.9786,
+      "p": 0.023280550202780432,
+      "sd": 6.971
+    },
+    {
+      "term": "lap_number",
+      "unit": "per 1 SD",
+      "or": 0.8292,
+      "lo": 0.717,
+      "hi": 0.9589,
+      "p": 0.011564487200627435,
+      "sd": 15.711
+    },
+    {
+      "term": "overtake_available",
+      "unit": "binary (1 vs 0)",
+      "or": 1.7234,
+      "lo": 1.2232,
+      "hi": 2.4281,
+      "p": 0.0018611272161261911,
+      "sd": null
+    }
+  ],
+  "permutation": {
+    "observed": 0.08637,
+    "n": 1000,
+    "p_two_sided": 0.208,
+    "pct_abs": 79.2,
+    "q95_abs": 0.13772,
+    "histogram": {
+      "lo": -0.25311,
+      "hi": 0.25311,
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        2,
+        6,
+        13,
+        13,
+        19,
+        20,
+        25,
+        38,
+        51,
+        46,
+        76,
+        47,
+        69,
+        75,
+        84,
+        70,
+        61,
+        55,
+        50,
+        41,
+        35,
+        21,
+        20,
+        24,
+        12,
+        5,
+        1,
+        6,
+        8,
+        1,
+        2,
+        1,
+        0,
+        1
+      ]
+    }
+  },
+  "energy_terms_lr": {
+    "chi2": 3.694,
+    "df": 3,
+    "p": 0.2965
+  },
+  "makers": [
+    {
+      "maker": "Mercedes",
+      "cells": 44,
+      "mean_offset_m": 6.4,
+      "sd_offset_m": 36,
+      "share_earliest": 0.045
+    },
+    {
+      "maker": "Ferrari",
+      "cells": 46,
+      "mean_offset_m": 8.3,
+      "sd_offset_m": 49.2,
+      "share_earliest": 0.152
+    },
+    {
+      "maker": "Honda",
+      "cells": 43,
+      "mean_offset_m": -24.6,
+      "sd_offset_m": 58.9,
+      "share_earliest": 0.651
+    },
+    {
+      "maker": "Audi",
+      "cells": 42,
+      "mean_offset_m": -2.8,
+      "sd_offset_m": 53.2,
+      "share_earliest": 0.167
+    },
+    {
+      "maker": "Red Bull Ford",
+      "cells": 44,
+      "mean_offset_m": 11.6,
+      "sd_offset_m": 45,
+      "share_earliest": 0.045
+    }
+  ]
+}
