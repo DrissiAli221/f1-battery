@@ -1,16 +1,21 @@
 [project]
 name = "f1battery-model"
 version = "0.1.0"
+# Floor set by the pinned numpy and scipy releases (both require >=3.12). The code
+# uses no syntax newer than 3.12; it has been run on 3.14 only.
 requires-python = ">=3.12"
 dependencies = [
-    "numpy",
-    "pandas",
-    "scipy",
-    "matplotlib",
-    "psycopg[binary]",
-    "pynumdiff",
-    "statsmodels>=0.14",
+    "numpy==2.5.4",
+    "pandas==3.0.6",
+    "scipy==1.18.1",
+    "matplotlib==3.11.2",
+    "psycopg[binary]==3.3.6",
+    "pynumdiff==0.3",
+    "statsmodels==0.15.0",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -18,3 +23,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["f1battery_model"]
+
+[tool.pytest.ini_options]
+markers = [
+    "db: needs the PostgreSQL database (DB_URL); deselect with -m 'not db'",
+]
