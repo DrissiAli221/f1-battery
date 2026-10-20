@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Page } from "./types";
+import type { Page, StraightProfileResponse } from "./types";
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://localhost:8080";
 
@@ -113,3 +113,13 @@ export function useList<T>(path: string | null, params: Params = {}): Remote<T[]
 }
 
 export const apiBase = BASE;
+
+/** URL of one driver's cross-lap speed profile on one straight (D30). */
+export function profileUrl(sessionKey: number, straightId: number, driver: number): string {
+  return url(`/sessions/${sessionKey}/straights/${straightId}/profile`, { driver });
+}
+
+/** One driver's cross-lap speed profile on one straight; feed it to `toProfile` for the instrument. */
+export function getProfile(sessionKey: number, straightId: number, driver: number): Promise<StraightProfileResponse> {
+  return getJson<StraightProfileResponse>(profileUrl(sessionKey, straightId, driver));
+}

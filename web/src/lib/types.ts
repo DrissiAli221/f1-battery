@@ -118,3 +118,26 @@ export function straightName(s: { straight_id: number; label?: string | null }):
   const l = (s.label ?? "").trim();
   return l && !/^(straight|derived)$/i.test(l) ? l : `Straight ${s.straight_id}`;
 }
+
+/** One 50 m bin of a cross-lap speed profile (D30): medians over the clean laps. */
+export interface ProfileBin {
+  bin: number;
+  d_start_m: number;
+  /** Median speed in the bin, whole kph. */
+  v_kph: number;
+  /** Median of the per-lap mean acceleration in the bin, m/s². */
+  a_ms2: number;
+}
+
+/** `GET /api/sessions/{key}/straights/{s}/profile?driver=` (derived aggregate, never raw samples). */
+export interface StraightProfileResponse {
+  session_key: number;
+  driver_number: number;
+  straight_id: number;
+  model_version: string | null;
+  bin_m: number;
+  bins: ProfileBin[];
+  cutoff_median_m: number | null;
+  ci_low_m: number | null;
+  ci_high_m: number | null;
+}
