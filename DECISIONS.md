@@ -547,3 +547,13 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - Nothing of it is committed to the repository; the view fetches it at
   runtime. No per-lap profile endpoint is built; the per-lap view keeps the
   regime bins and the per-lap cut-off tick.
+
+## D31 — 2026-10-20 — F1 imagery, logos and typefaces may be used in the view
+- The owner's call: this is a private, non-commercial portfolio project, so
+  the self-imposed ban on F1, FIA and FOM marks and on the official F1
+  typeface (D24, AGENTS.md) is lifted. Imagery is chosen by the owner (the
+  first is the F1 "digital presentation" wallpaper as the landing hero),
+  compressed to WebP/JPG under `web/public/`, and credited in the footer.
+- Caveat recorded for later: revisit before the site is linked publicly from
+  applications; trademark use that is fine for a private project can draw
+  attention once it is public.
