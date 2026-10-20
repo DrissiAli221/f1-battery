@@ -10,6 +10,8 @@
   --accent-lite: color-mix(in srgb, var(--accent) 55%, var(--ink));
   --stage-h: clamp(560px, calc(100svh - var(--header-h) - 40px), 900px);
   padding-top: 104px;
+  /* Keeps the footer below the fold while the data arrives (no layout shift as it fills). */
+  min-height: calc(100svh + var(--stage-h));
 }
 @media (min-width: 1024px) {
   .xp {
@@ -57,6 +59,11 @@
 .xp-vs {
   font-size: 13px;
   color: var(--muted);
+}
+@media (max-width: 639px) {
+  .xp-vs {
+    display: none;
+  }
 }
 
 /* Driver picker */
@@ -250,7 +257,6 @@
 }
 .xp-map__seg {
   cursor: pointer;
-  outline: none;
 }
 .xp-map__hit {
   fill: none;
@@ -465,6 +471,12 @@ text.xp-map__sid {
 }
 
 /* Regime-only fallback */
+@media (min-width: 1024px) {
+  .xp-straight.xp-regaxis {
+    justify-content: flex-start;
+    padding-top: 24px;
+  }
+}
 .xp-regaxis__plot {
   outline: none;
   touch-action: pan-y;
@@ -496,6 +508,10 @@ text.xp-map__sid {
   fill: var(--muted);
 }
 .xp-svgcode {
+  paint-order: stroke;
+  stroke: var(--page-bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
@@ -916,4 +932,8 @@ text.xp-map__sid {
 .xp-head--skel {
   display: grid;
   gap: 48px;
+}
+.xp-skel-stage {
+  height: var(--stage-h);
+  border-top: 1px solid var(--line);
 }

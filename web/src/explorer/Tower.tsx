@@ -32,8 +32,10 @@ const medOf = (r: SummaryDriver, sid: number): Median | null => {
  * tiny bracket on a scale shared by every driver for that straight; then the share of green
  * laps in each regime. A row is a button: it selects that driver.
  */
-export function Tower({ rows, straights, lapLen, selected, primary, compare, onPick }: Props) {
+export function Tower({ rows, straights: allStraights, lapLen, selected, primary, compare, onPick }: Props) {
   const [all, setAll] = useState(false);
+  // Only straights where someone has a cut-off get a column (Singapore: one of seven).
+  const straights = allStraights.filter((s) => s.straight_id === selected || rows.some((r) => medOf(r, s.straight_id)));
   const sel = straights.find((s) => s.straight_id === selected) ?? straights[0];
   const rel = (s: TrackStraight, v: number) => along(s, v, lapLen);
   const key = (r: SummaryDriver) => {
@@ -80,7 +82,6 @@ export function Tower({ rows, straights, lapLen, selected, primary, compare, onP
         {visible.map((r, i) => {
           const isP = r.driver_number === primary;
           const isC = r.driver_number === compare;
-          const m = sel ? medOf(r, sel.straight_id) : null;
           return (
             <li key={r.driver_number} data-reveal className={`xp-row ${isP ? "is-primary" : ""} ${isC ? "is-compare" : ""}`}>
               <button
@@ -88,7 +89,6 @@ export function Tower({ rows, straights, lapLen, selected, primary, compare, onP
                 className="xp-row__btn"
                 style={{ "--team": teamColour(r) } as React.CSSProperties}
                 onClick={() => onPick(r.driver_number)}
-                aria-label={`${i + 1}, ${driverName(r)}, ${sel ? `S${sel.straight_id} median cut-off ${m ? `${int(rel(sel, m.m))} metres` : "none"}` : ""}${isP ? ", selected" : isC ? ", compared" : ""}. Select this driver.`}
               >
                 <span className="xp-row__in">
                   <span className="xp-row__pos">{i + 1}</span>
@@ -97,7 +97,6 @@ export function Tower({ rows, straights, lapLen, selected, primary, compare, onP
                     <Avatar d={r} size={28} />
                     <span className="xp-row__code">{driverCode(r)}</span>
                     <span className="xp-row__name">{r.last_name ?? driverName(r)}</span>
-                    {(isP || isC) && <span className="xp-row__tag">{isP ? "selected" : "compare"}</span>}
                   </span>
                   {straights.map((s) => {
                     const v = medOf(r, s.straight_id);
@@ -118,6 +117,7 @@ export function Tower({ rows, straights, lapLen, selected, primary, compare, onP
                   })}
                   <RegimeShare shares={r.regime_shares} />
                 </span>
+                <span className="sr-only">{isP ? ", selected" : isC ? ", compared" : ", select this driver"}</span>
               </button>
             </li>
           );

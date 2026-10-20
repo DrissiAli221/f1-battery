@@ -110,7 +110,7 @@ function RegimeAxis(p: Props & { d: number }) {
   const [ref, { w: W }] = useSize<HTMLDivElement>();
   const L = p.length;
   const strips = p.strips ?? [];
-  const rowH = 56;
+  const rowH = 64;
   const top = 28;
   const axisY = top + Math.max(1, strips.length) * rowH + 20;
   const H = axisY + 40;
@@ -179,30 +179,32 @@ function RegimeAxis(p: Props & { d: number }) {
               <line key={m} x1={x(m)} x2={x(m)} y1={top - 8} y2={axisY} className="xp-gridline" />
             ))}
             {strips.map((s, i) => {
+              // A label line, then the drawing band under it.
               const y0 = top + i * rowH;
-              const mid = y0 + rowH / 2;
+              const b0 = y0 + 12;
+              const bh = rowH - 16;
+              const mid = b0 + bh / 2;
               const md = s.median;
-              const right = md ? x(md.hi ?? md.m) < W - 150 : true;
               return (
                 <g key={s.code}>
                   {md && md.lo !== null && md.hi !== null && (
                     <>
-                      <rect x={x(md.lo)} y={y0 + 6} width={Math.max(2, x(md.hi) - x(md.lo))} height={rowH - 12} fill={`url(#xp-hatch-${i})`} />
-                      <path d={`M${x(md.lo)},${y0 + 10}v-4H${x(md.hi)}v4`} fill="none" stroke={s.colour} />
+                      <rect x={x(md.lo)} y={b0 + 4} width={Math.max(2, x(md.hi) - x(md.lo))} height={bh - 4} fill={`url(#xp-hatch-${i})`} />
+                      <path d={`M${x(md.lo)},${b0 + 8}v-4H${x(md.hi)}v4`} fill="none" stroke={s.colour} />
                     </>
                   )}
                   {s.cuts.map((c, j) => (
-                    <line key={j} x1={x(c)} x2={x(c)} y1={mid - 9} y2={mid + 9} stroke={s.colour} strokeOpacity={0.55} strokeWidth={1} />
+                    <line key={j} x1={x(c)} x2={x(c)} y1={mid - 8} y2={mid + 8} stroke={s.colour} strokeOpacity={0.55} strokeWidth={1} />
                   ))}
-                  {md && <line x1={x(md.m)} x2={x(md.m)} y1={y0 + 2} y2={y0 + rowH - 2} stroke={s.colour} strokeWidth={2} />}
-                  <text x={0} y={y0 + 2} className="xp-svgcode" style={{ fill: s.colour }}>
+                  {md && <line x1={x(md.m)} x2={x(md.m)} y1={b0} y2={b0 + bh} stroke={s.colour} strokeWidth={2} />}
+                  <text x={0} y={y0} className="xp-svgcode" style={{ fill: s.colour }}>
                     {s.code}
+                    {md && (
+                      <tspan className="xp-svgnum" dx="10">
+                        median est. <tspan className="xp-svgnum--ink">{int(md.m)}&nbsp;m</tspan>
+                      </tspan>
+                    )}
                   </text>
-                  {md && (
-                    <text x={right ? x(md.hi ?? md.m) + 8 : x(md.lo ?? md.m) - 8} y={mid + 4} textAnchor={right ? "start" : "end"} className="xp-svgnum">
-                      est. <tspan className="xp-svgnum--ink">{int(md.m)}&nbsp;m</tspan>
-                    </text>
-                  )}
                 </g>
               );
             })}

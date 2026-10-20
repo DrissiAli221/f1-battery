@@ -230,7 +230,7 @@ export function TrackMap(props: Props) {
                 role="button"
                 tabIndex={0}
                 aria-pressed={on}
-                aria-label={`S${s.straight_id}, ${s.label}${has ? "" : `, no cut-off for ${primary.code}`}`}
+                aria-label={`S${s.straight_id} ${s.label}${has ? "" : `, no cut-off for ${primary.code}`}`}
                 onClick={() => onSelect(s.straight_id)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -244,7 +244,7 @@ export function TrackMap(props: Props) {
                 {l && (
                   <text x={l.x} y={l.y} textAnchor={l.anchor} className="xp-map__name">
                     <tspan className="xp-map__sid">S{s.straight_id}</tspan>
-                    {wide && <tspan dx="6">{s.label}</tspan>}
+                    {wide && <tspan dx="3">{` ${s.label}`}</tspan>}
                   </text>
                 )}
               </g>

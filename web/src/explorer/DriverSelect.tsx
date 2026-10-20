@@ -105,8 +105,8 @@ export function DriverSelect({
           <>
             <span className="xp-pick__empty" aria-hidden="true" />
             <span className="xp-pick__txt">
-              <span className="xp-pick__add">Compare</span>
-              <span className="xp-pick__name">add a driver</span>
+              <span className="xp-pick__add">{allowNone ? "Compare" : "Driver"}</span>
+              <span className="xp-pick__name">{allowNone ? "add a driver" : "choose"}</span>
             </span>
           </>
         )}

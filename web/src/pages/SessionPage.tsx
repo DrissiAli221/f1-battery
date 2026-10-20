@@ -203,9 +203,9 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
             {session.circuit_short_name ?? `Session ${sessionKey}`}
           </h1>
           <p className="xp-head__meta" data-intro>
-            {session.session_name} · {date(session.date_start, "short")}
+            {session.session_name} · {date(session.date_start, "short").replace(/ /g, NB)}
             {nLaps > 0 && ` · ${nLaps}${NB}laps`}
-            {lapLen && ` · ${int(lapLen)}${NB}m a lap`}
+            {lapLen && ` · ${int(lapLen)}${NB}m${NB}a${NB}lap`}
           </p>
         </div>
         <div className="xp-head__pick" data-intro>
@@ -403,7 +403,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
       {/* ---------- Cut-off by lap ---------- */}
       {has && straight && lapLen && pDriver && (
         <section className="wrap xp-sec" aria-labelledby="xp-bylap">
-          <SectionIntro id="xp-bylap" title={<>Cut-off by lap on {sName}</>}>
+          <SectionIntro id="xp-bylap" title={<>Cut‑off by lap on <span className="whitespace-nowrap">{sName}</span></>}>
             One dot per lap with a cut-off, in metres from the start of the straight. Each band is a driver's median with its 95{NB}%
             interval, an estimate. Click a dot to put that lap on the stage.
           </SectionIntro>
@@ -437,7 +437,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
       {/* ---------- The tower ---------- */}
       {has && lapLen && (
         <section className="wrap xp-sec" aria-labelledby="xp-tower">
-          <SectionIntro id="xp-tower" title="Median cut-off per straight">
+          <SectionIntro id="xp-tower" title="Median cut‑off per straight">
             Every driver with a cut-off, ranked by {straight ? `S${straight.straight_id}` : "the selected straight"}, latest first. The bar on
             the right is the share of green laps spent deploying, on the plateau, lifting and braking. Select a row to put that driver on the stage.
           </SectionIntro>
@@ -487,9 +487,11 @@ function PageReadout({ reading, code, lapNo, sid }: { reading: Store<PanelReadin
 
 function PageSkeleton() {
   return (
-    <div className="wrap xp-head xp-head--skel" role="img" aria-label="Loading the session">
-      <div className="xp-skel-title" />
-      <div className="xp-skel-axis" />
+    <div className="wrap" role="img" aria-label="Loading the session">
+      <div className="xp-head xp-head--skel">
+        <div className="xp-skel-title" />
+      </div>
+      <div className="xp-skel-stage" />
     </div>
   );
 }
