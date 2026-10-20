@@ -96,7 +96,7 @@
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.5;
-  color: var(--accent);
+  color: var(--ink);
 }
 .fx-stamp-date span {
   display: block;
@@ -338,7 +338,27 @@
   pointer-events: none;
 }
 @media (max-width: 767px) {
-  .fx-forest__over > :first-child {
+  .fx-forest__over {
+    display: none;
+  }
+  .fx-forest--bar {
+    padding-top: 0;
+  }
+}
+.fx-forest__ref--row,
+.fx-forest__bar--row {
+  top: -4px;
+  bottom: -4px;
+}
+.fx-forest__key {
+  margin-top: 4px;
+  font-size: var(--t-ui-s);
+  color: var(--muted);
+}
+@media (min-width: 768px) {
+  .fx-forest__ref--row,
+  .fx-forest__bar--row,
+  .fx-forest__key {
     display: none;
   }
 }
@@ -448,7 +468,7 @@
 }
 @media (min-width: 768px) {
   .fx-checks > li {
-    grid-template-columns: 3rem minmax(0, 6fr) minmax(0, 5fr) 9rem;
+    grid-template-columns: 3rem minmax(0, 6fr) minmax(0, 5fr) 12rem;
     align-items: baseline;
   }
 }
@@ -473,7 +493,9 @@
 .fx-checks__result {
   grid-column: 2;
   font-family: var(--font-mono);
-  font-size: 15px;
+  /* 24 px is large text, so the accent passes AA (3.92:1 against 3:1). */
+  font-size: 24px;
+  line-height: 1;
 }
 @media (min-width: 768px) {
   .fx-checks__detail {
@@ -690,6 +712,10 @@
 .sx-index {
   margin-top: var(--grid-top);
 }
+/* Holds the footer below the fold until the list arrives (no layout shift). */
+.sx-index.is-loading {
+  min-height: 100svh;
+}
 .sx-legend {
   display: none;
 }
@@ -711,7 +737,9 @@
   }
 }
 .sx-h2 {
-  font-size: clamp(1.75rem, 1.1rem + 1.8vw, 2.75rem);
+  font-size: clamp(1.75rem, 1.2rem + 1.2vw, 2.25rem);
+  overflow-wrap: anywhere;
+  hyphens: auto;
   font-weight: 600;
   line-height: 1;
   letter-spacing: var(--tr-section);
@@ -756,7 +784,7 @@
 }
 @media (min-width: 1024px) {
   .sx-legend {
-    padding-left: calc((100% + var(--gutter)) * 3 / 12);
+    padding-left: calc((100% - var(--gutter)) * 3 / 12 + var(--gutter));
   }
 }
 .sx-row__name {
@@ -800,6 +828,12 @@
 @media (min-width: 768px) {
   .sx-row__trace {
     grid-column: auto;
+  }
+}
+@media (max-width: 767px) {
+  /* Phones: without a profile the bare axis would read as a second row rule. */
+  .sx-row__trace.is-empty {
+    display: none;
   }
 }
 .sx-row__axis {
@@ -876,8 +910,11 @@
 .nf__axis {
   display: block;
   width: 100%;
-  height: 72px;
   overflow: visible;
+}
+.nf__grid {
+  stroke: var(--line);
+  shape-rendering: crispEdges;
 }
 .nf__axisline {
   stroke: var(--line-strong);
@@ -922,4 +959,13 @@
   .sx-row__go {
     transition: none !important;
   }
+}
+
+/* Inline source links: a 24 px tall target without changing the line rhythm. */
+.fx-note .link {
+  padding-block: 3px;
+}
+/* The first tick is the domain's start: hang it from the column edge, not centred on it. */
+.fx-forest__ticks span:first-child {
+  translate: 0 0;
 }
