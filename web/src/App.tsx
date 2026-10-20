@@ -10,6 +10,11 @@ const SessionsPage = lazy(() => import("./pages/SessionsPage").then((m) => ({ de
 const SessionPage = lazy(() => import("./pages/SessionPage").then((m) => ({ default: m.SessionPage })));
 const FindingsPage = lazy(() => import("./pages/FindingsPage").then((m) => ({ default: m.FindingsPage })));
 const MethodLogPage = lazy(() => import("./pages/MethodLogPage").then((m) => ({ default: m.MethodLogPage })));
+// Temporary instrument preview on a fixture; the route only exists on the dev server.
+// The DEV guard lets the production build drop the chunk (and its fixture) entirely.
+const DevStraightPage = import.meta.env.DEV
+  ? lazy(() => import("./pages/DevStraightPage").then((m) => ({ default: m.DevStraightPage })))
+  : () => null;
 const LivePage = lazy(() => import("./pages/LivePage").then((m) => ({ default: m.LivePage })));
 
 const TITLES: Record<Route["name"], string> = {
@@ -19,6 +24,7 @@ const TITLES: Record<Route["name"], string> = {
   findings: "Findings · Energy/26",
   method: "Method log · Energy/26",
   live: "Live · Energy/26",
+  "dev-straight": "The straight (fixture) · Energy/26",
   missing: "Not found · Energy/26",
 };
 
@@ -36,11 +42,17 @@ function Page({ route }: { route: Route }) {
       return <MethodLogPage />;
     case "live":
       return <LivePage key={route.key ?? "index"} sessionKey={route.key} />;
+    case "dev-straight":
+      return <DevStraightPage />;
     case "missing":
       return (
         <div className="wrap section">
           <Empty title="Page not found">
-            Nothing lives at {route.path}. <a className="prose-link" href={href.landing}>Go to the start</a>.
+            Nothing lives at {route.path}.{" "}
+            <a className="prose-link" href={href.landing}>
+              Go to the start
+            </a>
+            .
           </Empty>
         </div>
       );
@@ -49,15 +61,16 @@ function Page({ route }: { route: Route }) {
 
 export function App() {
   const { route, path } = useLocation();
-  // New page: start at the top. Query-only changes (explorer state) keep the scroll position.
+  // Scroll reset, focus and the curtain live in the shell (motion/useRouteChange); query-only
+  // changes (explorer state) are not route changes and keep the scroll position.
   useEffect(() => {
-    window.scrollTo({ top: 0 });
     document.title = TITLES[route.name];
-  }, [path, route.name]);
+  }, [route.name]);
   return (
     <MotionConfig reducedMotion="user">
-      <Shell route={route}>
-        <Suspense fallback={<Loading className="h-[60vh]" />}>
+      <Shell route={route} path={path}>
+        {/* A full-viewport fallback keeps the footer below the fold while a lazy page loads (no layout shift). */}
+        <Suspense fallback={<Loading className="h-[100svh]" />}>
           <Page route={route} />
         </Suspense>
       </Shell>
