@@ -36,7 +36,7 @@ export function DevMapPage() {
       <p className="mb-4 font-mono text-[12px] text-muted">
         circuit {circuitKey} · {circuit?.name ?? "no ref"} · rotation {circuit?.rotation ?? "n/a"} · {circuit?.corners.length ?? 0} corners · {circuit?.outline?.length ?? 0} ref points
       </p>
-      <div className="h-[640px]">
+      <div>
         <TrackMap
           outline={outline.data}
           circuit={circuit}

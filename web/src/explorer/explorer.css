@@ -1221,3 +1221,12 @@
     height: 640px !important;
   }
 }
+
+/* v3.2: the map sizes itself from its width (TrackMap autoHeight) */
+.ss-map__box {
+  height: auto !important;
+  min-height: 0 !important;
+}
+.ss-map__box .tmap {
+  height: auto;
+}

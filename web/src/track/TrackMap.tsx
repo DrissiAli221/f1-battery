@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import { gsap } from "gsap";
 import type { Store } from "../explorer/store";
-import { along, project, wrap, type CircuitRef, type Pad, type Projection, type TrackStraight } from "../lib/track";
+import { along, project, trackAspect, wrap, type CircuitRef, type Pad, type Projection, type TrackStraight } from "../lib/track";
 import { useSize } from "../lib/useSize";
 import { prefersReducedMotion } from "../motion";
 import type { Outline } from "../lib/types";
@@ -66,6 +66,11 @@ export interface TrackMapProps {
   /** Kept for callers; the reference look has neither. */
   compass?: boolean;
   scale?: boolean;
+  /** Size the box from its width so the track fills it edge to edge (default). */
+  autoHeight?: boolean;
+  maxHeight?: number;
+  /** Turn tall circuits a quarter so the track lies wide (default). */
+  landscape?: boolean;
   pad?: Pad;
   /** Overrides the reference orientation (degrees), for testing or a fixed layout. */
   rotation?: number | null;
@@ -82,17 +87,14 @@ export interface TrackMapHandle {
 }
 
 /*
- * Pixel proportions, read off the reference (DESIGN.md v3): the road is two 1.75 px light
- * lines 11 px apart with the ground showing between them; the coloured lines in the middle
- * are 2 px with a chevron every ~64 px; a driver is a 16 px dot with a 2.5 px ground-colour
- * ring that visibly cuts the road lines, and its tag sits above; corner numbers are 18 px
- * outlined circles outside the bend.
+ * Proportions, measured on the reference render (a 640 px wide track): a driver dot is 13 px,
+ * its chip 30 x 15 px with 8 px type, a corner ring 15 px, the road 6.5 px between two hairline
+ * edges, the coloured lines 1.5 px with a chevron every ~55 px. Everything scales with the
+ * track's drawn width (k = width / 640), so the map looks the same at any size; only the
+ * road edges stay hairlines.
  */
-const GAP = 11;
-const EDGE = 1.75;
-const LINE = 2;
-const CHEVRON_PX = 64;
-const SIDE = { wide: { l: 44, r: 44, t: 40, b: 40 }, narrow: { l: 28, r: 28, t: 28, b: 28 } };
+const REF_W = 640;
+const SIDE = { wide: { l: 36, r: 36, t: 44, b: 44 }, narrow: { l: 22, r: 22, t: 30, b: 30 } };
 
 function tickLine(T: Projection, d: number, a: number, b: number) {
   const q = T.pose(d);
@@ -114,10 +116,10 @@ function bracket(T: Projection, lo: number, hi: number, off: number, serif: numb
   return `${s0}L${T.sub(a, b, off).slice(1)}${s1}`;
 }
 
-/** Chevron poses along a run, one every CHEVRON_PX, in the direction of travel. */
-function chevrons(T: Projection, r: MapRun): { x: number; y: number; deg: number }[] {
+/** Chevron poses along a run, one every `everyPx`, in the direction of travel. */
+function chevrons(T: Projection, r: MapRun, everyPx: number): { x: number; y: number; deg: number }[] {
   const len = wrap(r.d1 - r.d0, T.lap) || (r.d1 > r.d0 ? r.d1 - r.d0 : 0);
-  const stepM = CHEVRON_PX * T.mpp;
+  const stepM = everyPx * T.mpp;
   const out: { x: number; y: number; deg: number }[] = [];
   if (len < stepM * 0.6) return out;
   const n = Math.floor(len / stepM);
@@ -150,16 +152,32 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     label = "Track map",
     children,
   } = props;
-  const [boxRef, { w: W, h: H }] = useSize<HTMLDivElement>();
+  const autoHeight = props.autoHeight ?? true;
+  const maxHeight = props.maxHeight ?? 820;
+  const landscape = props.landscape ?? true;
+  const [boxRef, { w: W, h: measuredH }] = useSize<HTMLDivElement>();
   const wide = W >= 560;
+  const padding = pad ?? (wide ? SIDE.wide : SIDE.narrow);
+  const ref2 = useMemo(() => (rotation === undefined ? circuit : circuit ? { ...circuit, rotation } : null), [circuit, rotation]);
+  // The box's own height, from the track's aspect at this width (the track fills the width).
+  const autoH = useMemo(() => {
+    if (!autoHeight || W <= 0) return null;
+    const aspect = trackAspect(outline, ref2, landscape);
+    return Math.round(Math.min(maxHeight, padding.t + padding.b + (W - padding.l - padding.r) * aspect));
+  }, [autoHeight, W, outline, ref2, landscape, maxHeight, padding]);
+  const H = autoH ?? measuredH;
   const T = useMemo(() => {
     if (!(W > 0 && H > 0)) return null;
-    const ref2 = rotation === undefined ? circuit : circuit ? { ...circuit, rotation } : null;
-    return project(outline, W, H, pad ?? (wide ? SIDE.wide : SIDE.narrow), ref2);
-  }, [outline, circuit, W, H, wide, pad, rotation]);
+    return project(outline, W, H, padding, ref2, landscape);
+  }, [outline, ref2, W, H, padding, landscape]);
 
-  const gap = wide ? GAP : GAP - 2;
-  const outer = gap + 2 * EDGE;
+  // Scale factor against the reference render, from the track's drawn width.
+  const k = Math.max(0.7, Math.min(2.4, (W - padding.l - padding.r) / REF_W));
+  const gap = 6.5 * k;
+  const edgeW = 1.1;
+  const outer = gap + 2 * edgeW;
+  const lineW = Math.max(1.25, 1.5 * k * 0.8);
+  const chev = 3 * k;
 
   // Tags: HTML, positioned from the ticker (live) or from props (static).
   const tagEls = useRef(new Map<number | string, HTMLDivElement>());
@@ -172,33 +190,44 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   };
   useImperativeHandle(ref, () => ({ place: placeTag, projection: () => T }), [T]);
 
-  // Static tags follow their d from props. Chips are laid out so none covers another: each
-  // tries the slots above its dot in order (centred, then left and right, then a row up).
+  // Static tags follow their d from props. Chips sit just above their dot with the dot under
+  // one end of the chip (the reference alternates ends); when that spot is taken the chip
+  // tries the other end, the centre, then a row up, so none covers another.
   useLayoutEffect(() => {
     if (!T) return;
     const sorted = [...tags].sort((a, b) => wrap(a.d, T.lap) - wrap(b.d, T.lap));
-    const boxes: { x: number; y: number; w: number; h: number }[] = [];
-    const SLOTS: [number, number][] = [[0, 0], [-24, -6], [24, -6], [0, -22], [-24, -28], [24, -28], [0, -44], [-24, -50], [24, -50]];
-    for (const t of sorted) {
+    // Every dot is an obstacle for every chip (a chip must never sit on a neighbour's dot).
+    const r = 6.5 * k + 2 * k;
+    const boxes: { x: number; y: number; w: number; h: number }[] = sorted.map((t) => {
+      const q = T.pose(t.d);
+      return { x: q.x - r, y: q.y - r, w: 2 * r, h: 2 * r };
+    });
+    // Corner rings too, when drawn.
+    if (corners) for (const c of T.corners) boxes.push({ x: c.lx - 7.5 * k, y: c.ly - 7.5 * k, w: 15 * k, h: 15 * k });
+    const h = 15 * k;
+    const lift = 6.5 * k + 1.5 * k; // dot radius plus the air above it
+    for (const [i, t] of sorted.entries()) {
       const q = T.pose(t.d);
       const el = tagEls.current.get(t.id);
       const chip = el?.querySelector<HTMLElement>(".tmap__tag-chip");
-      const w = chip?.offsetWidth || 36;
-      const h = 18;
+      const w = chip?.offsetWidth || 30 * k;
+      const end = w * 0.32;
+      const first: [number, number][] = i % 2 ? [[end, 0], [-end, 0]] : [[-end, 0], [end, 0]];
+      const SLOTS: [number, number][] = [...first, [0, 0], [-end, -(h + 3)], [end, -(h + 3)], [0, -(h + 3)], [-end, -2 * (h + 3)], [end, -2 * (h + 3)]];
       let pick: [number, number] = SLOTS[0];
       for (const [sx, sy] of SLOTS) {
         const bx = q.x + sx - w / 2;
-        const by = q.y - 13 - h + sy;
-        const hit = boxes.some((b) => bx < b.x + b.w + 4 && bx + w + 4 > b.x && by < b.y + b.h + 3 && by + h + 3 > b.y);
+        const by = q.y - lift - h + sy;
+        const hit = boxes.some((b) => bx < b.x + b.w + 3 && bx + w + 3 > b.x && by < b.y + b.h + 2 && by + h + 2 > b.y);
         if (!hit) {
           pick = [sx, sy];
           break;
         }
       }
-      boxes.push({ x: q.x + pick[0] - w / 2, y: q.y - 13 - h + pick[1], w, h });
+      boxes.push({ x: q.x + pick[0] - w / 2, y: q.y - lift - h + pick[1], w, h });
       placeTag(t.id, t.d);
-      el?.style.setProperty("--tx", `${pick[0]}px`);
-      el?.style.setProperty("--ty", `${pick[1]}px`);
+      el?.style.setProperty("--tx", `${pick[0].toFixed(1)}px`);
+      el?.style.setProperty("--ty", `${pick[1].toFixed(1)}px`);
     }
   });
 
@@ -250,14 +279,14 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   const sfLabelPos = sfPose ? (Math.abs(sfPose.nx) > Math.abs(sfPose.ny) ? (sfPose.nx < 0 ? "right" : "left") : sfPose.ny < 0 ? "below" : "above") : "below";
 
   return (
-    <div ref={boxRef} className={`tmap ${className}`} data-hires={T?.hires ? "1" : "0"}>
+    <div ref={boxRef} className={`tmap ${className}`} data-hires={T?.hires ? "1" : "0"} style={{ ["--k" as string]: k.toFixed(3), height: autoH ?? undefined }}>
       {T && (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="tmap__svg" role="group" aria-label={label} onPointerMove={onMove}>
           <defs>
-            <pattern id="tmap-chequer" width="5" height="5" patternUnits="userSpaceOnUse">
-              <rect width="5" height="5" fill="#f2f2f4" />
-              <rect width="2.5" height="2.5" fill="#111114" />
-              <rect x="2.5" y="2.5" width="2.5" height="2.5" fill="#111114" />
+            <pattern id="tmap-chequer" width={2.2 * k} height={2.2 * k} patternUnits="userSpaceOnUse">
+              <rect width={2.2 * k} height={2.2 * k} fill="#f2f2f4" />
+              <rect width={1.1 * k} height={1.1 * k} fill="#111114" />
+              <rect x={1.1 * k} y={1.1 * k} width={1.1 * k} height={1.1 * k} fill="#111114" />
             </pattern>
           </defs>
 
@@ -296,7 +325,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
                     <path d={d} className="tmap__lit" strokeWidth={outer} />
                     <path d={d} className="tmap__lit-ground" strokeWidth={gap} />
                     {straightLabels && (
-                      <text x={q.x - q.nx * (outer + 12)} y={q.y - q.ny * (outer + 12) + 4} textAnchor="middle" className="tmap__sid">
+                      <text x={q.x + q.nx * (outer + 9 * k)} y={q.y + q.ny * (outer + 9 * k) + 3 * k} textAnchor="middle" className="tmap__sid" fontSize={7 * k}>
                         S{s.straight_id}
                       </text>
                     )}
@@ -313,18 +342,23 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
                 key={i}
                 d={T.sub(r.d0, Math.min(r.d1, T.lap - 0.01), r.offset ?? 0)}
                 stroke={r.colour}
-                strokeWidth={r.kind === "band" ? gap - 2 : LINE}
+                strokeWidth={r.kind === "band" ? gap - 2 : lineW}
                 className={r.kind === "band" ? "tmap__band" : "tmap__line"}
               />
             ))}
           </g>
           {arrows && (
-            <g className="tmap__chevrons" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+            <g className="tmap__chevrons" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={lineW}>
               {runs
                 .filter((r) => r.kind !== "band")
                 .flatMap((r, i) =>
-                  chevrons(T, r).map((c, j) => (
-                    <path key={`${i}-${j}`} d="M-2.5,-2.5L1,0L-2.5,2.5" stroke={r.colour} transform={`translate(${c.x.toFixed(1)},${c.y.toFixed(1)}) rotate(${c.deg.toFixed(1)})`} />
+                  chevrons(T, r, 55 * k).map((c, j) => (
+                    <path
+                      key={`${i}-${j}`}
+                      d={`M${(-chev).toFixed(1)},${(-chev).toFixed(1)}L${(chev * 0.4).toFixed(1)},0L${(-chev).toFixed(1)},${chev.toFixed(1)}`}
+                      stroke={r.colour}
+                      transform={`translate(${c.x.toFixed(1)},${c.y.toFixed(1)}) rotate(${c.deg.toFixed(1)})`}
+                    />
                   )),
                 )}
             </g>
@@ -335,7 +369,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             {ticks.map((t) => {
               const side = t.side ?? 1;
               const inner = side === 1 ? outer / 2 + 2 : -(outer / 2 + 2);
-              const far = side === 1 ? outer / 2 + 11 : -(outer / 2 + 11);
+              const far = side === 1 ? outer / 2 + 9 * k : -(outer / 2 + 9 * k);
               return (
                 <g key={t.id} stroke={t.colour} fill="none" className={t.on ? "is-on" : ""}>
                   {t.lo !== null && t.lo !== undefined && t.hi !== null && t.hi !== undefined && (
@@ -350,7 +384,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
           {/* Start/finish: the chequer across the road. */}
           {sf && sfPose && (
             <g className="tmap__sf" transform={`translate(${sfPose.x.toFixed(1)},${sfPose.y.toFixed(1)}) rotate(${sfPose.deg.toFixed(1)})`} pointerEvents="none">
-              <rect x={-2.5} y={-(gap / 2 + 1)} width={5} height={gap + 2} fill="url(#tmap-chequer)" />
+              <rect x={-2.2 * k} y={-(gap / 2 + 1.1 * k)} width={4.4 * k} height={gap + 2.2 * k} fill="url(#tmap-chequer)" />
             </g>
           )}
 
@@ -359,8 +393,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             <g className="tmap__corners" pointerEvents="none">
               {T.corners.map((c, i) => (
                 <g key={`${c.n}-${i}`} transform={`translate(${c.lx.toFixed(1)},${c.ly.toFixed(1)})`}>
-                  <circle r={wide ? 9 : 7.5} className="tmap__corner" />
-                  <text y={wide ? 3.5 : 3} textAnchor="middle" className="tmap__corner-n">
+                  <circle r={7.5 * k} className="tmap__corner" />
+                  <text y={2.6 * k} textAnchor="middle" className="tmap__corner-n" fontSize={7.5 * k}>
                     {c.n}
                   </text>
                 </g>
@@ -370,8 +404,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
 
           {sel && cursor && (
             <g ref={dotRef} className="tmap__dot" pointerEvents="none">
-              <circle r={gap / 2 + 3} className="tmap__dot-ring" />
-              <circle r={3} className="tmap__dot-core" />
+              <circle r={gap / 2 + 2.5 * k} className="tmap__dot-ring" />
+              <circle r={2.2 * k} className="tmap__dot-core" />
             </g>
           )}
         </svg>
@@ -403,7 +437,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
       {sf && sfPose && T && (
         <span
           className="tmap__sf-label"
-          style={{ left: sfPose.x - sfPose.nx * (outer / 2 + 12), top: sfPose.y - sfPose.ny * (outer / 2 + 12) }}
+          style={{ left: sfPose.x - sfPose.nx * (outer / 2 + 9 * k), top: sfPose.y - sfPose.ny * (outer / 2 + 9 * k) }}
           data-pos={sfLabelPos}
           aria-hidden="true"
         >

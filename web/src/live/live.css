@@ -474,3 +474,14 @@
   border: 0 !important;
   background: transparent !important;
 }
+
+/* v3.2: the map sizes itself from its width */
+.lv-stage__road,
+.lv-map {
+  height: auto !important;
+  min-height: 0 !important;
+}
+.lv-map {
+  position: relative !important;
+  inset: auto !important;
+}

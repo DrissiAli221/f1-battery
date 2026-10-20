@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { Cta } from "../components/Cta";
 import { SessionHeader } from "../components/SessionHeader";
 import { Card, Label, SectionHead, Skeleton } from "../components/system";
@@ -7,9 +7,8 @@ import { int } from "../lib/format";
 import { href } from "../lib/router";
 import { driverCode, driverName, teamColour } from "../lib/teams";
 import type { SessionRow } from "../lib/types";
-import type { Projection } from "../lib/track";
 import { useSize } from "../lib/useSize";
-import { TrackMap, type TrackMapHandle } from "../track/TrackMap";
+import { TrackMap } from "../track/TrackMap";
 import { useCircuit } from "../track/circuits";
 import { useMainStraight, type DriverCut } from "./data";
 
@@ -27,22 +26,7 @@ export function LastRace({ session, loading }: { session: SessionRow | null; loa
   const data = useMainStraight(session, true);
   const circuit = useCircuit(session?.circuit_key);
   const ready = data.state === "done" && !!data.outline;
-  const mapRef = useRef<TrackMapHandle>(null);
-  const [boxRef, size] = useSize<HTMLDivElement>();
-  const [proj, setProj] = useState<Projection | null>(null);
-  // The map computes its projection from its own measured size; read it once both have
-  // settled (two frames), and again on every resize.
-  useLayoutEffect(() => {
-    let a = 0;
-    let b = 0;
-    a = requestAnimationFrame(() => {
-      b = requestAnimationFrame(() => setProj(mapRef.current?.projection() ?? null));
-    });
-    return () => {
-      cancelAnimationFrame(a);
-      cancelAnimationFrame(b);
-    };
-  }, [size.w, size.h, ready, circuit]);
+  const [boxRef] = useSize<HTMLDivElement>();
 
   const order = useMemo(() => [...data.cuts].sort((a, b) => b.m - a.m), [data.cuts]);
   const rows = useMemo<Row[]>(() => order.slice(0, TOWER_ROWS).map((c, i) => ({ driver: { ...c.driver, last_name: c.driver.last_name ?? driverName(c.driver).split(" ").slice(-1)[0] }, pos: i + 1, cut: c })), [order]);
@@ -90,14 +74,13 @@ export function LastRace({ session, loading }: { session: SessionRow | null; loa
                 circuit={circuit}
                 straights={straight ? [straight] : []}
                 selected={data.straightId}
-                ref={mapRef}
+                tags={data.cuts.map((c) => ({ id: c.driver.driver_number, code: driverCode(c.driver), colour: teamColour(c.driver), d: c.d, note: `${int(c.m)} m` }))}
                 corners
                 compass
                 scale
                 sf
                 label={`Track map of ${session?.circuit_short_name ?? "the circuit"}, ${theName} lit, each driver's median cut-off as a tag`}
               >
-                <Ladder cuts={data.cuts} proj={proj} w={size.w} h={size.h} />
               </TrackMap>
             ) : (
               <Skeleton className="last__skel-map" />
@@ -146,9 +129,6 @@ export function LastRace({ session, loading }: { session: SessionRow | null; loa
   );
 }
 
-const STEP = 26; // px per chip row
-const CHIP_W = 78;
-const GAP = 44; // px from the outermost dot to the column
 
 /*
  * The drivers' tags as a ladder. Median cut-offs on one straight sit within a few metres of
@@ -157,57 +137,3 @@ const GAP = 44; // px from the outermost dot to the column
  * column beside the straight, ordered top to bottom by where the dots are: the broadcast
  * ladder. Past one column's height the drivers alternate between both sides of the road.
  */
-function Ladder({ cuts, proj, w, h }: { cuts: DriverCut[]; proj: Projection | null; w: number; h: number }) {
-  const layout = useMemo(() => {
-    if (!proj || !cuts.length || w < 10 || h < 10) return null;
-    const pts = cuts.map((c) => {
-      const q = proj.pose(c.d);
-      return { c, x: q.x, y: q.y, ox: -q.nx, oy: -q.ny };
-    });
-    const n = pts.length;
-    const cx = pts.reduce((s, p) => s + p.x, 0) / n;
-    const ox = pts.reduce((s, p) => s + p.ox, 0) / n;
-    const side0 = Math.abs(ox) > 0.3 ? Math.sign(ox) : cx < w / 2 ? 1 : -1;
-    const rows = Math.max(1, Math.floor((h - 24) / STEP));
-    const byY = [...pts].sort((a, b) => a.y - b.y);
-    const groups: { side: number; items: typeof pts }[] =
-      n <= rows ? [{ side: side0, items: byY }] : [{ side: side0, items: byY.filter((_, i) => i % 2 === 0) }, { side: -side0, items: byY.filter((_, i) => i % 2 === 1) }];
-    return groups.flatMap((g) => {
-      const xs = g.items.map((p) => p.x);
-      const edge = g.side > 0 ? Math.min(w - CHIP_W - 6, Math.max(...xs) + GAP) : Math.max(CHIP_W + 6, Math.min(...xs) - GAP);
-      const cy = g.items.reduce((s, p) => s + p.y, 0) / g.items.length;
-      const total = g.items.length * STEP;
-      const top = Math.max(12, Math.min(h - total - 12, cy - total / 2));
-      return g.items.map((p, i) => ({ ...p, side: g.side, edge, cy: top + i * STEP + STEP / 2 }));
-    });
-  }, [cuts, proj, w, h]);
-  if (!layout) return null;
-  return (
-    <div className="ladder" aria-hidden="true">
-      <svg className="ladder__lines" width={w} height={h}>
-        {layout.map((p) => {
-          const elbow = p.edge - p.side * 14;
-          return <path key={p.c.driver.driver_number} d={`M${p.x.toFixed(1)},${p.y.toFixed(1)}L${elbow.toFixed(1)},${p.cy.toFixed(1)}L${p.edge.toFixed(1)},${p.cy.toFixed(1)}`} />;
-        })}
-        {layout.map((p) => (
-          <circle key={p.c.driver.driver_number} cx={p.x} cy={p.y} r={4} style={{ fill: teamColour(p.c.driver) }} />
-        ))}
-      </svg>
-      {layout.map((p) => (
-        <span
-          key={p.c.driver.driver_number}
-          className="ladder__chip"
-          style={{
-            left: p.side > 0 ? p.edge : p.edge - CHIP_W,
-            top: p.cy,
-            width: CHIP_W,
-            ["--team" as string]: teamColour(p.c.driver),
-          }}
-        >
-          <b>{driverCode(p.c.driver)}</b>
-          <span className="num">{int(p.c.m)}&nbsp;m</span>
-        </span>
-      ))}
-    </div>
-  );
-}

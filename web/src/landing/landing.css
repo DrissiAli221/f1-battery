@@ -1002,3 +1002,12 @@
     min-height: 600px !important;
   }
 }
+
+/* v3.2: the map sizes itself from its width */
+.last__map {
+  min-height: 0 !important;
+  height: auto !important;
+}
+.last__mapbox {
+  height: auto !important;
+}

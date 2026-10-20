@@ -212,7 +212,31 @@ export interface Projection {
  * Orientation: the reference's broadcast rotation when known, so each circuit reads the way
  * it does on TV; otherwise the rotation (15 degree steps) that fills the box best.
  */
-export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: CircuitRef | null): Projection {
+/** The map's orientation in radians: the broadcast one, turned a quarter when `landscape` asks for a wide shape. */
+function orientation(ring: Pt[], ref: CircuitRef | null | undefined, landscape: boolean, iw: number, ih: number): number | null {
+  if (ref?.rotation === null || ref?.rotation === undefined) return null;
+  // The frame is x east, y north (flipped to screen). The reference's rotation is the
+  // broadcast orientation in that frame's own convention; on screen it is a clockwise turn
+  // of (rotation - 90) degrees (checked on Monza and Singapore against the TV maps).
+  let a = ((ref.rotation - 90) * Math.PI) / 180;
+  if (landscape) {
+    const b = bbox(rotate(ring, a));
+    if (b.h > b.w && iw >= ih) a += Math.PI / 2;
+  }
+  return a;
+}
+
+/** Aspect (height over width) of the drawn track at its orientation, for sizing a box to it. */
+export function trackAspect(outline: Outline, ref: CircuitRef | null | undefined, landscape = true): number {
+  const lap = lapLength(outline);
+  const hires = !!ref?.outline && ref.outline.length > 20;
+  const ring: Pt[] = hires ? ref!.outline!.map(([x, y], i) => ({ d: i, x, y: -y })) : densify(outline, lap);
+  const a = orientation(ring, ref, landscape, 2, 1) ?? 0;
+  const b = bbox(rotate(ring, a));
+  return b.h / b.w;
+}
+
+export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: CircuitRef | null, landscape = true): Projection {
   const lap = lapLength(outline);
   const dense = densify(outline, lap);
   const iw = Math.max(10, W - pad.l - pad.r);
@@ -222,11 +246,9 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
 
   // Orientation.
   let angle: number;
-  if (ref?.rotation !== null && ref?.rotation !== undefined) {
-    // The frame is x east, y north (flipped to screen above). The reference's rotation is
-    // the broadcast orientation in that frame's own convention; on screen it is a clockwise
-    // turn of (rotation - 90) degrees (checked on Monza and Singapore against the TV maps).
-    angle = ((ref.rotation - 90) * Math.PI) / 180;
+  const oriented = orientation(ring, ref, landscape, iw, ih);
+  if (oriented !== null) {
+    angle = oriented;
   } else {
     let best = { a: 0, s: 0 };
     for (let deg = 0; deg < 180; deg += 15) {
@@ -321,7 +343,7 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
       else if (sOf[i] < sOf[i - 1]) sOf[i] = sOf[i - 1];
     }
     if (import.meta.env.DEV && !ok) console.debug("track: centreline rejected", { end: sOf[sOf.length - 1] / total, p90, worstM });
-    if (!ok) return project(outline, W, H, pad, ref ? { ...ref, outline: null } : null);
+    if (!ok) return project(outline, W, H, pad, ref ? { ...ref, outline: null } : null, landscape);
   } else {
     sOf = cum.slice(0, D.length);
   }
