@@ -7,8 +7,8 @@ import { ReadoutSlot } from "./Readout";
 type NavKey = "findings" | "explorer" | "method" | "live";
 
 const NAV: { key: NavKey; label: string; to: string }[] = [
+  { key: "explorer", label: "Sessions", to: href.sessions() },
   { key: "findings", label: "Findings", to: href.findings },
-  { key: "explorer", label: "Explorer", to: href.sessions() },
   { key: "method", label: "Method", to: href.method },
   { key: "live", label: "Live", to: href.live() },
 ];
@@ -29,20 +29,24 @@ function activeKey(route: Route): NavKey | null {
   }
 }
 
+/*
+ * The wordmark is a text placeholder: the owner is producing a logo with an image tool and
+ * will drop it in here (an <img> in place of the mark and the text). Nothing is invented.
+ */
 export function Wordmark() {
   return (
-    <a href={href.landing} className="wordmark draw" aria-label="Energy/26, home">
-      Energy<span className="text-accent">/</span>26
+    <a href={href.landing} className="wordmark" aria-label="f1-battery, home">
+      <span className="wordmark__mark" aria-hidden="true" />
+      f1-battery
     </a>
   );
 }
 
 /*
  * Navbar, ported from the owner's MonarcPulse site (D29 addendum). Desktop (lg): fixed 64 px
- * bar, a 1200 px row; transparent over a hero (links white with mix-blend-difference) and
- * glass once the hero's bottom passes 64 px (HeroStage toggles `html.nav-clear` from a
- * ScrollTrigger); glass on every other route. Phones: a floating glass pill with a three-bar
- * button and a drop panel.
+ * bar; transparent over a hero (links white with mix-blend-difference) and glass once the
+ * hero's bottom passes 64 px (HeroStage toggles `html.nav-clear`); glass on every other
+ * route. Phones: a floating glass pill with a three-bar button and a drop panel.
  */
 function Header({ route }: { route: Route }) {
   const active = activeKey(route);
@@ -61,7 +65,7 @@ function Header({ route }: { route: Route }) {
   }, [open]);
   const links = NAV.map((n) => (
     <li key={n.key}>
-      <a href={n.to} className="draw navlink" aria-current={active === n.key ? "page" : undefined}>
+      <a href={n.to} className="navlink" aria-current={active === n.key ? "page" : undefined}>
         {n.label}
       </a>
     </li>
@@ -74,7 +78,7 @@ function Header({ route }: { route: Route }) {
           <div className="navd__right">
             <ul className="navd__links">{links}</ul>
             <Cta href={href.sessions()} size="sm">
-              Open the explorer
+              Open a session
             </Cta>
           </div>
         </div>
@@ -101,7 +105,7 @@ function Header({ route }: { route: Route }) {
         <div id="navm-panel" className={`navm__panel ${open ? "is-open" : ""}`}>
           <ul className="navm__links">{links}</ul>
           <Cta href={href.sessions()} className="mt-6">
-            Open the explorer
+            Open a session
           </Cta>
         </div>
       </nav>
@@ -122,9 +126,19 @@ function Footer() {
             </a>{" "}
             (CC BY-NC-SA 4.0), non-commercial. The site serves derived values only.
           </li>
-          <li>Driver headshots and team logos load at runtime from their sources and remain their owners' property.</li>
-          <li>Built on PRNDL, an unofficial student-made F1 design system, used with permission.</li>
-          <li>Not affiliated with Formula 1, the FIA or FOM.</li>
+          <li>
+            Corner numbers and circuit centrelines from the{" "}
+            <a className="link" href="https://multiviewer.app" target="_blank" rel="noreferrer">
+              MultiViewer
+            </a>{" "}
+            circuits API. Flags by{" "}
+            <a className="link" href="https://flagpedia.net" target="_blank" rel="noreferrer">
+              Flagpedia
+            </a>
+            .
+          </li>
+          <li>Driver headshots, team logos and venue photographs load at runtime from Formula 1 media and remain their owners' property.</li>
+          <li>Type: Geist, Geist Mono and Titillium Web (SIL Open Font License). Not affiliated with Formula 1, the FIA or FOM.</li>
         </ul>
       </div>
     </footer>
@@ -149,10 +163,6 @@ export function Shell({ route, path, children }: { route: Route; path: string; c
         <Footer />
       </div>
       <div className="readout" ref={setSlot} />
-      <div id="curtain" aria-hidden="true">
-        <div className="curtain__panel" />
-        <div className="curtain__line" />
-      </div>
     </ReadoutSlot.Provider>
   );
 }

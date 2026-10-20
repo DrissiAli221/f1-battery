@@ -1,23 +1,78 @@
 /*
- * Design tokens. Single source for colour, type, spacing and radius; tailwind.config.ts
- * maps its theme onto these custom properties, so changing a value here restyles the
- * whole view.
+ * Design tokens, v3 (web/DESIGN.md, D32). Single source for colour, type, spacing and
+ * radius; tailwind.config.ts maps its theme onto these custom properties.
  *
- * Roles follow web/DESIGN.md (D29): one dark ground, one ink, one muted, hairlines, one red
- * accent that is never data, and the four regime colours as the only other colour on the
- * page. PRNDL primitive names are kept where they exist (D27). Team colours are never
- * tokens: they come from the API (`team_colour`).
+ * Roles: one deep black ground, three raised surfaces, hairlines, one ink and two greys, the
+ * brand red (never data), broadcast sector and tyre colours, the four regime colours, and
+ * the road colours for the track map. Team colours are never tokens: they come from the API
+ * (`team_colour`) and are set per element as `--team`.
  *
- * Dark is the only mode for now (D28); the ground is one token (--page-bg).
+ * Dark is the only mode.
  */
 :root {
-  /* ---- Primitive (PRNDL) ---- */
-  --color-red-900: #170100;
-  --color-red-700: #710300;
-  --color-red-600: #a90500;
-  --color-red-500: #e10600;
+  /* ---- Ground and surfaces ---- */
+  --page-bg: #030303;
+  --ground-2: #0a0a0c;
+  --surface-1: #111115; /* cards */
+  --surface-2: #15151e; /* raised rows, table heads, the F1 app's dark */
+  --surface-3: #1f1f27; /* chips, inputs, tooltips, the concept's tower card */
+  --surface-4: #2a2a34; /* hover on surface-3 */
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(255, 255, 255, 0.28);
+
+  /* ---- Ink ---- */
+  --ink: #f4f4f6;
+  --muted: #a0a0aa;
+  --faint: #6e6e78;
+
+  /* ---- Brand ---- */
+  --accent: #e10600;
+  --accent-deep: #b30500;
+  --accent-soft: rgba(225, 6, 0, 0.14);
+
+  /* ---- Broadcast semantics ---- */
+  --sector-best: #b55bff; /* purple: fastest overall */
+  --sector-good: #2fd36e; /* green: personal best, improved */
+  --sector-slow: #ffd400; /* yellow: slower */
+  --tyre-soft: #ff3b30;
+  --tyre-medium: #ffd400;
+  --tyre-hard: #f0f0f0;
+  --tyre-inter: #3ac65b;
+  --tyre-wet: #2b7bff;
+  --flag-green: #2fd36e;
+  --flag-yellow: #ffd400;
+  --flag-red: #e10600;
+
+  /* ---- Regimes (the model's four labels) ---- */
+  --regime-deploy: #19e68c;
+  --regime-plateau: #ffd400;
+  --regime-lift: #8a6cff;
+  --regime-brake: #ff4d6d;
+  --regime-other: #3a3a44;
+
+  /* ---- The road (track map) ---- */
+  --road-edge: #44444e;
+  --road-body: #17171c;
+  --road-marker: #e8e8ec;
+
+  /* ---- Older aliases, kept so untouched pages compile until they are rebuilt ---- */
+  --surface: var(--surface-1);
+  --surface-deep: var(--ground-2);
+  --frame: #000000;
+  --ink-head: #ffffff;
+  --ink-2: #d6d6dc;
+  --ink-3: var(--muted);
+  --ink-4: var(--faint);
+  --brand: var(--accent);
+  --brand-hover: var(--accent-deep);
+  --brand-pressed: #8a0400;
+  --brand-deep: #170100;
+  --track-edge: var(--road-edge);
+  --track-body: var(--road-body);
+  --color-red-500: var(--accent);
   --color-grey-950: #0b0b0b;
-  --color-grey-900: #15151d;
+  --color-grey-900: var(--surface-2);
   --color-grey-850: #1a1a24;
   --color-grey-800: #1c1c24;
   --color-grey-700: #26262b;
@@ -25,57 +80,26 @@
   --color-grey-500: #606066;
   --color-grey-400: #aaabb1;
   --color-grey-300: #d0d0d5;
-  --color-grey-200: #f7f4f1;
+  --color-grey-200: var(--ink);
   --color-grey-100: #fefefe;
   --color-navy-700: #0e0c16;
   --color-navy-300: #97959e;
   --color-hot-pink-500: #e51073;
-  --color-green-500: #27983e;
-  --color-yellow-500: #ffd100;
-  /* Broadcast dark from the brief: the ground. Not a PRNDL value. */
-  --color-ground-950: #030303; /* deep neutral black (Ali, 2026-10-20) */
-  --color-ground-900: #0e0e0e; /* neutral surface, no blue cast */
-
-  /* ---- Roles (DESIGN.md "Palette") ---- */
-  --page-bg: var(--color-ground-950); /* ground */
-  --ground-2: var(--color-ground-900); /* surface, curtain */
-  --ink: var(--color-grey-200);
-  /* Lifted from navy-300 (#97959e, 6.6:1) so captions at 11-12 px, over hatching and on
-     ground-2, still clear 4.5:1 everywhere: 7.6:1 on the ground, 7.0:1 on ground-2. The
-     hierarchy against ink comes from size and weight, not from a dimmer grey. */
-  --muted: #a3a1a8;
-  --line: rgba(247, 244, 241, 0.12); /* hairlines, axes, hatching */
-  --line-strong: rgba(247, 244, 241, 0.28);
-  --accent: var(--color-red-500); /* wordmark, cursor, focus ring, verdict stamp. Never data */
-  --regime-deploy: #a8f04a;
-  --regime-plateau: #ffd84d;
-  --regime-lift: #9e5bff;
-  --regime-brake: #ff8ae0;
-  --regime-other: #4a4a57;
-
-  /* ---- Older aliases, kept so the pages compile until they are rebuilt ---- */
-  --surface: var(--ground-2);
-  --surface-deep: var(--color-grey-950);
-  --frame: #000000;
-  --line-2: rgba(247, 244, 241, 0.07);
-  --ink-head: var(--color-grey-100);
-  --ink-2: var(--color-grey-300);
-  --ink-3: var(--muted);
-  --ink-4: var(--color-grey-500);
-  --brand: var(--accent);
-  --brand-hover: var(--color-red-600);
-  --brand-pressed: var(--color-red-700);
-  --brand-deep: var(--color-red-900);
-  --track-edge: #2b2b37;
-  --track-body: var(--ground-2);
-  --color-text-on-color: var(--color-grey-100);
-  --color-text-on-color-inverse: var(--color-grey-950);
+  --color-green-500: var(--sector-good);
+  --color-yellow-500: var(--sector-slow);
+  --color-ground-950: var(--page-bg);
+  --color-ground-900: var(--ground-2);
+  --color-red-900: #170100;
+  --color-red-700: #710300;
+  --color-red-600: var(--accent-deep);
+  --color-text-on-color: #ffffff;
+  --color-text-on-color-inverse: #0b0b0b;
   --color-surface-badge: var(--color-hot-pink-500);
-  --color-surface-success: var(--color-green-500);
-  --color-surface-warning: var(--color-yellow-500);
+  --color-surface-success: var(--sector-good);
+  --color-surface-warning: var(--sector-slow);
   --color-surface-btn-primary--default: var(--accent);
-  --color-surface-btn-other--default: var(--ground-2);
-  --color-surface-btn-other--pressed: var(--color-grey-800);
+  --color-surface-btn-other--default: var(--surface-2);
+  --color-surface-btn-other--pressed: var(--surface-3);
   --color-border-btn-other--default: var(--color-grey-100);
   --color-border-btn-other--pressed: var(--color-grey-300);
   --color-border-focus-state: var(--accent);
@@ -83,49 +107,56 @@
   /* ---- Type ---- */
   --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
-  /* Orbitron: the wordmark, three-letter driver codes and tower position numbers. Nowhere else. */
-  --font-display: "Orbitron", "Geist", sans-serif;
+  /* Titillium Web: the wordmark, labels, tabs, corner numbers, driver codes, positions. */
+  --font-display: "Titillium Web", "Geist", system-ui, sans-serif;
 
-  /* Fluid scale (DESIGN.md "Type"): big jumps between display and text. */
-  --t-display: clamp(3rem, 1rem + 8vw, 9.5rem);
-  --t-section: clamp(2rem, 1.2rem + 3vw, 4.5rem);
-  /* The hero question: display voice, one step down, so the copy and the trace share one
-     viewport (the copy sits bottom-left under the trace; D29 addendum). */
-  --t-hero: clamp(2rem, 0.9rem + 4.6vw, 5.25rem);
-  --t-body: 17px;
+  --t-display: clamp(2.6rem, 1rem + 4.8vw, 5.6rem);
+  --t-section: clamp(1.8rem, 1rem + 2.4vw, 3.2rem);
+  --t-hero: clamp(2.2rem, 1rem + 3.6vw, 4.4rem);
+  --t-title: 22px;
+  --t-body: 16px;
   --t-ui: 13px;
   --t-ui-s: 12px;
+  --t-label: 11px;
   --t-mono: 12px;
-  --lh-display: 0.9;
-  --tr-display: -0.045em;
-  --tr-section: -0.03em;
-  --measure: 62ch;
+  --t-stat: clamp(2.2rem, 1.4rem + 2.2vw, 3.6rem);
+  --lh-display: 0.96;
+  --tr-display: -0.035em;
+  --tr-section: -0.025em;
+  --tr-label: 0.08em;
+  --measure: 60ch;
 
-  /* ---- Grid and rhythm (ported from the owner's MonarcPulse spacing, D29 addendum) ---- */
-  --gutter: 24px; /* side padding of every container, and the outer margin */
-  --container: 1200px; /* the centre column: nav row, section content, hero hairlines */
-  --section-y: 112px; /* section padding, top and bottom (lg: 128) */
-  --head-top: 40px; /* space above a section heading block (lg: 96) */
-  --grid-top: 32px; /* heading block to the grid or figure under it (md: 48, lg: 80) */
-  --head-gap: 12px; /* heading to its paragraph (lg: 16) */
-  --stack: 40px; /* between stacked blocks in a section (lg: 64) */
-  /* Moods (DESIGN.md): each landing section picks one. */
+  /* ---- Grid and rhythm (MonarcPulse spacing, D29 addendum) ---- */
+  --gutter: 24px;
+  --container: 1240px;
+  --section-y: 96px;
+  --head-top: 40px;
+  --grid-top: 32px;
+  --head-gap: 12px;
+  --stack: 40px;
   --rhythm-tight: 32px;
   --rhythm-normal: var(--section-y);
-  --rhythm-airy: 160px;
+  --rhythm-airy: 144px;
+  --card-pad: 20px;
   --spacing-01: 4px;
 
-  /* ---- Radius: 0 everywhere, except pills (999) and avatars (50 %) ---- */
-  --radius: 0px;
+  /* ---- Radius ---- */
+  --radius-card: 16px;
+  --radius-panel: 12px;
+  --radius-chip: 6px;
   --radius-pill: 999px;
   --radius-avatar: 50%;
-  /* Older PRNDL radius names now follow the rule; xl was only used for pills. */
-  --radius-xxs: 0px;
-  --radius-xs: 0px;
-  --radius-s: 0px;
-  --radius-m: 0px;
-  --radius-l: 0px;
+  --radius: var(--radius-panel);
+  --radius-xxs: 4px;
+  --radius-xs: var(--radius-chip);
+  --radius-s: 8px;
+  --radius-m: var(--radius-panel);
+  --radius-l: var(--radius-card);
   --radius-xl: var(--radius-pill);
+
+  /* ---- Shadows (two uses only) ---- */
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line-2);
+  --shadow-pill: 0 8px 24px rgba(0, 0, 0, 0.45);
 
   /* ---- Layout and layers ---- */
   --header-h: 64px;
@@ -137,15 +168,16 @@
 }
 @media (min-width: 768px) {
   :root {
-    --grid-top: 48px;
+    --grid-top: 40px;
+    --card-pad: 24px;
   }
 }
 @media (min-width: 1024px) {
   :root {
-    --section-y: 128px;
-    --head-top: 96px;
-    --grid-top: 80px;
+    --section-y: 120px;
+    --head-top: 64px;
+    --grid-top: 56px;
     --head-gap: 16px;
-    --stack: 64px;
+    --stack: 56px;
   }
 }

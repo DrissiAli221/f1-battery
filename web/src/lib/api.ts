@@ -37,7 +37,7 @@ async function fetchJson<T>(href: string): Promise<T> {
     const wait = res.headers.get("Retry-After");
     throw new ApiError(429, `Rate limited by the API. Try again in ${wait ?? "a few"} seconds.`);
   }
-  if (!res.ok) throw new ApiError(res.status, `The API answered ${res.status} for ${new URL(href).pathname}.`);
+  if (!res.ok) throw new ApiError(res.status, `The API answered ${res.status} for ${new URL(href, window.location.origin).pathname}.`);
   return (await res.json()) as T;
 }
 

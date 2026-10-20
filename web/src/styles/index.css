@@ -68,17 +68,26 @@
   }
 
   /* ---- Navbar (ported from MonarcPulse; Shell.tsx) ---- */
+  /* Wordmark: a plain text placeholder; the owner will supply a logo image (src/components/Shell.tsx). */
   .wordmark {
     display: inline-flex;
     align-items: center;
+    gap: 8px;
     height: 32px;
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-head);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
     white-space: nowrap;
+  }
+  .wordmark__mark {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: var(--accent);
+    clip-path: polygon(0 100%, 35% 0, 100% 0, 65% 100%);
   }
   .navlink {
     display: inline-block;
@@ -99,7 +108,7 @@
     }
   }
   .glass {
-    background: rgba(12, 12, 17, 0.78);
+    background: rgba(5, 5, 6, 0.78);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
   }
@@ -113,7 +122,7 @@
     height: var(--header-h);
     align-items: center;
     justify-content: center;
-    background: rgba(12, 12, 17, 0.78);
+    background: rgba(5, 5, 6, 0.78);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     transition: background-color 0.3s, backdrop-filter 0.3s, -webkit-backdrop-filter 0.3s;
@@ -167,7 +176,7 @@
     translate: -50% 0;
     border: 1px solid var(--line);
     border-radius: 32px;
-    background: rgba(12, 12, 17, 0.78);
+    background: rgba(5, 5, 6, 0.78);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
   }
@@ -739,29 +748,6 @@
     }
   }
 
-  /* Page curtain: the cursor line sweeps and draws ground-2 behind it (motion/transition.ts).
-     No CSS transform on the panel or the line: GSAP owns them. */
-  #curtain {
-    position: fixed;
-    inset: 0;
-    z-index: var(--z-curtain);
-    pointer-events: none;
-    visibility: hidden;
-    overflow: hidden;
-  }
-  .curtain__panel {
-    position: absolute;
-    inset: 0;
-    background: var(--ground-2);
-  }
-  .curtain__line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -1px;
-    width: 2px;
-    background: var(--accent);
-  }
   /* Page container: the 1200 px centre column with the 24 px gutter. */
   .wrap {
     @apply mx-auto w-full max-w-container;

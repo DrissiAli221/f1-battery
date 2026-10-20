@@ -32,6 +32,26 @@ export function headshot(url: string | null | undefined, size: "1col" | "2col" |
   return url.replace(/\.transform\/[^/]+\//, `.transform/${size}/`);
 }
 
+/**
+ * The current formula1.com headshot (a real photo, ~50 KB, right-facing) for the 2026 season,
+ * built from the driver id in OpenF1's `headshot_url` (…/lannor01.png…) and the team slug.
+ * Falls back to the OpenF1 URL (often the silhouette) when either part is missing.
+ */
+export function headshotHd(d: Pick<Driver, "headshot_url" | "team_name">, w = 160): string | null {
+  const id = d.headshot_url ? /\/([a-z]{6}\d{2})\.png/.exec(d.headshot_url)?.[1] : undefined;
+  const slug = d.team_name ? LOGO_SLUG[d.team_name] : undefined;
+  if (id && slug) {
+    return `https://media.formula1.com/image/upload/c_lfill,w_${w}/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/${slug}/${id}/2026${slug}${id}right.webp`;
+  }
+  return headshot(d.headshot_url, "1col");
+}
+
+/** Side view of the team's car (formula1.com media), for session and team cards. */
+export function teamCar(team: string | null | undefined, h = 262): string | null {
+  const slug = team ? LOGO_SLUG[team] : undefined;
+  return slug ? `https://media.formula1.com/image/upload/c_lfill,h_${h}/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/${slug}/2026${slug}carright.webp` : null;
+}
+
 const FALLBACK = "#6b6b76";
 
 export function teamColour(d: Pick<Driver, "team_colour"> | null | undefined): string {

@@ -8,7 +8,7 @@ import type { Route } from "./router";
  * every layout effect and so wins.
  */
 
-const SITE = "Energy/26";
+const SITE = "f1-battery";
 
 export const ROUTE_META: Record<Route["name"], { title: string; description: string }> = {
   landing: {
@@ -37,6 +37,7 @@ export const ROUTE_META: Record<Route["name"], { title: string; description: str
     title: `Live · ${SITE}`,
     description: "A session replayed on the circuit map with the running order and each car's estimated energy regime.",
   },
+  "dev-map": { title: `Track map (dev) · ${SITE}`, description: "Map preview." },
   "dev-straight": { title: `The straight (fixture) · ${SITE}`, description: "Instrument preview." },
   missing: {
     title: `Not found · ${SITE}`,
