@@ -39,7 +39,10 @@
   --page-bg: var(--color-ground-950); /* ground */
   --ground-2: var(--color-grey-900); /* surface, curtain */
   --ink: var(--color-grey-200);
-  --muted: var(--color-navy-300); /* AA on the ground (6.6:1) */
+  /* Lifted from navy-300 (#97959e, 6.6:1) so captions at 11-12 px, over hatching and on
+     ground-2, still clear 4.5:1 everywhere: 7.6:1 on the ground, 7.0:1 on ground-2. The
+     hierarchy against ink comes from size and weight, not from a dimmer grey. */
+  --muted: #a3a1a8;
   --line: rgba(247, 244, 241, 0.12); /* hairlines, axes, hatching */
   --line-strong: rgba(247, 244, 241, 0.28);
   --accent: var(--color-red-500); /* wordmark, cursor, focus ring, verdict stamp. Never data */

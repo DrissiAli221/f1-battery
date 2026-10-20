@@ -69,6 +69,8 @@ export interface StraightProps {
   onSeek?: (d: number) => void;
   /** Called when the cursor enters another bin (and once on mount): feed the page readout. */
   onReading?: (r: Reading) => void;
+  /** No profile yet and still loading: the skeleton's axis shimmers (it is still once the answer is "none"). */
+  pending?: boolean;
   /** row only: light the trace and run its cursor (the index row's hover). */
   active?: boolean;
   /**
@@ -144,6 +146,7 @@ export function Straight({
   onSeek,
   onReading,
   active = false,
+  pending = false,
   creepSeconds = 24,
   readout = "auto",
   className = "",
@@ -583,7 +586,7 @@ export function Straight({
         aria-valuemin={interactive ? 0 : undefined}
         aria-valuemax={interactive ? Math.round(L) : undefined}
         aria-orientation={interactive ? "horizontal" : undefined}
-        aria-busy={profile ? undefined : true}
+        aria-busy={!profile && pending ? true : undefined}
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
         onPointerDown={onPointerDown}
@@ -604,7 +607,7 @@ export function Straight({
             </div>
           </div>
         )}
-        {!profile && <div className="st__skeleton" />}
+        {!profile && <div className={`st__skeleton ${pending ? "shimmer" : ""}`} />}
       </div>
 
       {profile && readout === "auto" && (

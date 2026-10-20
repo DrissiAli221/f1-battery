@@ -5,7 +5,8 @@
  * the row nears the viewport, through the rate-limit bucket. Hover or focus: the session
  * name's underline draws and the row's trace lights and runs its cursor.
  */
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CutTicks } from "../components/CutTicks";
 import { Readout } from "../components/Readout";
 import { Straight } from "../instrument/Straight";
 import { useList } from "../lib/api";
@@ -18,6 +19,8 @@ import "../findings/findings.css";
 
 const TYPES = ["Race", "Sprint", "Qualifying", "Sprint Qualifying"] as const;
 const NB = " ";
+/** Weekends loaded ahead of the one nearest the viewport. */
+const PREFETCH = 3;
 
 const dayMonth = (iso: string, withYear: boolean) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: withYear ? "numeric" : undefined, timeZone: "UTC" });
@@ -64,32 +67,41 @@ export function SessionsPage() {
       .sort((a, b) => (b[0].date_start ?? "").localeCompare(a[0].date_start ?? ""));
   }, [all, type]);
   const root = usePage<HTMLDivElement>(undefined, [meetings]);
+  // Rows load a weekend at a time: the first weekends at once, then each weekend that comes
+  // near the viewport also starts the next three, so the list is filled ahead of the reader.
+  const [reach, setReach] = useState(0);
+  const seen = useCallback((i: number) => setReach((r) => Math.max(r, i)), []);
   const withResults = all.filter((s) => s.has_results).length;
 
   return (
     <div ref={root}>
-      {sessions.data && (
-        <Readout label="Sessions">
-          {all.length} sessions · {withResults} with estimates
-        </Readout>
-      )}
       <section className="wrap sx-top" aria-labelledby="sx-h1">
         <div data-intro>
           <h1 id="sx-h1" className="sx-h1">
             Sessions
           </h1>
+          {/* Always rendered (it sits in the flow on phones): a shimmer until the list arrives, no shift. */}
+          <Readout label="Sessions">
+            {sessions.data ? (
+              <>
+                {all.length} sessions · {withResults} with estimates
+              </>
+            ) : (
+              <span className="shimmer shimmer--num" aria-hidden="true" />
+            )}
+          </Readout>
         </div>
         <div data-intro data-delay="0.1">
           <p className="sx-intro">
-            Every ingested 2026 session, newest weekend first. Each row draws one driver’s median speed along the main straight and
-            prints the session’s median cut-off there (est.). Open one to read every straight, lap by lap.
+            Every ingested 2026 session, newest weekend first. Each row draws the main straight with every driver’s median cut-off as a
+            tick and prints the session median (est.), in metres from the start of the straight. Open one to read every straight, lap by lap.
           </p>
           <nav className="sx-filter" aria-label="Filter by session type">
-            <a href={href.sessions()} className="draw" aria-current={!type ? "true" : undefined}>
+            <a href={href.sessions()} aria-current={!type ? "true" : undefined}>
               All <span>{sessions.data ? all.length : ""}</span>
             </a>
             {TYPES.filter((t) => counts.has(t)).map((t) => (
-              <a key={t} href={href.sessions(t)} className="draw" aria-current={type === t ? "true" : undefined}>
+              <a key={t} href={href.sessions(t)} aria-current={type === t ? "true" : undefined}>
                 {t} <span>{counts.get(t)}</span>
               </a>
             ))}
@@ -107,23 +119,27 @@ export function SessionsPage() {
             <span>Date</span>
             <span>Drivers with a cut</span>
             <span>Median cut-off, main straight (est.)</span>
-            <span>Speed along it, one driver (median of laps)</span>
+            <span>Main straight, one tick per driver (est.)</span>
             <span />
           </div>
         )}
-        {meetings.map((m) => (
-          <Meeting key={m[0].meeting_key} sessions={m} />
+        {meetings.map((m, i) => (
+          <Meeting key={m[0].meeting_key} sessions={m} index={i} due={i <= reach + PREFETCH} onNear={seen} />
         ))}
       </section>
     </div>
   );
 }
 
-function Meeting({ sessions }: { sessions: SessionRow[] }) {
+function Meeting({ sessions, index, due, onNear }: { sessions: SessionRow[]; index: number; due: boolean; onNear: (i: number) => void }) {
   const first = sessions[0];
   const id = `sx-m-${first.meeting_key}`;
+  const [ref, near] = useNearView<HTMLElement>("600px 0px");
+  useEffect(() => {
+    if (near) onNear(index);
+  }, [near, index, onNear]);
   return (
-    <section className="sx-meeting" aria-labelledby={id}>
+    <section ref={ref} className="sx-meeting" aria-labelledby={id}>
       <div className="sx-meeting__head" data-reveal>
         <h2 id={id} className="sx-h2">
           {first.circuit_short_name ?? "Unknown circuit"}
@@ -133,7 +149,7 @@ function Meeting({ sessions }: { sessions: SessionRow[] }) {
       <ul className="sx-rows">
         {sessions.map((s) => (
           <li key={s.session_key} data-reveal>
-            <Row s={s} />
+            <Row s={s} due={due || near} />
           </li>
         ))}
       </ul>
@@ -141,17 +157,28 @@ function Meeting({ sessions }: { sessions: SessionRow[] }) {
   );
 }
 
-function Row({ s }: { s: SessionRow }) {
-  const [ref, near] = useNearView<HTMLAnchorElement>();
-  const data = useRowData(s, near);
+/** A loading value: a short shimmer bar in the number's place, never an ellipsis. */
+function Pending() {
+  return (
+    <>
+      <span className="shimmer shimmer--num" aria-hidden="true" />
+      <span className="sr-only">loading</span>
+    </>
+  );
+}
+
+function Row({ s, due }: { s: SessionRow; due: boolean }) {
+  const data = useRowData(s, due);
   const [lit, setLit] = useState(false);
   const muted = !s.has_results;
+  const pending = !muted && data.state !== "done";
   const date = s.date_start ? dayMonth(s.date_start, false) : "no date";
+  const hasTicks = data.length !== null && data.ticks.length > 0;
   return (
     <a
-      ref={ref}
       href={href.session(s.session_key)}
       className={`sx-row ${muted ? "is-muted" : ""}`}
+      aria-busy={pending || undefined}
       onPointerEnter={(e) => e.pointerType === "mouse" && setLit(true)}
       onPointerLeave={() => setLit(false)}
       onFocus={() => setLit(true)}
@@ -168,18 +195,37 @@ function Row({ s }: { s: SessionRow }) {
         ) : (
           <>
             <span className="sx-row__n">
-              <b>{data.drivers ?? (data.done ? "–" : "…")}</b>
-              <span className="sx-row__k">{NB}drivers with a cut</span>
+              {data.drivers !== null ? <b>{data.drivers}</b> : pending ? <Pending /> : <b>–</b>}
+              <span className="sx-row__k">{NB}{data.drivers === 1 ? "driver" : "drivers"} with a cut</span>
             </span>
             <span className="sx-row__cut">
-              <b>{data.cutoff !== null ? `${int(data.cutoff)}${NB}m` : data.done ? "–" : "…"}</b>
-              <span className="sx-row__k">{NB}median cut-off{data.straightName ? `, ${data.straightName.toLowerCase()}` : ""} (est.)</span>
+              {data.cutoff !== null ? (
+                <b>
+                  {int(data.cutoff)}
+                  {NB}m
+                </b>
+              ) : pending ? (
+                <Pending />
+              ) : (
+                <b>–</b>
+              )}
+              <span className="sx-row__k">
+                {NB}median cut-off{data.straightName ? `, ${data.straightName.toLowerCase()}` : ""} (est.)
+              </span>
             </span>
           </>
         )}
       </span>
-      <span className={`sx-row__trace ${data.profile ? "" : "is-empty"}`} aria-hidden="true">
-        {data.profile ? <Straight profile={data.profile} size="row" active={lit} /> : <span className="sx-row__axis" />}
+      <span className={`sx-row__trace ${data.profile || hasTicks ? "" : "is-empty"}`} aria-hidden="true">
+        {data.profile ? (
+          <Straight profile={data.profile} size="row" active={lit} />
+        ) : hasTicks ? (
+          <CutTicks ticks={data.ticks} length={data.length as number} median={data.cutoff} active={lit} />
+        ) : pending ? (
+          <span className="shimmer shimmer--axis" />
+        ) : (
+          <span className="sx-row__axis" />
+        )}
       </span>
       <span className="sx-row__go">
         <Arrow />

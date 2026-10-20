@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { CutTicks } from "../components/CutTicks";
 import { Straight } from "../instrument/Straight";
 import { int } from "../lib/format";
 import { href } from "../lib/router";
 import type { SessionRow } from "../lib/types";
-import { useRow } from "./data";
+import { useRowData } from "../findings/sessionRow";
 
 const ROWS = 10;
 
@@ -34,8 +35,8 @@ export function Season({ sessions, loading }: { sessions: SessionRow[]; loading:
           The season
         </h2>
         <p className="section-intro__text" data-reveal>
-          The latest races and sprints. Each row draws its main straight from the session's own median profile, with the
-          median cut-off in metres from the start of that straight.
+          The latest races and sprints. Each row is the session's main straight: every driver's median cut-off as a tick,
+          the session median drawn taller and printed in metres from the start of that straight.
         </p>
       </div>
 
@@ -43,8 +44,8 @@ export function Season({ sessions, loading }: { sessions: SessionRow[]; loading:
         <span>Circuit</span>
         <span>Date</span>
         <span>Session</span>
-        <span className="season__head-cut">Cut-off, into it</span>
-        <span className="season__head-trace">Main straight</span>
+        <span className="season__head-cut">Median cut-off (est.)</span>
+        <span className="season__head-trace">Main straight, one tick per driver (est.)</span>
       </div>
       {loading && !rows.length ? (
         <p className="season__empty">Loading the season.</p>
@@ -73,25 +74,20 @@ export function Season({ sessions, loading }: { sessions: SessionRow[]; loading:
 }
 
 function SeasonRow({ session }: { session: SessionRow }) {
-  const li = useRef<HTMLLIElement>(null);
-  const [seen, setSeen] = useState(false);
   const [hot, setHot] = useState(false);
-  useEffect(() => {
-    const el = li.current;
-    if (!el || seen) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && setSeen(true), { rootMargin: "200px 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [seen]);
-  const row = useRow(session, seen);
+  // Ten rows, about 30 requests with the circuits shared: they are all queued at once through
+  // the rate-limit bucket (findings/throttle.ts), so the list is filled before it is reached.
+  const row = useRowData(session, true);
   const cut = row.cutoff;
+  const pending = row.state !== "done";
   const circuit = session.circuit_short_name ?? `Session ${session.session_key}`;
 
   return (
-    <li ref={li} className="season__li" data-reveal>
+    <li className="season__li" data-reveal>
       <a
         href={href.session(session.session_key)}
         className={`season__row ${hot ? "is-hot" : ""}`}
+        aria-busy={pending || undefined}
         onPointerEnter={(e) => e.pointerType === "mouse" && setHot(true)}
         onPointerLeave={() => setHot(false)}
         onFocus={() => setHot(true)}
@@ -103,17 +99,29 @@ function SeasonRow({ session }: { session: SessionRow }) {
         <span className="season__cut">
           {cut !== null ? (
             <>
-              <span className="num">{cut < 0 ? `\u2212${int(-cut)}` : int(cut)}</span>&nbsp;m <span className="season__est">est.</span>
+              <span className="num">{int(cut)}</span>&nbsp;m <span className="season__est">est.</span>
+            </>
+          ) : pending ? (
+            <>
+              <span className="shimmer shimmer--num" aria-hidden="true" />
+              <span className="sr-only">loading</span>
             </>
           ) : (
             <>
-              <span className="num">–</span> <span className="season__est">est.</span>
-              {row.state === "loading" && <span className="sr-only"> loading</span>}
+              <span className="num">–</span> <span className="season__est">no cut-off</span>
             </>
           )}
         </span>
         <span className="season__trace" aria-hidden="true">
-          {row.profile ? <Straight profile={row.profile} size="row" active={hot} /> : <span className="season__axis" />}
+          {row.profile ? (
+            <Straight profile={row.profile} size="row" active={hot} />
+          ) : row.length !== null && row.ticks.length ? (
+            <CutTicks ticks={row.ticks} length={row.length} median={cut} active={hot} />
+          ) : pending ? (
+            <span className="shimmer shimmer--axis" />
+          ) : (
+            <span className="season__axis" />
+          )}
         </span>
       </a>
     </li>

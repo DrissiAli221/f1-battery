@@ -57,8 +57,7 @@ function Axis() {
 export function NotFoundPage({ path }: { path: string }) {
   const root = usePage<HTMLElement>();
   return (
-    <section ref={root} className="wrap nf" aria-labelledby="nf-h1">
-      <Readout label="Status">404</Readout>
+    <section ref={root} className="wrap nf" aria-labelledby="nf-h1" data-stage>
       <div data-intro>
         <Axis />
       </div>
@@ -68,6 +67,7 @@ export function NotFoundPage({ path }: { path: string }) {
       <p className="nf__p" data-intro data-delay="0.15">
         Nothing is recorded at <span className="fx-mono">{path}</span>. The straight starts again at the beginning.
       </p>
+      <Readout label="Status">404</Readout>
       <div className="nf__cta" data-intro data-delay="0.2">
         <Cta href={href.landing}>Back to the start</Cta>
       </div>

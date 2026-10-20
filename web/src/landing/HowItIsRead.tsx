@@ -67,7 +67,7 @@ const CHAPTERS: { title: ReactNode; text: ReactNode }[] = [
  * (its "progress" input), so nothing re-renders per frame. Reduced motion: no sticky stage,
  * each chapter carries its own small trace with the cursor parked.
  */
-export function HowItIsRead({ profile, labels }: { profile: Profile | null; labels: StraightLabels }) {
+export function HowItIsRead({ profile, labels, pending = false }: { profile: Profile | null; labels: StraightLabels; pending?: boolean }) {
   const [reduced] = useState(() => prefersReducedMotion());
   const [step, setStep] = useState(0);
   const root = useRef<HTMLElement>(null);
@@ -115,7 +115,7 @@ export function HowItIsRead({ profile, labels }: { profile: Profile | null; labe
               <h3 className="how__title">{c.title}</h3>
               <p className="how__text">{c.text}</p>
               <div className="how__mini" data-step={i}>
-                <Straight profile={profile} size="panel" readout="none" d={stops ? stops[i] : 0} labels={i === 2 ? labels : undefined} />
+                <Straight profile={profile} pending={pending} size="panel" readout="none" d={stops ? stops[i] : 0} labels={i === 2 ? labels : undefined} />
               </div>
             </li>
           ))}
@@ -133,7 +133,7 @@ export function HowItIsRead({ profile, labels }: { profile: Profile | null; labe
             ))}
           </ol>
           <div className="how__stage" data-step={step}>
-            <Straight profile={profile} size="panel" d={{ mode: "progress", progress }} labels={labels} />
+            <Straight profile={profile} pending={pending} size="panel" d={{ mode: "progress", progress }} labels={labels} />
           </div>
         </div>
       )}

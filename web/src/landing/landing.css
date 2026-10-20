@@ -4,14 +4,15 @@
  * Every :hover sits inside (hover: hover) and has a :focus-visible twin.
  */
 
-/* ================= 2. Verdict: statement plus one fact (rhythm: normal) ================= */
+/* ================= 2. Verdict: statement plus one fact (rhythm: normal) =================
+   Normal above (one section pad after the hero); nothing below: the next section's own top
+   (64 px phones, 120 px desktop) is the whole gap, so the fact is not followed by a void. */
 .verdict {
-  padding-block: var(--section-y);
+  padding-block: var(--section-y) 0;
 }
 .verdict__grid {
   display: grid;
   gap: var(--stack) var(--gutter);
-  padding-top: var(--head-top);
 }
 @media (min-width: 1024px) {
   .verdict__grid {
@@ -146,9 +147,20 @@
   color: var(--ink-head);
 }
 
-/* ================= 3. How it is read: sticky narrative (rhythm: airy) ================= */
+/* ================= 3. How it is read: sticky narrative (rhythm: airy) =================
+   The air is inside: chapters a screen apart. Outside, 64 / 120 px above (after the verdict)
+   and the same below; the intro carries no extra head room. */
 .how {
-  padding-block: var(--rhythm-airy);
+  --how-y: 64px;
+  padding-block: var(--how-y);
+}
+@media (min-width: 1024px) {
+  .how {
+    --how-y: 120px;
+  }
+}
+.how .how__intro {
+  padding-top: 0;
 }
 .how__grid {
   display: flex;
@@ -166,7 +178,8 @@
 .how__stage .st--panel .st__plot {
   height: clamp(150px, 22svh, 260px);
 }
-/* Phones: the stage holds the top of the screen; each chapter enters just under it. */
+/* Tablets: the stage holds the top of the screen on an opaque ground; each chapter enters
+   just under it. */
 .how__chapter {
   display: flex;
   align-items: flex-start;
@@ -175,6 +188,25 @@
 }
 .how__chapter:last-child {
   min-height: 56svh;
+}
+/* Phones: no sticky stage (it would cut through the chapter text on a short screen). The
+   drawing sits above the three chapters, which read as a plain list. */
+@media (max-width: 767px) {
+  .how__stage {
+    position: static;
+    padding-bottom: 8px;
+  }
+  .how__chapter,
+  .how__chapter:last-child {
+    min-height: 0;
+    padding-top: 32px;
+  }
+  .how__chapter .how__title {
+    color: var(--ink-head);
+  }
+  .how__chapter .how__text {
+    color: var(--ink);
+  }
 }
 @media (min-width: 1024px) {
   .how__grid {
@@ -282,6 +314,9 @@
 .season {
   padding-block: var(--rhythm-tight) var(--section-y);
 }
+.season .section-intro {
+  padding-top: var(--head-top);
+}
 .season__head,
 .season__row {
   display: grid;
@@ -344,6 +379,7 @@
   color: var(--muted);
 }
 .season__trace {
+  position: relative;
   grid-area: trace;
   display: block;
   height: 32px;

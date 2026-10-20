@@ -3,9 +3,10 @@ import type { ReactNode } from "react";
 /*
  * Buttons, ported from the owner's MonarcPulse site and restyled in our tokens. Square (the
  * radius rule), two cells: the label on the accent, the arrow on ink. On hover or keyboard
- * focus the block's left edge clips in by 4 px, the gap between the cells closes, the label
- * steps 4 px along x and a second arrow slides in: the cursor verb, along x. Under reduced
- * motion the end state shows without the movement.
+ * focus the arrow tile expands left across the label (a clip-path, 420 ms, MonarcPulse's
+ * mechanism), so the button floods from red to ink and the label turns dark; the label steps
+ * 4 px along x and a second arrow slides in: the cursor verb, along x. Under reduced motion
+ * the flood is an instant colour change and nothing moves.
  */
 
 function Arrow() {

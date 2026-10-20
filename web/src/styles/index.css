@@ -1,3 +1,4 @@
+@import "./fonts.css";
 @import "./tokens.css";
 
 @tailwind base;
@@ -302,11 +303,15 @@
     background: var(--accent);
     transition: right 0.42s var(--ease-cta);
   }
+  /* The arrow tile. On hover and focus it expands left across the label (420 ms, the
+     MonarcPulse wipe): the button floods from red to ink, the label turns dark. Its left edge
+     moves rather than a clip-path, so at rest the tile's box really ends at the arrow (contrast
+     checkers measure the label against the red, not the hidden ink). */
   .cta__cell {
     position: absolute;
-    inset: 0 0 0 auto;
-    width: var(--cta-h);
+    inset: 0 0 0 calc(100% - var(--cta-h));
     background: var(--ink);
+    transition: left 0.42s var(--ease-cta);
   }
   .cta__label {
     position: relative;
@@ -315,7 +320,7 @@
     align-items: center;
     padding-inline: 16px 20px;
     white-space: nowrap;
-    transition: translate 0.42s var(--ease-cta);
+    transition: translate 0.42s var(--ease-cta), color 0.42s var(--ease-cta);
   }
   .cta--sm .cta__label {
     padding-inline: 12px 16px;
@@ -345,14 +350,12 @@
   .cta__track > .cta__arrow:first-child {
     translate: -26px 0;
   }
-  .cta:focus-visible .cta__clip {
-    clip-path: inset(0 0 0 4px);
-  }
-  .cta:focus-visible .cta__fill {
-    right: var(--cta-h);
+  .cta:focus-visible .cta__cell {
+    left: 0;
   }
   .cta:focus-visible .cta__label {
     translate: 4px 0;
+    color: var(--page-bg);
   }
   .cta:focus-visible .cta__arrow:first-child {
     translate: 0 0;
@@ -361,14 +364,12 @@
     translate: 26px 0;
   }
   @media (hover: hover) {
-    .cta:hover .cta__clip {
-      clip-path: inset(0 0 0 4px);
-    }
-    .cta:hover .cta__fill {
-      right: var(--cta-h);
+    .cta:hover .cta__cell {
+      left: 0;
     }
     .cta:hover .cta__label {
       translate: 4px 0;
+      color: var(--page-bg);
     }
     .cta:hover .cta__arrow:first-child {
       translate: 0 0;
@@ -576,9 +577,91 @@
   .readout:empty {
     display: none;
   }
-  html.readout-away .readout {
+  html.readout-away .readout,
+  html.readout-off .readout {
     translate: 0 calc(100% + var(--gutter) + 24px);
     opacity: 0;
+  }
+
+  /* Phones: the readout sits in the flow under the page's header (Readout.tsx), never fixed. */
+  .readout-inline {
+    margin-top: 16px;
+    font-family: var(--font-mono);
+    font-size: var(--t-mono);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .readout-inline > * {
+    margin: 0;
+  }
+
+  /* ---- Loading skeleton: a drawn axis with a light running along it (never an ellipsis) ---- */
+  .shimmer {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    background: var(--line);
+    vertical-align: middle;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(247, 244, 241, 0.32), transparent);
+    translate: -100% 0;
+  }
+  html.motion .shimmer::after {
+    animation: shimmer 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  @keyframes shimmer {
+    to {
+      translate: 100% 0;
+    }
+  }
+  .shimmer--num {
+    width: 4.5ch;
+    height: 0.7em;
+  }
+  .shimmer--axis {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 1px;
+    display: block;
+    height: 2px;
+  }
+
+  /* ---- Index rows before profiles exist: one tick per driver's median cut-off (CutTicks.tsx) ---- */
+  .cutticks {
+    display: block;
+    width: 100%;
+    height: 32px;
+    overflow: visible;
+  }
+  .cutticks line {
+    vector-effect: non-scaling-stroke;
+    shape-rendering: crispEdges;
+  }
+  .cutticks__axis {
+    stroke: var(--line-strong);
+  }
+  .cutticks__t {
+    stroke: var(--muted);
+    stroke-opacity: 0.55;
+    transition: stroke 0.3s, stroke-opacity 0.3s;
+  }
+  .cutticks__m {
+    stroke: var(--ink-head);
+    stroke-width: 2;
+    transition: stroke 0.3s;
+  }
+  .cutticks.is-active .cutticks__t {
+    stroke: var(--regime-plateau);
+    stroke-opacity: 0.9;
+  }
+  .cutticks.is-active .cutticks__m {
+    stroke: var(--accent);
   }
 
   /* Footer finale */
@@ -599,6 +682,12 @@
     letter-spacing: var(--tr-section);
     color: var(--ink-head);
     text-wrap: balance;
+  }
+  /* Inline credit links: a 44 px tall target without changing the line rhythm. */
+  .finale__credits .link {
+    display: inline-block;
+    padding-block: 13px;
+    margin-block: -13px;
   }
   .finale__credits {
     display: grid;
@@ -892,15 +981,10 @@
   .navm__bars i {
     transition: none !important;
   }
-  /* The CTA shows its hover end state at rest: the arrow in place, the clip in. */
-  .cta__clip {
-    clip-path: inset(0 0 0 4px);
-  }
-  .cta__fill {
-    right: var(--cta-h);
-  }
+  /* The CTA keeps its colour change (the flood to ink happens at once) without movement:
+     the label does not step and one arrow stays in place. */
   .cta__label {
-    translate: 4px 0;
+    translate: none !important;
   }
   .cta__arrow:first-child {
     translate: 0 0 !important;

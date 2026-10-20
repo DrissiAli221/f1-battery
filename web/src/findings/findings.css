@@ -684,6 +684,8 @@
   margin-top: var(--stack);
   font-size: 15px;
 }
+/* Filter chips: the nav's underline draw. The current one keeps a hairline at rest, and the
+   accent still draws over it on hover, so every chip answers the pointer. */
 .sx-filter a {
   display: inline-flex;
   align-items: baseline;
@@ -691,10 +693,22 @@
   min-height: 32px;
   padding-top: 4px;
   color: var(--muted);
+  background:
+    linear-gradient(var(--accent) 0 0) left bottom / 0% 2px no-repeat,
+    linear-gradient(var(--line-strong) 0 0) left bottom / 0% 1px no-repeat;
+  transition: background-size 0.45s cubic-bezier(0.165, 0.84, 0.44, 1), color 0.3s;
 }
 .sx-filter a[aria-current="true"] {
   color: var(--ink-head);
-  background-size: 100% 2px;
+  background-size: 0% 2px, 100% 1px;
+}
+@media (hover: hover) {
+  .sx-filter a:hover {
+    background-size: 100% 2px, 100% 1px;
+  }
+}
+.sx-filter a:focus-visible {
+  background-size: 100% 2px, 100% 1px;
 }
 .sx-filter a span {
   font-family: var(--font-mono);
@@ -835,6 +849,10 @@
   .sx-row__trace.is-empty {
     display: none;
   }
+}
+.sx-row__trace .cutticks {
+  position: absolute;
+  inset: 0;
 }
 .sx-row__axis {
   position: absolute;

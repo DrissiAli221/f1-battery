@@ -67,7 +67,7 @@ export function HeroStage({
   }, [progress]);
 
   return (
-    <section ref={section} className="hero" aria-label={label}>
+    <section ref={section} className="hero" aria-label={label} data-stage>
       <div ref={back} className="hero__back">
         {trace}
       </div>

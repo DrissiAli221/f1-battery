@@ -11,8 +11,8 @@ import straightNames from "../content/straight-names.json";
 import { Avatar } from "../components/Driver";
 import { Readout } from "../components/Readout";
 import { Straight } from "../instrument/Straight";
-import { toProfile } from "../instrument/driver";
-import { getProfile, useList, useLoad } from "../lib/api";
+import { loadStraightProfile } from "../instrument/load";
+import { useList, useLoad } from "../lib/api";
 import { fixed, int } from "../lib/format";
 import { href } from "../lib/router";
 import type { Driver, SessionRow } from "../lib/types";
@@ -24,7 +24,7 @@ import "../findings/findings.css";
 const REPO = "https://github.com/DrissiAli221/f1-battery/blob/main/";
 
 // The opening instrument: Monza race, NOR, the straight the landing uses (D30 profile).
-const PROFILE = { session: 11361, straight: 2, driver: 1 } as const;
+const PROFILE = { session: 11361, circuit: 39, straight: 2, driver: 1 } as const;
 const STRAIGHT_NAME = (straightNames as Record<string, Record<string, string>>)["39"]?.[String(PROFILE.straight)] ?? "Straight 2";
 
 function fmtFrozen(iso: string) {
@@ -58,7 +58,7 @@ function useQuoteDrivers(): Map<string, Driver> {
 
 export function FindingsPage() {
   const profile = useLoad(`fx-profile:${PROFILE.session}:${PROFILE.straight}:${PROFILE.driver}`, () =>
-    getProfile(PROFILE.session, PROFILE.straight, PROFILE.driver).then((r) => (r.bins.length ? toProfile(r) : null)),
+    loadStraightProfile(PROFILE.session, PROFILE.circuit, PROFILE.straight, PROFILE.driver),
   );
   const drivers = useQuoteDrivers();
   const root = usePage<HTMLDivElement>(undefined, [drivers.size, profile.data]);
@@ -89,14 +89,12 @@ export function FindingsPage() {
 
   return (
     <div ref={root}>
-      <Readout label="Verdict">
-        No effect · OR {fixed(runs.point.or, 2)} ({fixed(runs.point.lo, 2)}–{fixed(runs.point.hi, 2)})
-      </Readout>
 
       <section className="wrap fx-open" aria-labelledby="fx-q">
         <div data-intro>
           <Straight
             profile={profile.data}
+            pending={profile.loading}
             size="panel"
             d={{ mode: "pointer" }}
             labels={{ circuit: "Monza race", straight: STRAIGHT_NAME, driver: "NOR" }}
@@ -112,6 +110,9 @@ export function FindingsPage() {
           </p>
         </div>
 
+        <Readout label="Verdict">
+          No effect · OR {fixed(runs.point.or, 2)} ({fixed(runs.point.lo, 2)}–{fixed(runs.point.hi, 2)})
+        </Readout>
         <h1 id="fx-q" className="fx-h1" data-intro data-delay="0.15">
           {notes.question}
         </h1>

@@ -41,7 +41,16 @@ export function LandingPage() {
       <HeroStage
         progress={progress}
         label="The question"
-        trace={<Straight profile={hero.profile} size="hero" readout="float" d={{ mode: "progress", progress }} labels={hero.labels} />}
+        trace={
+          <Straight
+            profile={hero.profile}
+            pending={hero.status === "pending"}
+            size="hero"
+            readout="float"
+            d={{ mode: "progress", progress }}
+            labels={hero.labels}
+          />
+        }
       >
         <h1 className="hero-q" data-intro>
           {notes.question}
@@ -57,16 +66,17 @@ export function LandingPage() {
         </div>
       </HeroStage>
 
+      <div className="wrap">
+        <Readout>
+          <p>
+            No effect · frozen <span className="whitespace-nowrap">{frozenText()}</span>
+          </p>
+        </Readout>
+      </div>
       <Verdict />
-      <HowItIsRead profile={hero.profile} labels={hero.labels} />
+      <HowItIsRead profile={hero.profile} labels={hero.labels} pending={hero.status === "pending"} />
       <Season sessions={sessions.data ?? []} loading={sessions.loading} />
       <RecordStrip />
-
-      <Readout>
-        <p>
-          No effect · frozen <span className="whitespace-nowrap">{frozenText()}</span>
-        </p>
-      </Readout>
     </div>
   );
 }

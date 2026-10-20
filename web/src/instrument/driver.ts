@@ -8,6 +8,7 @@
  * same curve is used for the drawn path and for the cursor dot, so the dot sits on the line.
  */
 import type { ProfileBin, RegimeLabel, StraightProfileResponse } from "../lib/types";
+import { intoStraight, type StraightFrame } from "../lib/straights";
 
 export type Regime = RegimeLabel;
 
@@ -42,17 +43,23 @@ export const REGIME_VAR: Record<Regime, string> = {
   brake: "var(--regime-brake)",
 };
 
-/** Adapts the API response; the straight's length is the binned extent. */
-export function toProfile(r: StraightProfileResponse, regimes?: RegimeMark[]): Profile {
+/**
+ * Adapts the API response; the straight's length is the binned extent. Bins count metres from
+ * the straight's start, the response's cut-off fields count metres from the start/finish line:
+ * pass the straight's `frame` (lib/straights.ts) and they are converted to metres into the
+ * straight. Without a frame the cut-off fields are taken as already converted.
+ */
+export function toProfile(r: StraightProfileResponse, regimes?: RegimeMark[], frame?: StraightFrame | null): Profile {
   const bins = [...r.bins].sort((a, b) => a.d_start_m - b.d_start_m);
   const last = bins[bins.length - 1];
+  const m = (v: number | null) => (frame ? intoStraight(frame, v) : v);
   return {
     length_m: last ? last.d_start_m + r.bin_m : 0,
     bin_m: r.bin_m,
     bins,
-    cutoff_median_m: r.cutoff_median_m,
-    ci_low_m: r.ci_low_m,
-    ci_high_m: r.ci_high_m,
+    cutoff_median_m: m(r.cutoff_median_m),
+    ci_low_m: m(r.ci_low_m),
+    ci_high_m: m(r.ci_high_m),
     regimes,
   };
 }

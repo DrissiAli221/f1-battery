@@ -205,10 +205,19 @@
   padding-inline: var(--gutter);
 }
 
-/* Loading: the axis drawn, nothing on it. */
+/* No profile: the axis drawn, nothing on it. While it is still loading (`pending`), a light
+   runs along the axis (the shared .shimmer); once the answer is "none", it is still. */
 .st__skeleton {
   position: absolute;
   inset: auto 0 40px 0;
   height: 1px;
   background: var(--line-strong);
+}
+.st--panel .st__skeleton {
+  bottom: 36px;
+}
+.st__skeleton.shimmer {
+  position: absolute;
+  display: block;
+  height: 2px;
 }
