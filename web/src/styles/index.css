@@ -425,7 +425,7 @@
   }
   /* The trace's axis lands above the 55.55 % hairline; the copy owns the space below. */
   .hero .st--hero .st__plot {
-    height: clamp(180px, calc(43svh - 104px), 520px);
+    height: clamp(180px, calc(41svh - 104px), 520px);
   }
   .hero__cols {
     position: absolute;
@@ -463,7 +463,7 @@
 
   /* Hero copy rhythm (MonarcPulse): h1, 12 px, paragraph, 40 px, CTA row with 12 px gaps. */
   .hero-q {
-    max-width: 18ch;
+    max-width: 20ch;
     margin-left: -0.06em; /* optical margin at display size */
     font-size: var(--t-hero);
     font-weight: 600;
@@ -592,7 +592,7 @@
     padding-inline: var(--gutter);
   }
   .finale__line {
-    max-width: 18ch;
+    max-width: 20ch;
     font-size: var(--t-section);
     font-weight: 600;
     line-height: 1;

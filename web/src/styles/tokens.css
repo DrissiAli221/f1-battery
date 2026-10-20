@@ -87,7 +87,7 @@
   --t-section: clamp(2rem, 1.2rem + 3vw, 4.5rem);
   /* The hero question: display voice, one step down, so the copy and the trace share one
      viewport (the copy sits bottom-left under the trace; D29 addendum). */
-  --t-hero: clamp(2.25rem, 0.9rem + 5.6vw, 6.5rem);
+  --t-hero: clamp(2rem, 0.9rem + 4.6vw, 5.25rem);
   --t-body: 17px;
   --t-ui: 13px;
   --t-ui-s: 12px;
