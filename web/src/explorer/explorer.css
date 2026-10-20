@@ -41,8 +41,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(33, 32, 38, 0.6) 0%, rgba(33, 32, 38, 0.1) 28%, rgba(33, 32, 38, 0.35) 60%, var(--page-bg) 100%),
-    linear-gradient(90deg, rgba(33, 32, 38, 0.55) 0%, transparent 55%);
+    linear-gradient(180deg, rgba(3, 3, 3, 0.6) 0%, rgba(3, 3, 3, 0.1) 28%, rgba(3, 3, 3, 0.35) 60%, var(--page-bg) 100%),
+    linear-gradient(90deg, rgba(3, 3, 3, 0.55) 0%, transparent 55%);
 }
 .ss-photo--none {
   height: 220px;

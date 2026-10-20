@@ -291,8 +291,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
           <defs>
             <pattern id="tmap-chequer" width={0.14 * D} height={0.14 * D} patternUnits="userSpaceOnUse">
               <rect width={0.14 * D} height={0.14 * D} fill="#f2f2f4" />
-              <rect width={0.07 * D} height={0.07 * D} fill="#212026" />
-              <rect x={0.07 * D} y={0.07 * D} width={0.07 * D} height={0.07 * D} fill="#212026" />
+              <rect width={0.07 * D} height={0.07 * D} fill="#111114" />
+              <rect x={0.07 * D} y={0.07 * D} width={0.07 * D} height={0.07 * D} fill="#111114" />
             </pattern>
           </defs>
 

@@ -11,14 +11,14 @@
  */
 :root {
   /* ---- Ground and surfaces ---- */
-  /* Sampled from the owner's reference concept (DESIGN.md v3): a charcoal ground with a
-     faint blue cast, panels a step lighter. */
-  --page-bg: #212026;
-  --ground-2: #26252b;
-  --surface-1: #2a2930; /* cards */
-  --surface-2: #2c2a34; /* raised rows, table heads (the concept's panel) */
-  --surface-3: #35343e; /* chips, inputs, tooltips */
-  --surface-4: #403f4a; /* hover on surface-3 */
+  /* Deep neutral black ground (the owner's call); surfaces step up from it. The map's own
+     greys are sampled from the reference concept (track.css), the ground is not. */
+  --page-bg: #030303;
+  --ground-2: #0a0a0c;
+  --surface-1: #111115; /* cards */
+  --surface-2: #15151e; /* raised rows, table heads */
+  --surface-3: #1f1f27; /* chips, inputs, tooltips */
+  --surface-4: #2a2a34; /* hover on surface-3 */
   --line: rgba(255, 255, 255, 0.09);
   --line-2: rgba(255, 255, 255, 0.16);
   --line-strong: rgba(255, 255, 255, 0.3);
