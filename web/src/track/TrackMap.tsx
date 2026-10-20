@@ -153,7 +153,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     children,
   } = props;
   const autoHeight = props.autoHeight ?? true;
-  const maxHeight = props.maxHeight ?? 820;
+  const maxHeight = props.maxHeight ?? 900;
   const landscape = props.landscape ?? true;
   const [boxRef, { w: W, h: measuredH }] = useSize<HTMLDivElement>();
   const wide = W >= 560;
@@ -171,13 +171,16 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     return project(outline, W, H, padding, ref2, landscape);
   }, [outline, ref2, W, H, padding, landscape]);
 
-  // Scale factor against the reference render, from the track's drawn width.
-  const k = Math.max(0.7, Math.min(2.4, (W - padding.l - padding.r) / REF_W));
-  const gap = 6.5 * k;
-  const edgeW = 1.1;
-  const outer = gap + 2 * edgeW;
-  const lineW = Math.max(1.25, 1.5 * k * 0.8);
-  const chev = 3 * k;
+  // Scale factor against the reference render, from the track's drawn width. Proportions
+  // are taken off the reference crop with the dot as the unit D = 15 k: road edges 0.55 D
+  // apart and 0.08 D thick, the middle line 0.06 D, chevrons 0.15 D, corner rings 0.8 D.
+  const k = Math.max(0.8, Math.min(2.6, ((W - padding.l - padding.r) / REF_W) * 1.15));
+  const D = 15 * k;
+  const gap = 0.55 * D;
+  const edgeW = Math.max(1, 0.08 * D);
+  const outer = gap + edgeW;
+  const lineW = Math.max(1, 0.06 * D);
+  const chev = 0.15 * D;
 
   // Tags: HTML, positioned from the ticker (live) or from props (static).
   const tagEls = useRef(new Map<number | string, HTMLDivElement>());
@@ -197,20 +200,20 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     if (!T) return;
     const sorted = [...tags].sort((a, b) => wrap(a.d, T.lap) - wrap(b.d, T.lap));
     // Every dot is an obstacle for every chip (a chip must never sit on a neighbour's dot).
-    const r = 6.5 * k + 2 * k;
+    const r = 0.5 * D + 0.1 * D;
     const boxes: { x: number; y: number; w: number; h: number }[] = sorted.map((t) => {
       const q = T.pose(t.d);
       return { x: q.x - r, y: q.y - r, w: 2 * r, h: 2 * r };
     });
     // Corner rings too, when drawn.
-    if (corners) for (const c of T.corners) boxes.push({ x: c.lx - 7.5 * k, y: c.ly - 7.5 * k, w: 15 * k, h: 15 * k });
-    const h = 15 * k;
-    const lift = 6.5 * k + 1.5 * k; // dot radius plus the air above it
+    if (corners) for (const c of T.corners) boxes.push({ x: c.lx - 0.4 * D, y: c.ly - 0.4 * D, w: 0.8 * D, h: 0.8 * D });
+    const h = 0.75 * D;
+    const lift = 0.5 * D + 0.3 * D; // dot radius plus the air above it (the crop shows ~0.3 D)
     for (const [i, t] of sorted.entries()) {
       const q = T.pose(t.d);
       const el = tagEls.current.get(t.id);
       const chip = el?.querySelector<HTMLElement>(".tmap__tag-chip");
-      const w = chip?.offsetWidth || 30 * k;
+      const w = chip?.offsetWidth || 1.5 * D;
       const end = w * 0.32;
       const first: [number, number][] = i % 2 ? [[end, 0], [-end, 0]] : [[-end, 0], [end, 0]];
       const SLOTS: [number, number][] = [...first, [0, 0], [-end, -(h + 3)], [end, -(h + 3)], [0, -(h + 3)], [-end, -2 * (h + 3)], [end, -2 * (h + 3)]];
@@ -218,7 +221,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
       for (const [sx, sy] of SLOTS) {
         const bx = q.x + sx - w / 2;
         const by = q.y - lift - h + sy;
-        const hit = boxes.some((b) => bx < b.x + b.w + 3 && bx + w + 3 > b.x && by < b.y + b.h + 2 && by + h + 2 > b.y);
+        // Its own dot is not an obstacle (index i in `boxes`): the chip is meant to touch it.
+        const hit = boxes.some((b, bi) => bi !== i && bx < b.x + b.w + 3 && bx + w + 3 > b.x && by < b.y + b.h + 2 && by + h + 2 > b.y);
         if (!hit) {
           pick = [sx, sy];
           break;
@@ -279,14 +283,14 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   const sfLabelPos = sfPose ? (Math.abs(sfPose.nx) > Math.abs(sfPose.ny) ? (sfPose.nx < 0 ? "right" : "left") : sfPose.ny < 0 ? "below" : "above") : "below";
 
   return (
-    <div ref={boxRef} className={`tmap ${className}`} data-hires={T?.hires ? "1" : "0"} style={{ ["--k" as string]: k.toFixed(3), height: autoH ?? undefined }}>
+    <div ref={boxRef} className={`tmap ${className}`} data-hires={T?.hires ? "1" : "0"} style={{ ["--k" as string]: k.toFixed(3), ["--D" as string]: `${D.toFixed(2)}px`, height: autoH ?? undefined }}>
       {T && (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="tmap__svg" role="group" aria-label={label} onPointerMove={onMove}>
           <defs>
-            <pattern id="tmap-chequer" width={2.2 * k} height={2.2 * k} patternUnits="userSpaceOnUse">
-              <rect width={2.2 * k} height={2.2 * k} fill="#f2f2f4" />
-              <rect width={1.1 * k} height={1.1 * k} fill="#111114" />
-              <rect x={1.1 * k} y={1.1 * k} width={1.1 * k} height={1.1 * k} fill="#111114" />
+            <pattern id="tmap-chequer" width={0.14 * D} height={0.14 * D} patternUnits="userSpaceOnUse">
+              <rect width={0.14 * D} height={0.14 * D} fill="#f2f2f4" />
+              <rect width={0.07 * D} height={0.07 * D} fill="#1a1a1f" />
+              <rect x={0.07 * D} y={0.07 * D} width={0.07 * D} height={0.07 * D} fill="#1a1a1f" />
             </pattern>
           </defs>
 
@@ -325,7 +329,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
                     <path d={d} className="tmap__lit" strokeWidth={outer} />
                     <path d={d} className="tmap__lit-ground" strokeWidth={gap} />
                     {straightLabels && (
-                      <text x={q.x + q.nx * (outer + 9 * k)} y={q.y + q.ny * (outer + 9 * k) + 3 * k} textAnchor="middle" className="tmap__sid" fontSize={7 * k}>
+                      <text x={q.x + q.nx * (outer + 0.6 * D)} y={q.y + q.ny * (outer + 0.6 * D) + 0.2 * D} textAnchor="middle" className="tmap__sid" fontSize={0.42 * D}>
                         S{s.straight_id}
                       </text>
                     )}
@@ -348,11 +352,11 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             ))}
           </g>
           {arrows && (
-            <g className="tmap__chevrons" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={lineW}>
+            <g className="tmap__chevrons" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={Math.max(0.8, 0.05 * D)}>
               {runs
                 .filter((r) => r.kind !== "band")
                 .flatMap((r, i) =>
-                  chevrons(T, r, 55 * k).map((c, j) => (
+                  chevrons(T, r, 3.6 * D).map((c, j) => (
                     <path
                       key={`${i}-${j}`}
                       d={`M${(-chev).toFixed(1)},${(-chev).toFixed(1)}L${(chev * 0.4).toFixed(1)},0L${(-chev).toFixed(1)},${chev.toFixed(1)}`}
@@ -369,7 +373,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             {ticks.map((t) => {
               const side = t.side ?? 1;
               const inner = side === 1 ? outer / 2 + 2 : -(outer / 2 + 2);
-              const far = side === 1 ? outer / 2 + 9 * k : -(outer / 2 + 9 * k);
+              const far = side === 1 ? outer / 2 + 0.6 * D : -(outer / 2 + 0.6 * D);
               return (
                 <g key={t.id} stroke={t.colour} fill="none" className={t.on ? "is-on" : ""}>
                   {t.lo !== null && t.lo !== undefined && t.hi !== null && t.hi !== undefined && (
@@ -384,7 +388,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
           {/* Start/finish: the chequer across the road. */}
           {sf && sfPose && (
             <g className="tmap__sf" transform={`translate(${sfPose.x.toFixed(1)},${sfPose.y.toFixed(1)}) rotate(${sfPose.deg.toFixed(1)})`} pointerEvents="none">
-              <rect x={-2.2 * k} y={-(gap / 2 + 1.1 * k)} width={4.4 * k} height={gap + 2.2 * k} fill="url(#tmap-chequer)" />
+              <rect x={-0.14 * D} y={-(gap / 2 + 0.07 * D)} width={0.28 * D} height={gap + 0.14 * D} fill="url(#tmap-chequer)" />
             </g>
           )}
 
@@ -393,8 +397,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             <g className="tmap__corners" pointerEvents="none">
               {T.corners.map((c, i) => (
                 <g key={`${c.n}-${i}`} transform={`translate(${c.lx.toFixed(1)},${c.ly.toFixed(1)})`}>
-                  <circle r={7.5 * k} className="tmap__corner" />
-                  <text y={2.6 * k} textAnchor="middle" className="tmap__corner-n" fontSize={7.5 * k}>
+                  <circle r={0.4 * D} className="tmap__corner" strokeWidth={Math.max(0.8, 0.05 * D)} />
+                  <text y={0.14 * D} textAnchor="middle" className="tmap__corner-n" fontSize={0.4 * D}>
                     {c.n}
                   </text>
                 </g>
@@ -404,8 +408,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
 
           {sel && cursor && (
             <g ref={dotRef} className="tmap__dot" pointerEvents="none">
-              <circle r={gap / 2 + 2.5 * k} className="tmap__dot-ring" />
-              <circle r={2.2 * k} className="tmap__dot-core" />
+              <circle r={gap / 2 + 0.15 * D} className="tmap__dot-ring" />
+              <circle r={0.14 * D} className="tmap__dot-core" />
             </g>
           )}
         </svg>
@@ -437,7 +441,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
       {sf && sfPose && T && (
         <span
           className="tmap__sf-label"
-          style={{ left: sfPose.x - sfPose.nx * (outer / 2 + 9 * k), top: sfPose.y - sfPose.ny * (outer / 2 + 9 * k) }}
+          style={{ left: sfPose.x - sfPose.nx * (outer / 2 + 0.55 * D), top: sfPose.y - sfPose.ny * (outer / 2 + 0.55 * D) }}
           data-pos={sfLabelPos}
           aria-hidden="true"
         >

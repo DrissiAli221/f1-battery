@@ -12,9 +12,11 @@
   min-height: 200px;
   overflow: visible;
   animation: tmap-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-  --road-line: #a6a6ae;
+  --D: 15px;
+  --road-line: #b9b9c1;
   --road-line-dim: #5a5a63;
   --road-ground: var(--page-bg);
+  --tag-grey: #8d8d94;
 }
 @keyframes tmap-in {
   from {
@@ -115,20 +117,19 @@
 /* Corners: outlined, outside the bend */
 .tmap__corner {
   fill: var(--page-bg);
-  stroke: #8d8d96;
-  stroke-width: 1;
+  stroke: #9a9aa2;
 }
 .tmap__corner-n {
   font-family: var(--font-display);
   font-weight: 600;
-  fill: #cfcfd6;
+  fill: #d6d6dc;
 }
 
 /* Start/finish label */
 .tmap__sf-label {
   position: absolute;
   font-family: var(--font-display);
-  font-size: calc(7px * var(--k));
+  font-size: calc(var(--D) * 0.38);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -176,55 +177,54 @@
   transform: translate(var(--x), var(--y));
   transition: opacity 0.25s;
 }
-/* The dot: 13 px at reference scale, on the line, with a ground-colour ring that cuts the road lines. */
+/* The dot, D across, on the line; the road lines simply pass behind it. */
 .tmap__tag-dot {
   position: absolute;
-  left: calc(-6.5px * var(--k));
-  top: calc(-6.5px * var(--k));
-  width: calc(13px * var(--k));
-  height: calc(13px * var(--k));
+  left: calc(var(--D) * -0.5);
+  top: calc(var(--D) * -0.5);
+  width: var(--D);
+  height: var(--D);
   border-radius: 50%;
   background: var(--team);
-  box-shadow: 0 0 0 calc(2px * var(--k)) var(--road-ground);
 }
-/* The chip: 30 x 15 at reference scale, just above the dot; --tx/--ty come from the layout pass. */
+/* The chip: 0.75 D tall, type 0.42 D, touching the top of the dot; --tx/--ty come from the layout pass. */
 .tmap__tag-chip {
   position: absolute;
   left: 0;
   top: 0;
   display: inline-flex;
   align-items: baseline;
-  gap: calc(4px * var(--k));
-  height: calc(15px * var(--k));
-  padding: 0 calc(5px * var(--k));
-  border-radius: calc(3px * var(--k));
+  gap: calc(var(--D) * 0.25);
+  height: calc(var(--D) * 0.75);
+  padding: 0 calc(var(--D) * 0.3);
+  border-radius: calc(var(--D) * 0.16);
   background: var(--team);
   color: #fff;
   font-family: var(--font-display);
-  font-size: calc(8px * var(--k));
+  font-size: calc(var(--D) * 0.42);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: calc(15px * var(--k));
+  letter-spacing: 0.03em;
+  line-height: calc(var(--D) * 0.75);
   white-space: nowrap;
-  transform: translate(calc(-50% + var(--tx, 0px)), calc(-100% - 8px * var(--k) + var(--ty, 0px)));
+  transform: translate(calc(-50% + var(--tx, 0px)), calc(-100% - var(--D) * 0.8 + var(--ty, 0px)));
 }
 .tmap__tag-chip small {
   font-family: var(--font-mono);
-  font-size: calc(7px * var(--k));
+  font-size: calc(var(--D) * 0.36);
   font-weight: 500;
   letter-spacing: 0;
   opacity: 0.9;
 }
-.tmap__tag.is-dim .tmap__tag-dot,
-.tmap__tag.is-dim .tmap__tag-chip {
-  background: #8a8a92;
+.tmap__tag.is-dim .tmap__tag-dot {
+  background: #a8a8ae;
 }
 .tmap__tag.is-dim .tmap__tag-chip {
-  color: #1a1a1f;
+  background: var(--tag-grey);
+  color: #fff;
 }
 .tmap__tag.is-on {
   z-index: 2;
 }
 .tmap__tag.is-on .tmap__tag-dot {
-  box-shadow: 0 0 0 calc(2px * var(--k)) var(--road-ground), 0 0 0 calc(3.2px * var(--k)) #fff;
+  box-shadow: 0 0 0 calc(var(--D) * 0.08) #fff;
 }
