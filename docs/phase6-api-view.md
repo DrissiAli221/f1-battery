@@ -132,6 +132,8 @@ after the test has run); it holds aggregates only. The spot checks, limits and
 wording live in `web/src/content/findings-notes.json`, curated from
 `docs/findings.md`.
 
+Straight speed profile: `python -m f1battery_model.profile --session <key> --run-id <uuid>` (or `--all-sessions`, from `model/` with the venv active) adds `speed_bin_<n>` (median kph) and `accel_bin_<n>` (median m/s²) rows with `lap_number` 0 per driver per straight to an existing run; bin n is [50n, 50n+50) m from the straight's start. It is a cross-lap aggregate over clean laps at the same 50 m resolution as the regime bins, never a single lap; re-running deletes and rewrites those variables.
+
 Straight names: the API labels every curated straight "Straight", so the view takes names from `web/src/content/straight-names.json` (circuit_key, then straight_id; Monza and the Singapore pit straight only) and otherwise shows "Straight N · a–b km", derived from `start_pct`/`end_pct` and the outline length.
 
 The "Method log" page at `#/method` needs no API: it renders `web/src/content/method-log.json`, a curated record of what was tried, the pre-set check, what was found and what changed, with source links to the repo on GitHub. `docs/method-log.md` is generated from the same file with `node web/scripts/gen-method-log.mjs` (run from the repo root); edit the JSON, not the markdown.
