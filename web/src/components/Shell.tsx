@@ -131,7 +131,7 @@ function Footer() {
             <a className="link" href="https://multiviewer.app" target="_blank" rel="noreferrer">
               MultiViewer
             </a>{" "}
-            circuits API. Flags by{" "}
+            circuits API (unofficial, not endorsed). Flags by{" "}
             <a className="link" href="https://flagpedia.net" target="_blank" rel="noreferrer">
               Flagpedia
             </a>

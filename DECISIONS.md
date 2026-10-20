@@ -584,6 +584,13 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   are not in MultiViewer for 2026: they get a hand-written name entry and
   the API outline, with no corner numbers. MultiViewer's round and sponsor
   titles are not used (they come from whichever season it last indexed).
+  The centreline is not a D9 "location sample": it carries no time, speed,
+  driver or session, only the shape of the road, the same thing a printed
+  circuit map shows. MultiViewer publishes no licence for this endpoint; it
+  is used on the private, non-commercial basis of D31 and credited as
+  unofficial in the footer. The frame agreement was checked at Monza; the
+  view verifies it per circuit (monotone snap, one full turn, every outline
+  point within 30 m of the centreline) and otherwise draws the API outline.
 - Not shown, because the data does not support it: tyre compounds (no stint
   endpoint), sector-style purple/green on estimated cut-offs (an earlier
   cut-off is not "faster"), a full-lap speed trace (D30: per-straight

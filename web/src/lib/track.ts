@@ -263,37 +263,65 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
   let sOf: number[];
   if (hires) {
     sOf = [];
+    const nR = R.length - 1; // ring vertices (the last repeats the first)
     let prev = -1;
+    let prevIdx = -1;
     let turns = 0;
+    const snapQ: number[] = [];
+    const seg = (p: { x: number; y: number }, a: number, c: number) => {
+      const vx = R[c].x - R[a].x;
+      const vy = R[c].y - R[a].y;
+      const L2 = vx * vx + vy * vy || 1;
+      const t = Math.max(0, Math.min(1, ((p.x - R[a].x) * vx + (p.y - R[a].y) * vy) / L2));
+      return { q: (R[a].x + vx * t - p.x) ** 2 + (R[a].y + vy * t - p.y) ** 2, s: cum[a] + (cum[c] - cum[a]) * t };
+    };
     for (const p of D) {
+      // Nearest ring vertex: a global search for the first point, then only a forward window
+      // from the previous match, so a crossover (Suzuka) cannot jump to the other branch.
       let bi = 0;
       let bq = Infinity;
-      for (let j = 0; j < R.length - 1; j++) {
+      const from = prevIdx < 0 ? 0 : prevIdx - 4;
+      const span = prevIdx < 0 ? nR : Math.min(nR, 80);
+      for (let k = 0; k < span; k++) {
+        const j = (((from + k) % nR) + nR) % nR;
         const q = (R[j].x - p.x) ** 2 + (R[j].y - p.y) ** 2;
         if (q < bq) {
           bq = q;
           bi = j;
         }
       }
-      // Project onto the segment after or before the vertex for sub-vertex precision.
-      let sv = cum[bi];
-      const seg = (a: number, c: number) => {
-        const vx = R[c].x - R[a].x;
-        const vy = R[c].y - R[a].y;
-        const L2 = vx * vx + vy * vy || 1;
-        const t = Math.max(0, Math.min(1, ((p.x - R[a].x) * vx + (p.y - R[a].y) * vy) / L2));
-        return { t, q: (R[a].x + vx * t - p.x) ** 2 + (R[a].y + vy * t - p.y) ** 2, s: cum[a] + (cum[c] - cum[a]) * t };
-      };
-      const f = seg(bi, bi + 1);
-      const g = bi > 0 ? seg(bi - 1, bi) : f;
-      sv = f.q <= g.q ? f.s : g.s;
+      // Sub-vertex precision: project onto the segment after or before the vertex.
+      const f = seg(p, bi, bi + 1);
+      // The segment before vertex 0 is the closing one (nR-1 -> nR), whose s runs up to `total`.
+      const g = bi === 0 ? seg(p, nR - 1, nR) : seg(p, bi - 1, bi);
+      const sv = f.q <= g.q ? f.s : g.s;
+      snapQ.push(Math.min(f.q, g.q));
       if (prev >= 0 && sv < prev - total / 2) turns++;
+      else if (prev >= 0 && sv > prev + total / 2) turns--;
       sOf.push(sv + turns * total);
       prev = sv;
+      prevIdx = bi;
     }
-    // Normalise so s(0) = 0 and the lap ends at `total`.
+    // Normalise so s(0) = 0, then check the map is usable: monotone, one full turn, and no
+    // outline point further than ~30 m from the centreline (the frames might not agree on
+    // some circuit). Otherwise draw the road from the outline itself.
     const s0 = sOf[0];
     sOf = sOf.map((v) => v - s0);
+    // A frame mismatch puts most points far off the road; one odd stretch of the outline
+    // (a reference lap through the pit lane, a data gap) is a local deviation the snap
+    // absorbs. So: the 90th percentile of the snap distance under 30 m, the worst under
+    // 150 m. Outline noise can also project a point a few metres behind the previous one:
+    // clamp those, and give up only on a real reversal (over 60 m back).
+    const sorted = [...snapQ].sort((a, b) => a - b);
+    const p90 = Math.sqrt(sorted[Math.floor(sorted.length * 0.9)] ?? 0) / s / 10;
+    const worstM = Math.sqrt(sorted[sorted.length - 1] ?? 0) / s / 10;
+    let ok = Math.abs(sOf[sOf.length - 1] - total) < total * 0.05 && p90 <= 30 && worstM <= 150;
+    for (let i = 1; ok && i < sOf.length; i++) {
+      if (sOf[i] < sOf[i - 1] - 600 * s) ok = false;
+      else if (sOf[i] < sOf[i - 1]) sOf[i] = sOf[i - 1];
+    }
+    if (import.meta.env.DEV && !ok) console.debug("track: centreline rejected", { end: sOf[sOf.length - 1] / total, p90, worstM });
+    if (!ok) return project(outline, W, H, pad, ref ? { ...ref, outline: null } : null);
   } else {
     sOf = cum.slice(0, D.length);
   }

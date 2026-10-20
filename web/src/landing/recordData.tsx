@@ -1,3 +1,4 @@
+import findings from "../content/findings.json";
 import { Fragment, type ReactNode } from "react";
 
 /*
@@ -47,7 +48,7 @@ export const RECORD: Record<string, { status: Status; line: string; crossed?: bo
   },
   "frozen-hypothesis-test": {
     status: "fail",
-    line: "The frozen bar was not met: odds ratio 0.92, interval 0.81 to 1.04, and the permutation control failed.",
+    line: `The frozen bar was not met: odds ratio ${findings.runs.point.or.toFixed(2)}, interval ${findings.runs.point.lo.toFixed(2)} to ${findings.runs.point.hi.toFixed(2)}, and the permutation control failed.`,
   },
 };
 
