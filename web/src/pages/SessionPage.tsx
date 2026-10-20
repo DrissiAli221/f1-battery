@@ -1,35 +1,53 @@
-import { useEffect, useMemo, useState } from "react";
-import { DriverCard, DriverPicker } from "../components/Driver";
-import { Empty, ErrorNote, Eyebrow, Loading, Reveal, SectionHead } from "../components/ui";
-import { CutoffChart } from "../explorer/CutoffChart";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { Readout } from "../components/Readout";
+import { SectionIntro } from "../components/Section";
+import { CutoffChart, type ChartDriver } from "../explorer/CutoffChart";
 import { useCutoffs, useRegimes, useSessionData } from "../explorer/data";
-import { DistanceStrip } from "../explorer/DistanceStrip";
-import { LapScrubber } from "../explorer/LapScrubber";
-import { StraightDetail, type StraightDriver } from "../explorer/StraightDetail";
-import { SummaryTable } from "../explorer/SummaryTable";
+import { DriverSelect } from "../explorer/DriverSelect";
+import { LapAxis } from "../explorer/LapAxis";
+import { defaultStraight, regimeIndex, rel, relMedian, useProfile, useStraightProfile } from "../explorer/profile";
+import { createStore, useStore, type Store } from "../explorer/store";
+import { StraightPanel, type PanelReading } from "../explorer/StraightPanel";
+import { Tower } from "../explorer/Tower";
 import { REGIME_VAR, TrackMap, type MarkDriver } from "../explorer/TrackMap";
-import { date, int, signed } from "../lib/format";
+import { REGIME_WORD } from "../instrument/driver";
+import { date, int } from "../lib/format";
 import { href, useQueryState } from "../lib/router";
 import { driverCode, teamColour } from "../lib/teams";
-import { regimeAt, regimeRuns, straightAt } from "../lib/track";
-import { useRemote, url } from "../lib/api";
+import { regimeRuns } from "../lib/track";
+import { straightName } from "../lib/types";
+import { scrollToTarget, usePage } from "../motion";
+import "../explorer/explorer.css";
 
 const num = (v: string | null) => (v !== null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : null);
+const NB = " ";
 
+/*
+ * The session explorer (DESIGN.md "Session page"): one instrument, no cards. A header with the
+ * circuit at display size and the two driver pickers; the stage (the map in columns 1 to 7,
+ * the straight in 8 to 12, one shared cursor); the race as a lap axis; then, with room, the
+ * cut-off by lap and the tower. State that can be shared lives in the query string
+ * (?driver=&compare=&straight=&lap=); the cursor lives in a store so a pointer move never
+ * re-renders the page.
+ */
 export function SessionPage({ sessionKey }: { sessionKey: number }) {
   const data = useSessionData(sessionKey);
-  const models = useRemote<{ items: { model_version: string; run_id: string }[] }>(url("/models"));
   const [query, setQuery] = useQueryState();
-  const [cursorHover, setCursorHover] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [cursor] = useState(() => createStore<number | null>(null));
+  const [reading] = useState(() => createStore<PanelReading | null>(null));
 
   const { session, drivers, withResults, medians, laps, straights, lap: lapLen } = data;
   const has = !!session?.has_results;
-  const enabled = useMemo(() => new Set(withResults.map((d) => d.driver_number)), [withResults]);
+  const enabled = useMemo(
+    () => new Set((has ? withResults : drivers).map((d) => d.driver_number)),
+    [has, withResults, drivers],
+  );
 
-  // Selection: query string first (shareable), validated against the data, then defaults.
+  // Selection: the query string first (shareable), validated against the data, then defaults.
   const qDriver = num(query.get("driver"));
-  const driver = qDriver !== null && (enabled.has(qDriver) || (!has && drivers.some((d) => d.driver_number === qDriver))) ? qDriver : data.defaultDriver;
+  const driver = qDriver !== null && enabled.has(qDriver) ? qDriver : data.defaultDriver;
   const qCompare = num(query.get("compare"));
   const compare = qCompare !== null && qCompare !== driver && enabled.has(qCompare) ? qCompare : null;
   const pDriver = drivers.find((d) => d.driver_number === driver) ?? null;
@@ -39,9 +57,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
 
   const qStraight = num(query.get("straight"));
   const straightId =
-    qStraight !== null && straights.some((s) => s.straight_id === qStraight)
-      ? qStraight
-      : (straights.find((s) => pMed?.has(s.straight_id)) ?? straights[0])?.straight_id ?? null;
+    qStraight !== null && straights.some((s) => s.straight_id === qStraight) ? qStraight : defaultStraight(straights, (id) => !!pMed?.has(id));
   const straight = straights.find((s) => s.straight_id === straightId) ?? null;
 
   const pCut = useCutoffs(sessionKey, driver, has);
@@ -55,7 +71,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
     return s;
   }, [pCut, straightId]);
 
-  // Default lap: the fastest green lap with a cut on the selected straight.
+  // Default lap: the fastest green lap with a cut-off on the selected straight.
   const defaultLap = useMemo(() => {
     const green = pLaps.filter((l) => l.green);
     const pool = green.filter((l) => withCut.has(l.lap_number));
@@ -66,184 +82,155 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
   const qLap = num(query.get("lap"));
   const lapNo = qLap !== null && pLaps.some((l) => l.lap_number === qLap) ? qLap : defaultLap;
 
-  // Regimes for the shown lap. While playing, the previous lap's colours stay and the request
-  // waits for the pause, to stay inside the API's per-IP rate limit.
+  // Regimes for the shown lap. While playing, the colours of the lap the play started on stay
+  // and the request waits for the pause, to stay inside the API's per-IP rate limit.
   const [regLap, setRegLap] = useState<number | null>(null);
   useEffect(() => {
     if (!playing) setRegLap(lapNo);
   }, [lapNo, playing]);
   const regimes = useRegimes(sessionKey, driver, regLap, has);
   const runs = useMemo(() => (regimes.data && lapLen ? regimeRuns(regimes.data.bins, lapLen) : []), [regimes.data, lapLen]);
+  const regIdx = useMemo(() => regimeIndex(regimes.data?.bins), [regimes.data]);
 
-  // Play through the laps.
+  // The speed profiles (D30): the selected driver, and the compare driver as a second trace.
+  const pState = useProfile(sessionKey, straightId, driver, has);
+  const cState = useProfile(sessionKey, straightId, compare, has);
+  const pProfile = useStraightProfile(pState, straight, lapLen, regIdx);
+  const cProfile = useStraightProfile(cState, straight, lapLen, null);
+
+  const lapCutLap = straightId !== null && lapNo !== null ? pCut?.get(lapNo)?.get(straightId) ?? null : null;
+  const lapCut = straight && lapLen ? rel(straight, lapCutLap, lapLen) : null;
+  const median = straight && lapLen ? relMedian(straight, pMed?.get(straight.straight_id), lapLen) : null;
+  const cMedian = straight && lapLen ? relMedian(straight, cMed?.get(straight.straight_id), lapLen) : null;
+  const length = pProfile?.length_m ?? straight?.len ?? 0;
+
+  // The scrubber owns the cursor: a new lap or straight parks it on that lap's cut-off.
+  useEffect(() => {
+    if (!length) return;
+    cursor.set(Math.max(0, Math.min(length, lapCut ?? median?.m ?? length / 2)));
+  }, [cursor, straightId, lapNo, lapCut, median?.m, length]);
+
+  // Play: one lap every 0.65 s on the GSAP ticker (the page's one clock).
+  const play = useRef({ laps: pLaps, lap: lapNo });
+  play.current = { laps: pLaps, lap: lapNo };
   useEffect(() => {
     if (!playing) return;
-    const t = window.setInterval(() => {
-      const i = pLaps.findIndex((l) => l.lap_number === lapNo);
-      if (i < 0 || i >= pLaps.length - 1) {
+    let acc = 0;
+    const tick = (_t: number, dt: number) => {
+      acc += dt;
+      if (acc < 650) return;
+      acc = 0;
+      const { laps: list, lap } = play.current;
+      const i = list.findIndex((l) => l.lap_number === lap);
+      if (i < 0 || i >= list.length - 1) {
         setPlaying(false);
         return;
       }
-      setQuery({ lap: pLaps[i + 1].lap_number });
-    }, 450);
-    return () => window.clearInterval(t);
-  }, [playing, pLaps, lapNo, setQuery]);
+      setQuery({ lap: list[i + 1].lap_number });
+    };
+    gsap.ticker.add(tick);
+    return () => gsap.ticker.remove(tick);
+  }, [playing, setQuery]);
 
-  useEffect(() => {
-    setPlaying(false);
-    setCursorHover(null);
-  }, [sessionKey]);
+  const root = usePage<HTMLDivElement>(undefined, [data.ready, session !== null, data.summary !== null]);
+  const onReading = useCallback((r: PanelReading) => reading.set(r), [reading]);
 
-  const lapCut = straightId !== null && lapNo !== null ? pCut?.get(lapNo)?.get(straightId) ?? null : null;
-  const pm = straightId !== null ? pMed?.get(straightId) : undefined;
-  const restCursor = lapCut ?? pm?.m ?? null;
-  const cursor = cursorHover ?? restCursor;
-
-  if (data.sessionsError) return <PageError error={data.sessionsError} />;
+  if (data.sessionsError) {
+    return (
+      <div ref={root} className="xp">
+        <p className="wrap xp-plain">The session could not be loaded: {data.sessionsError.message}</p>
+      </div>
+    );
+  }
   if (!session && data.sessionsLoaded) {
     return (
-      <div className="wrap section">
-        <Empty title="Unknown session">
-          There is no session {sessionKey}. <a className="prose-link" href={href.sessions()}>Back to the sessions</a>.
-        </Empty>
+      <div ref={root} className="xp">
+        <h1 className="wrap xp-plain">
+          There is no session {sessionKey}.{" "}
+          <a className="link" href={href.sessions()}>
+            Back to the sessions
+          </a>
+        </h1>
       </div>
     );
   }
   if (!session) {
     return (
-      <div className="wrap section">
-        <Loading label="Loading the session" className="h-[60vh]" />
+      <div ref={root} className="xp">
+        <PageSkeleton />
       </div>
     );
   }
 
   const pickDriver = (n: number | null) => {
     if (n === null) return;
+    setPlaying(false);
     setQuery({ driver: n, compare: n === compare ? null : compare, lap: null, straight: null });
   };
   const pickCompare = (n: number | null) => setQuery({ compare: n });
   const pickStraight = (id: number) => setQuery({ straight: id });
   const pickLap = (n: number) => setQuery({ lap: n });
 
-  const pMark: MarkDriver | null = pDriver ? { code: driverCode(pDriver), colour: teamColour(pDriver), medians: pMed } : null;
-  const cMark: MarkDriver | null = cDriver ? { code: driverCode(cDriver), colour: teamColour(cDriver), medians: cMed } : null;
-  const greenOf = (n: number | null) => (n === null ? 0 : (laps.get(n) ?? []).filter((l) => l.green).length);
-  const pStraight: StraightDriver | null = pDriver ? { d: pDriver, colour: teamColour(pDriver), medians: pMed, cutoffs: pCut, greenLaps: greenOf(driver) } : null;
-  const cStraight: StraightDriver | null = cDriver ? { d: cDriver, colour: teamColour(cDriver), medians: cMed, cutoffs: cCut, greenLaps: greenOf(compare) } : null;
+  const pCode = pDriver ? driverCode(pDriver) : "";
+  const cCode = cDriver ? driverCode(cDriver) : "";
+  const pMark: MarkDriver | null = pDriver ? { code: pCode, colour: "var(--ink)", medians: pMed } : null;
+  const cMark: MarkDriver | null = cDriver ? { code: cCode, colour: teamColour(cDriver), medians: cMed } : null;
   const nLaps = Math.max(0, ...[...laps.values()].map((l) => l.length));
-  const model = models.data?.items[0];
-  const straightTag = straight ? `S${straight.straight_id}` : "";
+  const sName = straight ? straightName(straight) : "";
+  const regLapShown = regimes.data?.lap ?? null;
+  const mode = pState.kind === "ready" ? "ready" : pState.kind === "loading" ? "loading" : "none";
+  // Per-lap cut-offs on the selected straight, for the fallback drawing without a profile.
+  const stripOf = (code: string, colour: string, cuts: typeof pCut, med: typeof median) => ({
+    code,
+    colour,
+    median: med,
+    cuts: straight && lapLen ? [...(cuts ?? new Map()).values()].flatMap((m) => (m.has(straight.straight_id) ? [rel(straight, m.get(straight.straight_id), lapLen) as number] : [])) : [],
+  });
+  const strips = [
+    ...(pDriver ? [stripOf(pCode, "var(--ink)", pCut, median)] : []),
+    ...(cDriver ? [stripOf(cCode, teamColour(cDriver), cCut, cMedian)] : []),
+  ];
+  const chartDrivers: ChartDriver[] = [];
+  if (pDriver) chartDrivers.push({ number: pDriver.driver_number, code: pCode, colour: "var(--ink)", hollow: false, cutoffs: pCut, median: straight ? pMed?.get(straight.straight_id) : undefined });
+  if (cDriver) chartDrivers.push({ number: cDriver.driver_number, code: cCode, colour: teamColour(cDriver), hollow: true, cutoffs: cCut, median: straight ? cMed?.get(straight.straight_id) : undefined });
 
   return (
-    <>
-      {/* ---------- Header: session meta and driver pickers ---------- */}
-      <section className="wrap pb-14 pt-14 md:pb-20 md:pt-20">
-        <nav className="mb-8 flex items-center gap-2 text-[14px] text-ink-3" aria-label="Breadcrumb">
-          <a className="prose-link" href={href.sessions()}>
-            Sessions
-          </a>
-          <span aria-hidden="true">/</span>
-          <span className="text-ink-2">{session.circuit_short_name}</span>
-        </nav>
-        <div className="grid gap-12 xl:grid-cols-12 xl:items-end">
-          <div className="xl:col-span-6">
-            <Eyebrow>
-              Explorer · session <span className="num">{sessionKey}</span>
-            </Eyebrow>
-            <h1 className="mt-5 break-words font-display text-[36px] font-bold uppercase leading-[1.05] text-ink-head sm:text-[48px] md:text-[64px]">
-              {session.circuit_short_name}
-              <span className="block text-ink-3">{session.session_name}</span>
-            </h1>
-            <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4 text-[15px]">
-              <Meta label="Date" value={date(session.date_start)} />
-              <Meta label="Laps" value={nLaps ? String(nLaps) : "–"} />
-              <Meta label="Lap length" value={lapLen ? `${int(lapLen)} m` : "–"} />
-              <Meta label="Model" value={model ? `${model.model_version} · run ${model.run_id.slice(0, 8)}` : "–"} />
-            </dl>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:col-span-6">
-            {pDriver ? (
-              <DriverCard
-                d={pDriver}
-                role="Selected"
-                stat={straight && has ? { label: `${straightTag} median cut`, value: pm ? `${int(pm.m)} m` : "none" } : undefined}
-                action={
-                  <DriverPicker drivers={drivers} value={driver} onChange={pickDriver} enabled={has ? enabled : new Set(drivers.map((d) => d.driver_number))} label="Choose the driver">
-                    Change
-                  </DriverPicker>
-                }
-              />
-            ) : (
-              <div className="h-[196px] rounded-xs bg-surface" />
-            )}
-            {cDriver ? (
-              <DriverCard
-                d={cDriver}
-                role="Compare"
-                stat={
-                  straight
-                    ? {
-                        label: `Δ median ${straightTag}`,
-                        value: pm && cMed?.get(straight.straight_id) ? `${signed(cMed.get(straight.straight_id)!.m - pm.m)} m` : "–",
-                      }
-                    : undefined
-                }
-                action={
-                  <DriverPicker drivers={drivers} value={compare} onChange={pickCompare} enabled={enabled} label="Choose a driver to compare" allowNone exclude={driver}>
-                    Change
-                  </DriverPicker>
-                }
-              />
-            ) : (
-              <div className="flex h-[176px] flex-col justify-between rounded-xs border-2 border-dashed border-line p-5 md:h-[196px]">
-                <div>
-                  <p className="font-display text-[15px] font-bold uppercase text-ink-2">Compare</p>
-                  <p className="mt-2 max-w-[30ch] text-[14px] text-ink-3">Add a second driver: hollow marks on the outer edge of the track.</p>
-                </div>
-                {has && (
-                  <div className="self-start">
-                    <DriverPicker drivers={drivers} value={null} onChange={pickCompare} enabled={enabled} label="Choose a driver to compare" exclude={driver}>
-                      Add a driver
-                    </DriverPicker>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+    <div ref={root} className="xp">
+      {/* ---------- Header: the circuit, the session, the two drivers ---------- */}
+      <div className="wrap xp-head">
+        <div className="xp-head__title">
+          <h1 className="xp-h1" data-intro>
+            {session.circuit_short_name ?? `Session ${sessionKey}`}
+          </h1>
+          <p className="xp-head__meta" data-intro>
+            {session.session_name} · {date(session.date_start, "short")}
+            {nLaps > 0 && ` · ${nLaps}${NB}laps`}
+            {lapLen && ` · ${int(lapLen)}${NB}m a lap`}
+          </p>
         </div>
-        {!has && (
-          <div className="mt-10 rounded-xs border border-warn/40 bg-warn/10 px-5 py-4 text-[15px] text-ink-2" role="status">
-            <strong className="text-ink-head">Model results are not published for this session.</strong> The track and laps come from ingested
-            telemetry only; cut-offs, regimes and the summary stay empty until the model has run.
-          </div>
-        )}
-      </section>
+        <div className="xp-head__pick" data-intro>
+          <DriverSelect drivers={drivers} value={driver} onChange={pickDriver} enabled={enabled} label="Driver" align="right" />
+          {has && (
+            <>
+              <span className="xp-vs" aria-hidden="true">
+                vs
+              </span>
+              <DriverSelect drivers={drivers} value={compare} onChange={pickCompare} enabled={enabled} label="Compare with" allowNone exclude={driver} align="right" />
+            </>
+          )}
+        </div>
+      </div>
+      {!has && (
+        <p className="wrap xp-plain xp-plain--s" role="status">
+          Model results are not published for this session yet: the map shows the circuit only, without cut-offs or regimes.
+        </p>
+      )}
 
-      {/* ---------- Hero: the track map ---------- */}
-      <section id="map" className="wrap scroll-mt-20" aria-label="Track map">
-        <div className="overflow-hidden rounded-s border border-line-2 bg-frame">
-          <div className="flex flex-wrap items-start justify-between gap-x-10 gap-y-5 border-b border-line-2 px-4 py-5 md:px-8 md:py-6">
-            <MapLegend
-              code={pDriver ? driverCode(pDriver) : ""}
-              compare={cDriver ? { code: driverCode(cDriver), colour: teamColour(cDriver) } : null}
-              regimeLap={regimes.data?.lap ?? null}
-              hasRegimes={runs.length > 0}
-            />
-            {lapLen && cursor !== null && (
-              <Readout
-                d={cursor}
-                lap={lapLen}
-                live={cursorHover !== null}
-                lapNo={lapNo}
-                zone={straightAt(straights, cursor, lapLen)}
-                regime={regimeAt(runs, cursor)}
-                regimeLap={regimes.data?.lap ?? null}
-                code={pDriver ? driverCode(pDriver) : ""}
-              />
-            )}
-          </div>
-          <div className="grid-bg relative h-[62vh] min-h-[420px] max-h-[900px] md:h-[74vh] md:min-h-[560px]">
-            {data.outline && data.outline.points.length > 1 && straights.length >= 0 && pMark ? (
+      {/* ---------- The stage: map and straight, one cursor ---------- */}
+      <section className="wrap xp-stage" aria-labelledby="xp-sname">
+        <div className="xp-stage__map" data-reveal>
+          <div className="xp-stage__mapbox">
+            {data.outline && data.outline.points.length > 1 && pMark ? (
               <TrackMap
                 outline={data.outline}
                 straights={straights}
@@ -252,296 +239,257 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
                 compare={cMark}
                 selected={straightId}
                 onSelect={pickStraight}
-                lapCut={lapCut}
+                lapCut={lapCutLap}
                 cursor={cursor}
-                onHover={setCursorHover}
-                animateKey={`${sessionKey}`}
+                length={length || null}
+                animateKey={String(sessionKey)}
               />
             ) : data.outlineError ? (
-              <div className="p-8">
-                <ErrorNote error={data.outlineError} />
-              </div>
-            ) : data.outline && data.outline.points.length <= 1 ? (
-              <div className="grid h-full place-items-center p-8">
-                <Empty title="No outline for this circuit">The reference lap has no location samples.</Empty>
-              </div>
+              <p className="xp-plain xp-plain--s">The circuit outline could not be loaded: {data.outlineError.message}</p>
+            ) : data.outline ? (
+              <p className="xp-plain xp-plain--s">The reference lap has no position samples, so there is no map for this circuit.</p>
             ) : (
-              <Loading label="Drawing the track" className="h-full" />
+              <div className="xp-skel-map" aria-label="Drawing the circuit" role="img" />
             )}
           </div>
-          {/* Distance strip and scrubber, attached under the map. */}
-          <div className="border-t border-line-2 bg-surface px-4 pb-8 pt-8 md:px-8">
-            {lapLen && pMark && (
-              <DistanceStrip
-                lap={lapLen}
-                straights={straights}
-                runs={runs}
-                primary={pMark}
-                compare={cMark}
-                selected={straightId}
-                onSelect={pickStraight}
-                cursor={cursor}
-                onHover={setCursorHover}
-              />
-            )}
-            <div className="mt-8 border-t border-line-2 pt-8">
-              {pLaps.length ? (
-                <LapScrubber
-                  laps={pLaps}
-                  lap={lapNo}
-                  onLap={(n) => {
-                    setPlaying(false);
-                    pickLap(n);
-                  }}
-                  playing={playing}
-                  onPlay={() => {
-                    if (!playing && pLaps[pLaps.length - 1]?.lap_number === lapNo) pickLap(pLaps[0].lap_number);
-                    setPlaying((p) => !p);
-                  }}
-                  withCut={withCut}
-                  straightLabel={straightTag || "straight"}
-                  lapCut={lapCut}
-                />
-              ) : (
-                <p className="text-ink-3">{data.ready ? "No timed laps for this driver." : "Loading laps"}</p>
+          {straights.length > 0 && (
+            <ul className="xp-strlist" aria-label="Straights">
+              {straights.map((s) => (
+                <li key={s.straight_id}>
+                  <button
+                    type="button"
+                    className="xp-strbtn"
+                    aria-pressed={s.straight_id === straightId}
+                    onClick={() => pickStraight(s.straight_id)}
+                  >
+                    <span className="num">S{s.straight_id}</span> {straightName(s)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="xp-stage__side" data-reveal>
+          {straight && lapLen ? (
+            <>
+              <div className="xp-side__head">
+                <p className="xp-side__sid">
+                  S{straight.straight_id} · {int(length)}
+                  {NB}m
+                </p>
+                <h2 id="xp-sname" className="xp-side__name">
+                  {sName}
+                </h2>
+              </div>
+              {has && (
+                <dl className="xp-figs">
+                  <div>
+                    <dt>{pCode} median est.</dt>
+                    <dd>
+                      {median ? `${int(median.m)}${NB}m` : "none"}
+                      {median && median.lo !== null && median.hi !== null && (
+                        <span className="xp-figs__ci">
+                          {int(median.lo)}–{int(median.hi)}
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                  {cDriver && (
+                    <div>
+                      <dt>{cCode} median est.</dt>
+                      <dd>
+                        {cMedian ? `${int(cMedian.m)}${NB}m` : "none"}
+                        {cMedian && cMedian.lo !== null && cMedian.hi !== null && (
+                          <span className="xp-figs__ci">
+                            {int(cMedian.lo)}–{int(cMedian.hi)}
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt>
+                      {pCode} lap {lapNo ?? "–"} est.
+                    </dt>
+                    <dd>{lapCut !== null ? `${int(lapCut)}${NB}m` : "no cut-off"}</dd>
+                  </div>
+                </dl>
               )}
+              {has ? (
+                pState.kind === "error" ? (
+                  <p className="xp-plain xp-plain--s">The speed profile could not be loaded: {pState.error.message}</p>
+                ) : (
+                  <StraightPanel
+                    mode={mode}
+                    profile={pProfile}
+                    compare={cProfile && cDriver ? { profile: cProfile, colour: teamColour(cDriver) } : null}
+                    length={length}
+                    d0={straight.d0}
+                    lap={lapLen}
+                    regimes={regIdx}
+                    median={median}
+                    lapCut={lapCut}
+                    lapNo={lapNo}
+                    cursor={cursor}
+                    onReading={onReading}
+                    labels={{ circuit: session.circuit_short_name ?? undefined, straight: sName, driver: pCode }}
+                    strips={strips}
+                  />
+                )
+              ) : null}
+              {has && (
+                <ul className="xp-legend">
+                  {mode === "ready" && (
+                    <li>
+                      <i className="xp-sw" style={{ background: "var(--ink)", height: 2 }} /> {pCode}, median speed of clean laps (est.)
+                    </li>
+                  )}
+                  {mode === "ready" && cProfile && cDriver && (
+                    <li>
+                      <i className="xp-sw" style={{ background: teamColour(cDriver), height: 1 }} /> {cCode}
+                    </li>
+                  )}
+                  <li>
+                    <i className="xp-sw xp-sw--hatch" /> cut-off interval (95{NB}%)
+                  </li>
+                  {regLapShown !== null &&
+                    (["deploy", "plateau", "lift", "brake"] as const).map((k) => (
+                      <li key={k}>
+                        <i className="xp-sw" style={{ background: REGIME_VAR[k] }} /> {REGIME_WORD[k]}
+                      </li>
+                    ))}
+                  {regLapShown !== null && <li className="xp-legend__k">regimes of lap {regLapShown}</li>}
+                </ul>
+              )}
+            </>
+          ) : (
+            <div className="xp-straight">
+              <div className="st st--panel">
+                <div className="st__plot" aria-busy="true">
+                  <div className="st__skeleton" />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* ---------- Selected straight ---------- */}
-      {has && straight && pStraight && lapLen && (
-        <section id="straight" className="wrap section">
-          <SectionHead
-            eyebrow="Selected straight"
-            title={
-              <>
-                {straightTag} ·{" "}
-                {/* Generated names carry distances; numbers stay out of Orbitron. */}
-                {/\d/.test(straight.label ?? "") ? <span className="font-sans normal-case tracking-[-0.03em]">{straight.label}</span> : straight.label}
-              </>
-            }
-          >
-            Where {driverCode(pStraight.d)}'s electrical deployment stops on this straight: the point where acceleration drops to the
-            engine-only plateau. Estimated from speed, not measured.
-          </SectionHead>
-          <div className="mb-14 grid grid-cols-3 gap-2 sm:flex sm:gap-8" role="tablist" aria-label="Straight">
-            {straights.map((s) => {
-              const hasCut = !!pMed?.has(s.straight_id);
-              return (
-                <button
-                  key={s.straight_id}
-                  type="button"
-                  role="tab"
-                  aria-selected={s.straight_id === straightId}
-                  className={`tab text-left sm:min-w-[120px] ${hasCut ? "" : "is-empty"}`}
-                  onClick={() => pickStraight(s.straight_id)}
-                >
-                  <span className="block font-display text-[15px] font-bold">S{s.straight_id}</span>
-                  <span className="block truncate text-[12px]">{hasCut ? s.label : "no cut"}</span>
-                </button>
-              );
-            })}
-          </div>
-          <Reveal>
-            <StraightDetail straight={straight} lap={lapLen} selectedLap={lapNo} primary={pStraight} compare={cStraight} onLap={pickLap} />
-          </Reveal>
-        </section>
-      )}
+      {/* ---------- The race: laps as the distance axis ---------- */}
+      <section className="wrap xp-scrub" aria-label="Laps" data-reveal>
+        {pLaps.length ? (
+          <LapAxis
+            laps={pLaps}
+            lap={lapNo}
+            onLap={(n) => {
+              setPlaying(false);
+              pickLap(n);
+            }}
+            playing={playing}
+            onPlay={() => {
+              if (!playing && pLaps[pLaps.length - 1]?.lap_number === lapNo) pickLap(pLaps[0].lap_number);
+              setPlaying((p) => !p);
+            }}
+            withCut={withCut}
+            code={pCode}
+          />
+        ) : data.ready ? (
+          <p className="xp-plain xp-plain--s">No timed laps for this driver.</p>
+        ) : (
+          <div className="xp-skel-axis" role="img" aria-label="Loading the laps" />
+        )}
+      </section>
 
       {/* ---------- Cut-off by lap ---------- */}
-      {has && straight && pStraight && lapLen && (
-        <section id="chart" className="border-y border-line-2 bg-surface/40">
-          <div className="wrap section">
-            <SectionHead
-              eyebrow="Cut-off by lap"
-              title={`${straightTag} across the ${session.session_name.toLowerCase()}`}
-              aside={
-                <ul className="flex flex-wrap gap-x-8 gap-y-3 text-[14px]">
-                  <LegendDot code={driverCode(pStraight.d)} colour={pStraight.colour} hollow={false} />
-                  {cStraight && <LegendDot code={driverCode(cStraight.d)} colour={cStraight.colour} hollow />}
-                  <li className="flex items-center gap-2 text-ink-3">
-                    <i className="inline-block h-3 w-6 bg-white/15" /> median and 95 % range
-                  </li>
-                </ul>
-              }
-            >
-              One point per lap with a cut-off on this straight. The red line is the scrubber's lap; click a point to move there.
-            </SectionHead>
-            <CutoffChart straight={straight} lap={lapLen} laps={pLaps} selectedLap={lapNo} onLap={pickLap} primary={pStraight} compare={cStraight} />
+      {has && straight && lapLen && pDriver && (
+        <section className="wrap xp-sec" aria-labelledby="xp-bylap">
+          <SectionIntro id="xp-bylap" title={<>Cut-off by lap on {sName}</>}>
+            One dot per lap with a cut-off, in metres from the start of the straight. Each band is a driver's median with its 95{NB}%
+            interval, an estimate. Click a dot to put that lap on the stage.
+          </SectionIntro>
+          <div className="xp-sec__body" data-reveal>
+            <ul className="xp-legend xp-legend--top">
+              <li>
+                <i className="xp-dotsw" style={{ background: "var(--ink)" }} /> {pCode}
+              </li>
+              {cDriver && (
+                <li>
+                  <i className="xp-dotsw" style={{ border: `1.5px solid ${teamColour(cDriver)}` }} /> {cCode}
+                </li>
+              )}
+              <li>
+                <i className="xp-sw" style={{ background: "var(--accent)", width: 2, height: 12 }} /> lap {lapNo ?? "–"}
+              </li>
+            </ul>
+            <CutoffChart
+              straight={straight}
+              lapLen={lapLen}
+              laps={pLaps}
+              selectedLap={lapNo}
+              onLap={pickLap}
+              drivers={chartDrivers}
+              loading={pCut === null}
+            />
           </div>
         </section>
       )}
 
-      {/* ---------- Session summary ---------- */}
-      {has && data.summary && lapLen && (
-        <section id="summary" className="wrap section">
-          <SectionHead
-            eyebrow={
-              <>
-                Session summary · <span className="num">{withResults.length}</span> drivers with a cut-off
-              </>
-            }
-            title="Median cut-off per straight"
-          >
-            Ranked by the selected straight, latest cut-off first. The regime bar is the share of each green lap spent deploying, on the
-            plateau, lifting and braking.
-          </SectionHead>
-          <SummaryTable
-            rows={data.summary}
-            straights={straights}
-            lap={lapLen}
-            selected={straightId}
-            primary={driver}
-            compare={compare}
-            onPick={(n) => {
-              pickDriver(n);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
+      {/* ---------- The tower ---------- */}
+      {has && lapLen && (
+        <section className="wrap xp-sec" aria-labelledby="xp-tower">
+          <SectionIntro id="xp-tower" title="Median cut-off per straight">
+            Every driver with a cut-off, ranked by {straight ? `S${straight.straight_id}` : "the selected straight"}, latest first. The bar on
+            the right is the share of green laps spent deploying, on the plateau, lifting and braking. Select a row to put that driver on the stage.
+          </SectionIntro>
+          <div className="xp-sec__body">
+            {data.summary ? (
+              <Tower
+                rows={data.summary}
+                straights={straights}
+                lapLen={lapLen}
+                selected={straightId}
+                primary={driver}
+                compare={compare}
+                onPick={(n) => {
+                  pickDriver(n);
+                  scrollToTarget(0);
+                }}
+              />
+            ) : (
+              <div className="xp-skel-rows" role="img" aria-label="Loading the tower" />
+            )}
+          </div>
         </section>
       )}
-      {!has && <div className="h-24" />}
-    </>
-  );
-}
 
-function Meta({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="label">{label}</dt>
-      <dd className="num mt-1 text-ink-head">{value}</dd>
+      {has && <PageReadout reading={reading} code={pCode} lapNo={regLapShown ?? lapNo} sid={straight?.straight_id ?? null} />}
     </div>
   );
 }
 
-function LegendDot({ code, colour, hollow }: { code: string; colour: string; hollow: boolean }) {
+/** The fixed bottom-right readout: where the cursor is, what the car is doing there. */
+function PageReadout({ reading, code, lapNo, sid }: { reading: Store<PanelReading | null>; code: string; lapNo: number | null; sid: number | null }) {
+  const r = useStore(reading);
+  if (!r) return null;
+  const parts = [`${int(r.d)}${NB}m`];
+  if (r.v !== null) parts.push(`${int(r.v)}${NB}kph`);
+  if (r.regime) parts.push(REGIME_WORD[r.regime]);
   return (
-    <li className="flex items-center gap-2">
-      <svg width="14" height="14" aria-hidden="true">
-        <circle cx="7" cy="7" r="5" fill={hollow ? "none" : colour} stroke={colour} strokeWidth="1.8" />
-      </svg>
-      <span className="font-display font-bold uppercase text-ink-head">{code}</span>
-    </li>
+    <Readout label="Cursor">
+      <p className="xp-ro__main">{parts.join(" · ")}</p>
+      <p className="xp-ro__sub">
+        {code} · lap {lapNo ?? "–"}
+        {sid !== null && ` · S${sid}`}
+      </p>
+    </Readout>
   );
 }
 
-function MapLegend({
-  code,
-  compare,
-  regimeLap,
-  hasRegimes,
-}: {
-  code: string;
-  compare: { code: string; colour: string } | null;
-  regimeLap: number | null;
-  hasRegimes: boolean;
-}) {
+function PageSkeleton() {
   return (
-    <div>
-      <p className="cap">
-        {hasRegimes ? (
-          <>
-            Regimes · {code} lap <span className="num">{regimeLap}</span>
-          </>
-        ) : (
-          "Regimes not available"
-        )}
-      </p>
-      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-ink-2">
-        {(["deploy", "plateau", "lift", "brake"] as const).map((k) => (
-          <li key={k} className="flex items-center gap-2">
-            <i className="inline-block h-[3px] w-4 rounded" style={{ background: REGIME_VAR[k] }} />
-            {k}
-          </li>
-        ))}
-      </ul>
-      <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-ink-3">
-        <li className="flex items-center gap-2">
-          <i className="inline-block h-3.5 w-[3px] bg-ink-head" /> {code} median
-        </li>
-        <li className="flex items-center gap-2">
-          <i className="inline-block h-[3px] w-4 bg-ink-head" /> range (95 %)
-        </li>
-        <li className="flex items-center gap-2">
-          <svg width="12" height="12" viewBox="-7 -7 15 14" aria-hidden="true">
-            <path d="M8,0 L-6,-7 L-2.5,0 L-6,7 Z" fill="var(--ink-head)" />
-          </svg>
-          this lap's cut
-        </li>
-        {compare && (
-          <li className="flex items-center gap-2">
-            <i className="inline-block h-3.5 w-[5px] rounded-[1px] border-[1.5px]" style={{ borderColor: compare.colour }} /> {compare.code}, outer edge
-          </li>
-        )}
-      </ul>
+    <div className="wrap xp-head xp-head--skel" role="img" aria-label="Loading the session">
+      <div className="xp-skel-title" />
+      <div className="xp-skel-axis" />
     </div>
   );
 }
-
-function Readout({
-  d,
-  lap,
-  live,
-  lapNo,
-  zone,
-  regime,
-  regimeLap,
-  code,
-}: {
-  d: number;
-  lap: number;
-  live: boolean;
-  lapNo: number | null;
-  zone: { straight_id: number; label: string | null } | null;
-  regime: string | null;
-  regimeLap: number | null;
-  code: string;
-}) {
-  return (
-    <div className="hidden min-w-[220px] md:block md:text-right" aria-live="polite">
-      <p className="cap">
-        Cursor ·{" "}
-        {live ? (
-          "hover"
-        ) : (
-          <>
-            lap <span className="num">{lapNo ?? "–"}</span> cut
-          </>
-        )}
-      </p>
-      <p className="mt-2 flex items-baseline gap-4 md:justify-end">
-        <span className="num text-[26px] leading-none text-ink-head">{int(d)} m</span>
-        <span className="num text-[13px] text-ink-3">{((d / lap) * 100).toFixed(1)} %</span>
-      </p>
-      <p className="mt-1 text-[14px] text-ink-2">
-        {zone ? (
-          <>
-            <span className="font-display text-[12px] font-bold text-ink-head">S{zone.straight_id}</span> · {zone.label}
-          </>
-        ) : (
-          "between straights"
-        )}
-      </p>
-      {regime && (
-        <p className="mt-1 flex items-center gap-2 text-[14px] text-ink-2 md:justify-end">
-          <i className="inline-block h-[3px] w-3 rounded" style={{ background: REGIME_VAR[regime as keyof typeof REGIME_VAR] }} />
-          {regime === "other" ? "unlabelled" : regime}
-          <span className="text-ink-3">
-            · {code} L{regimeLap}
-          </span>
-        </p>
-      )}
-    </div>
-  );
-}
-
-function PageError({ error }: { error: Error }) {
-  return (
-    <div className="wrap section">
-      <ErrorNote error={error} />
-    </div>
-  );
-}
-
