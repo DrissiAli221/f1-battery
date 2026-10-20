@@ -1,13 +1,15 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { href, type Route } from "../lib/router";
+import { useRouteChange } from "../motion";
+import { Cta } from "./Cta";
+import { ReadoutSlot } from "./Readout";
 
 type NavKey = "findings" | "explorer" | "method" | "live";
 
 const NAV: { key: NavKey; label: string; to: string }[] = [
   { key: "findings", label: "Findings", to: href.findings },
   { key: "explorer", label: "Explorer", to: href.sessions() },
-  { key: "method", label: "Method log", to: href.method },
+  { key: "method", label: "Method", to: href.method },
   { key: "live", label: "Live", to: href.live() },
 ];
 
@@ -29,150 +31,128 @@ function activeKey(route: Route): NavKey | null {
 
 export function Wordmark() {
   return (
-    <a href={href.landing} className="relative flex items-center gap-3" aria-label="Energy/26, home">
-      <span className="slash h-5" aria-hidden="true">
-        <i className="w-2 bg-brand" />
-        <i className="w-1 bg-ink-head" />
-      </span>
-      <span className="font-display text-[17px] font-extrabold uppercase tracking-[0.04em] text-ink-head">
-        Energy<span className="text-brand">/</span>26
-      </span>
+    <a href={href.landing} className="wordmark draw" aria-label="Energy/26, home">
+      Energy<span className="text-accent">/</span>26
     </a>
   );
 }
 
+/*
+ * Navbar, ported from the owner's MonarcPulse site (D29 addendum). Desktop (lg): fixed 64 px
+ * bar, a 1200 px row; transparent over a hero (links white with mix-blend-difference) and
+ * glass once the hero's bottom passes 64 px (HeroStage toggles `html.nav-clear` from a
+ * ScrollTrigger); glass on every other route. Phones: a floating glass pill with a three-bar
+ * button and a drop panel.
+ */
 function Header({ route }: { route: Route }) {
-  const [open, setOpen] = useState(false);
   const active = activeKey(route);
+  const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
   useEffect(() => setOpen(false), [route]);
-  const cta = route.name === "landing" ? { label: "Open the explorer", to: href.sessions() } : { label: "Sessions", to: href.sessions() };
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      button.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+  const links = NAV.map((n) => (
+    <li key={n.key}>
+      <a href={n.to} className="draw navlink" aria-current={active === n.key ? "page" : undefined}>
+        {n.label}
+      </a>
+    </li>
+  ));
   return (
-    <header className="sticky top-0 z-40 h-header border-b border-line-2 bg-surface/90 backdrop-blur">
-      <nav className="wrap relative flex h-full items-center justify-between" aria-label="Primary">
-        <div className="livery hidden lg:flex" style={{ right: 260 }} aria-hidden="true">
-          <i style={{ width: 22 }} />
-          <i style={{ width: 8, opacity: 0.7 }} />
-          <i style={{ width: 4, opacity: 0.5, marginLeft: 18 }} />
-          <i style={{ width: 34, marginLeft: 26 }} />
-          <i style={{ width: 12, opacity: 0.6 }} />
+    <header>
+      <nav className="navd" aria-label="Primary">
+        <div className="navd__row">
+          <Wordmark />
+          <div className="navd__right">
+            <ul className="navd__links">{links}</ul>
+            <Cta href={href.sessions()} size="sm">
+              Open the explorer
+            </Cta>
+          </div>
         </div>
-        <Wordmark />
-        <div className="hidden h-full items-stretch gap-2 md:flex">
-          {NAV.map((n) => (
-            <a
-              key={n.key}
-              href={n.to}
-              aria-current={active === n.key ? "page" : undefined}
-              className={`relative flex items-center px-3 text-[15px] transition-colors ${
-                active === n.key ? "font-bold text-ink-head" : "font-medium text-ink-2 hover:text-ink-head"
-              }`}
-            >
-              {n.label}
-              {active === n.key && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-brand" />}
-            </a>
-          ))}
-        </div>
-        <a href={cta.to} className="btn btn-secondary btn-sm relative hidden md:inline-flex">
-          {cta.label}
-        </a>
-        <button
-          type="button"
-          className="relative grid h-10 w-10 place-items-center rounded-full shadow-[inset_0_0_0_2px_var(--line)] md:hidden"
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-          aria-controls="menu-sheet"
-          onClick={() => setOpen((o) => !o)}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            {open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 8h16M4 16h16" />}
-          </svg>
-        </button>
       </nav>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            id="menu-sheet"
-            className="absolute inset-x-0 top-header border-b border-line bg-surface px-4 pb-6 pt-2 md:hidden"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.18 }}
+      <nav className="navm" aria-label="Primary, compact">
+        <div className="navm__row">
+          <Wordmark />
+          <button
+            ref={button}
+            type="button"
+            className={`navm__burger ${open ? "is-open" : ""}`}
+            aria-expanded={open}
+            aria-controls="navm-panel"
+            onClick={() => setOpen((o) => !o)}
           >
-            {NAV.map((n) => (
-              <a key={n.key} href={n.to} className="block border-b border-line py-4 font-display text-[18px] font-bold uppercase">
-                {n.label}
-              </a>
-            ))}
-            <a href={cta.to} className="btn btn-primary mt-6">
-              {cta.label}
-            </a>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <span className="sr-only">{open ? "Close the menu" : "Open the menu"}</span>
+            <span className="navm__bars" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </button>
+        </div>
+        <div id="navm-panel" className={`navm__panel ${open ? "is-open" : ""}`}>
+          <ul className="navm__links">{links}</ul>
+          <Cta href={href.sessions()} className="mt-6">
+            Open the explorer
+          </Cta>
+        </div>
+      </nav>
     </header>
   );
 }
 
 function Footer() {
   return (
-    <footer className="mt-auto border-t border-line-2 bg-surface">
-      <div className="wrap py-16 md:py-20">
-        <div className="mb-14 flex items-start gap-3 rounded-xs bg-warn px-5 py-4 text-[15px] font-semibold text-[var(--color-text-on-color-inverse)]">
-          <svg className="mt-0.5 shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-            <path d="M12 3l10 18H2L12 3zM12 10v5M12 18v.5" />
-          </svg>
-          Estimates derived from public telemetry, not measured battery data.
-        </div>
-        <div className="grid gap-10 text-[14px] leading-relaxed text-ink-3 md:grid-cols-4">
-          <div>
-            <Wordmark />
-            <p className="mt-4">Not affiliated with Formula 1, the FIA or FOM.</p>
-          </div>
-          <div>
-            <p className="label mb-3">Data</p>
-            <p>
-              Timing and telemetry from{" "}
-              <a className="prose-link" href="https://openf1.org" target="_blank" rel="noreferrer">
-                OpenF1
-              </a>{" "}
-              (CC BY-NC-SA 4.0), non-commercial. The site serves derived values only.
-            </p>
-          </div>
-          <div>
-            <p className="label mb-3">Images</p>
-            <p>
-              Driver headshots and team logos load at runtime from the Formula 1 media CDN via OpenF1's{" "}
-              <code className="num text-[13px]">headshot_url</code>; they remain the property of their owners.
-            </p>
-          </div>
-          <div>
-            <p className="label mb-3">Design</p>
-            <p>
-              UI based on PRNDL, an unofficial student-made F1 design system (Figma Community), used with permission.
-            </p>
-          </div>
-        </div>
+    <footer className="finale">
+      <div className="finale__in">
+        <p className="finale__line">Estimates from public telemetry. Never measured battery data.</p>
+        <ul className="finale__credits">
+          <li>
+            Timing and telemetry from{" "}
+            <a className="link" href="https://openf1.org" target="_blank" rel="noreferrer">
+              OpenF1
+            </a>{" "}
+            (CC BY-NC-SA 4.0), non-commercial. The site serves derived values only.
+          </li>
+          <li>Driver headshots and team logos load at runtime from their sources and remain their owners' property.</li>
+          <li>Built on PRNDL, an unofficial student-made F1 design system, used with permission.</li>
+          <li>Not affiliated with Formula 1, the FIA or FOM.</li>
+        </ul>
       </div>
     </footer>
   );
 }
 
-export function Shell({ route, children }: { route: Route; children: ReactNode }) {
+export function Shell({ route, path, children }: { route: Route; path: string; children: ReactNode }) {
+  const main = useRef<HTMLElement>(null);
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useRouteChange(path, main);
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* A button, not an anchor: "#main" would be read as a route by the hash router. */}
-      <button
-        type="button"
-        onClick={() => document.getElementById("main")?.focus()}
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xxs focus:bg-surface focus:px-3 focus:py-2"
-      >
-        Skip to content
-      </button>
-      <Header route={route} />
-      <main id="main" tabIndex={-1} className="flex-1 outline-none">
-        {children}
-      </main>
-      <Footer />
-    </div>
+    <ReadoutSlot.Provider value={slot}>
+      <div className="flex min-h-screen flex-col">
+        {/* A button, not an anchor: "#main" would be read as a route by the hash router. */}
+        <button type="button" onClick={() => main.current?.focus()} className="skip-link">
+          Skip to content
+        </button>
+        <Header route={route} />
+        <main id="main" ref={main} tabIndex={-1} className="flex-1 outline-none">
+          {children}
+        </main>
+        <Footer />
+      </div>
+      <div className="readout" ref={setSlot} />
+      <div id="curtain" aria-hidden="true">
+        <div className="curtain__panel" />
+        <div className="curtain__line" />
+      </div>
+    </ReadoutSlot.Provider>
   );
 }

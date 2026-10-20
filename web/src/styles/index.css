@@ -7,39 +7,644 @@
 @layer base {
   html {
     background: var(--page-bg);
-    scroll-padding-top: calc(var(--header-h) + 16px);
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
   }
   body {
     background: var(--page-bg);
     color: var(--ink);
     font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 1.55;
+    font-size: var(--t-body);
+    line-height: 1.5;
     letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
   }
   a {
     color: inherit;
   }
   ::selection {
-    background: var(--brand);
+    background: var(--accent);
     color: #fff;
   }
   :focus-visible {
-    outline: 2px solid var(--color-border-focus-state);
+    outline: 2px solid var(--accent);
     outline-offset: 3px;
+  }
+  #main:focus {
+    outline: none;
+  }
+  /* Lenis */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis:not(.lenis-autoToggle).lenis-stopped {
+    overflow: clip;
+  }
+  .lenis [data-lenis-prevent] {
+    overscroll-behavior: contain;
   }
 }
 
 @layer components {
-  /* Page container: wide, with 16 px gutters on phones growing to 64 px. */
-  .wrap {
-    @apply mx-auto w-full max-w-container px-4 sm:px-8 xl:px-16;
+
+  /* ================= Shell (DESIGN.md "Grid and rhythm") ================= */
+  .skip-link {
+    position: fixed;
+    left: var(--gutter);
+    top: 12px;
+    z-index: calc(var(--z-curtain) + 1);
+    padding: 0.6em 1em;
+    background: var(--ink);
+    color: var(--page-bg);
+    font-size: var(--t-ui);
+    translate: 0 -200%;
   }
-  /* Vertical rhythm between sections. */
+  .skip-link:focus-visible {
+    translate: none;
+  }
+
+  /* ---- Navbar (ported from MonarcPulse; Shell.tsx) ---- */
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-head);
+    white-space: nowrap;
+  }
+  .navlink {
+    display: inline-block;
+    padding-block: 4px;
+    font-size: 16px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--muted);
+    transition: color 0.3s, background-size 0.45s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+  .navlink[aria-current="page"],
+  .navlink:focus-visible {
+    color: var(--ink-head);
+  }
+  @media (hover: hover) {
+    .navlink:hover {
+      color: var(--ink-head);
+    }
+  }
+  .glass {
+    background: rgba(12, 12, 17, 0.78);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  /* Desktop bar: fixed, 64 px; glass unless a hero is under it. */
+  .navd {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: var(--z-header);
+    display: none;
+    height: var(--header-h);
+    align-items: center;
+    justify-content: center;
+    background: rgba(12, 12, 17, 0.78);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    transition: background-color 0.3s, backdrop-filter 0.3s, -webkit-backdrop-filter 0.3s;
+  }
+  @media (min-width: 1024px) {
+    .navd {
+      display: flex;
+    }
+  }
+  html.nav-clear .navd {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  html.nav-clear .navd .navd__links {
+    mix-blend-mode: difference;
+  }
+  html.nav-clear .navd .navlink {
+    color: #fff;
+  }
+  .navd__row {
+    display: flex;
+    width: 100%;
+    max-width: var(--container);
+    height: 32px;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: var(--gutter);
+  }
+  .navd__right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .navd__links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .navd__links .navlink {
+    margin-inline: 4px;
+  }
+
+  /* Phones: the floating glass pill and its drop panel. Scrolls away with the page. */
+  .navm {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    z-index: var(--z-header);
+    width: min(90%, 700px);
+    translate: -50% 0;
+    border: 1px solid var(--line);
+    border-radius: 32px;
+    background: rgba(12, 12, 17, 0.78);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  @media (min-width: 1024px) {
+    .navm {
+      display: none;
+    }
+  }
+  .navm__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+  }
+  .navm__burger {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    color: var(--ink);
+  }
+  .navm__bars {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    translate: -50% -50%;
+  }
+  .navm__bars i {
+    position: absolute;
+    display: block;
+    width: 100%;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+    transition: rotate 0.5s ease-in-out, translate 0.5s ease-in-out, opacity 0.5s ease-in-out;
+  }
+  .navm__bars i:nth-child(1) {
+    translate: 0 -6px;
+  }
+  .navm__bars i:nth-child(3) {
+    translate: 0 6px;
+  }
+  .navm__burger.is-open .navm__bars i:nth-child(1) {
+    translate: 0 0;
+    rotate: 45deg;
+  }
+  .navm__burger.is-open .navm__bars i:nth-child(2) {
+    opacity: 0;
+  }
+  .navm__burger.is-open .navm__bars i:nth-child(3) {
+    translate: 0 0;
+    rotate: -45deg;
+  }
+  .navm__panel {
+    position: absolute;
+    inset: calc(100% + 1rem) 0 auto 0;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--ground-2);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+    visibility: hidden;
+    opacity: 0;
+    translate: 0 -16px;
+    transition: opacity 0.3s ease-in-out, translate 0.3s ease-in-out, visibility 0.3s;
+  }
+  .navm__panel.is-open {
+    visibility: visible;
+    opacity: 1;
+    translate: 0 0;
+  }
+  .navm__links > li {
+    border-bottom: 1px solid var(--line);
+  }
+  .navm__links .navlink {
+    display: block;
+    width: fit-content;
+    padding-block: 14px;
+    color: var(--ink);
+  }
+
+  /* Content clears the fixed bar (desktop) or the pill (phones), except under a hero. */
+  #main {
+    padding-top: 96px;
+  }
+  @media (min-width: 1024px) {
+    #main {
+      padding-top: var(--header-h);
+    }
+  }
+  html.has-hero #main {
+    padding-top: 0;
+  }
+
+  /* ---- Buttons (Cta.tsx): accent label cell + ink arrow cell; square ---- */
+  .cta {
+    --cta-h: 40px;
+    --ease-cta: cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: block;
+    width: fit-content;
+    height: var(--cta-h);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--ink-head);
+    transition: scale 0.15s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .cta--sm {
+    --cta-h: 32px;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+  }
+  .cta:active {
+    scale: 0.98;
+  }
+  .cta__clip {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    height: 100%;
+    align-items: stretch;
+    overflow: hidden;
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 0.42s var(--ease-cta);
+  }
+  .cta__fill {
+    position: absolute;
+    inset: 0 calc(var(--cta-h) + 4px) 0 0;
+    background: var(--accent);
+    transition: right 0.42s var(--ease-cta);
+  }
+  .cta__cell {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: var(--cta-h);
+    background: var(--ink);
+  }
+  .cta__label {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    padding-inline: 16px 20px;
+    white-space: nowrap;
+    transition: translate 0.42s var(--ease-cta);
+  }
+  .cta--sm .cta__label {
+    padding-inline: 12px 16px;
+  }
+  .cta__go {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    width: var(--cta-h);
+    align-items: center;
+    justify-content: center;
+    color: var(--page-bg);
+  }
+  .cta__track {
+    position: relative;
+    display: block;
+    width: 16px;
+    height: 16px;
+    overflow: hidden;
+  }
+  .cta__track > .cta__arrow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: translate 0.42s var(--ease-cta);
+  }
+  .cta__track > .cta__arrow:first-child {
+    translate: -26px 0;
+  }
+  .cta:focus-visible .cta__clip {
+    clip-path: inset(0 0 0 4px);
+  }
+  .cta:focus-visible .cta__fill {
+    right: var(--cta-h);
+  }
+  .cta:focus-visible .cta__label {
+    translate: 4px 0;
+  }
+  .cta:focus-visible .cta__arrow:first-child {
+    translate: 0 0;
+  }
+  .cta:focus-visible .cta__arrow:last-child {
+    translate: 26px 0;
+  }
+  @media (hover: hover) {
+    .cta:hover .cta__clip {
+      clip-path: inset(0 0 0 4px);
+    }
+    .cta:hover .cta__fill {
+      right: var(--cta-h);
+    }
+    .cta:hover .cta__label {
+      translate: 4px 0;
+    }
+    .cta:hover .cta__arrow:first-child {
+      translate: 0 0;
+    }
+    .cta:hover .cta__arrow:last-child {
+      translate: 26px 0;
+    }
+  }
+
+  .cta-ghost {
+    display: inline-flex;
+    height: 40px;
+    align-items: center;
+    padding-inline: 16px;
+    border: 1px solid rgba(247, 244, 241, 0.5);
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--ink-head);
+    background: linear-gradient(var(--ink) 0 0) left / 0% 100% no-repeat;
+    transition: color 0.3s, border-color 0.3s, background-size 0.45s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+  .cta-ghost:focus-visible {
+    border-color: var(--ink);
+    background-size: 100% 100%;
+    color: var(--page-bg);
+  }
+  @media (hover: hover) {
+    .cta-ghost:hover {
+      border-color: var(--ink);
+      background-size: 100% 100%;
+      color: var(--page-bg);
+    }
+  }
+
+  /* ---- Hero (HeroStage.tsx): one viewport, two parallax layers ---- */
+  .hero {
+    position: relative;
+    height: 100svh;
+    min-height: 600px;
+    overflow: hidden;
+  }
+  .hero__back,
+  .hero__front {
+    position: absolute;
+    inset: 0;
+  }
+  .hero__front {
+    pointer-events: none;
+  }
+  .hero__back > * {
+    position: absolute;
+    inset: calc(var(--header-h) + 40px) 0 auto 0;
+  }
+  /* The trace's axis lands above the 55.55 % hairline; the copy owns the space below. */
+  .hero .st--hero .st__plot {
+    height: clamp(180px, calc(43svh - 104px), 520px);
+  }
+  .hero__cols {
+    position: absolute;
+    inset: 0 auto 0 50%;
+    width: 100%;
+    max-width: var(--container);
+    translate: -50% 0;
+    border-inline: 1px solid var(--line);
+  }
+  .hero__cols span {
+    position: absolute;
+    inset: 0 auto 0 50%;
+    border-left: 1px solid var(--line);
+  }
+  .hero__hline {
+    position: absolute;
+    inset: 55.55% 0 auto 0;
+    border-top: 1px solid var(--line);
+  }
+  .hero__copy-wrap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    width: 100%;
+    max-width: var(--container);
+    margin-inline: auto;
+    align-items: flex-end;
+    padding: 0 var(--gutter) 72px;
+  }
+  .hero__copy {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+  }
+
+  /* Hero copy rhythm (MonarcPulse): h1, 12 px, paragraph, 40 px, CTA row with 12 px gaps. */
+  .hero-q {
+    max-width: 18ch;
+    margin-left: -0.06em; /* optical margin at display size */
+    font-size: var(--t-hero);
+    font-weight: 600;
+    line-height: var(--lh-display);
+    letter-spacing: var(--tr-display);
+    color: var(--ink-head);
+    text-wrap: balance;
+  }
+  .hero-p {
+    max-width: 620px;
+    margin-top: 12px;
+    font-size: 16px;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    color: var(--muted);
+  }
+  .hero-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 40px;
+  }
+
+  /* ---- Rule and section intro (Section.tsx) ---- */
+  .rule {
+    height: 1px;
+    width: 100%;
+    color: var(--line-strong);
+    background: repeating-linear-gradient(90deg, transparent, transparent 4px, currentColor 4px, currentColor 10px);
+    mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+  }
+  .rule--v {
+    width: 1px;
+    height: 100%;
+    background: repeating-linear-gradient(180deg, transparent, transparent 4px, currentColor 4px, currentColor 10px);
+    mask-image: linear-gradient(180deg, transparent, #000 25%, #000 75%, transparent);
+  }
+  .section-intro {
+    display: grid;
+    gap: var(--head-gap);
+    padding-top: var(--head-top);
+  }
+  @media (min-width: 1024px) {
+    .section-intro {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: end;
+      gap: 0 var(--gutter);
+    }
+  }
+  .section-intro__title {
+    font-size: var(--t-section);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: var(--tr-section);
+    color: var(--ink-head);
+    text-wrap: balance;
+  }
+  .section-intro__text {
+    max-width: var(--measure);
+    line-height: 1.4;
+    color: var(--muted);
+  }
+
+  /* Underline draw (nav): the cursor verb, left to right. The current page keeps it. */
+  .draw {
+    background: linear-gradient(var(--accent) 0 0) left bottom / 0% 2px no-repeat;
+    transition: background-size 0.45s cubic-bezier(0.165, 0.84, 0.44, 1), color 0.3s;
+  }
+  @media (hover: hover) {
+    .draw:hover {
+      background-size: 100% 2px;
+    }
+  }
+  .draw:focus-visible,
+  .draw[aria-current="page"] {
+    background-size: 100% 2px;
+  }
+
+  /* Inline links: underline at rest, it rises into an accent band on hover. */
+  .link {
+    text-decoration: none;
+    background: linear-gradient(var(--accent) 0 0) left bottom / 100% 1px no-repeat;
+    transition: background-size 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+  @media (hover: hover) {
+    .link:hover {
+      background-size: 100% 0.35em;
+    }
+  }
+  .link:focus-visible {
+    background-size: 100% 0.35em;
+  }
+
+  /* The fixed readout slot, bottom right. Empty until a page fills it. */
+  .readout {
+    position: fixed;
+    right: var(--gutter);
+    bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px));
+    z-index: var(--z-readout);
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: var(--t-mono);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+    color: var(--ink);
+    text-align: right;
+    transition: translate 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
+  }
+  .readout:empty {
+    display: none;
+  }
+  html.readout-away .readout {
+    translate: 0 calc(100% + var(--gutter) + 24px);
+    opacity: 0;
+  }
+
+  /* Footer finale */
+  .finale {
+    border-top: 1px solid var(--line);
+    padding-block: var(--section-y) calc(var(--section-y) / 2 + 48px);
+  }
+  .finale__in {
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+  .finale__line {
+    max-width: 18ch;
+    font-size: var(--t-section);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: var(--tr-section);
+    color: var(--ink-head);
+    text-wrap: balance;
+  }
+  .finale__credits {
+    display: grid;
+    gap: 8px 32px;
+    margin-top: var(--grid-top);
+    font-size: var(--t-ui);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  @media (min-width: 900px) {
+    .finale__credits {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* Page curtain: the cursor line sweeps and draws ground-2 behind it (motion/transition.ts).
+     No CSS transform on the panel or the line: GSAP owns them. */
+  #curtain {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-curtain);
+    pointer-events: none;
+    visibility: hidden;
+    overflow: hidden;
+  }
+  .curtain__panel {
+    position: absolute;
+    inset: 0;
+    background: var(--ground-2);
+  }
+  .curtain__line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -1px;
+    width: 2px;
+    background: var(--accent);
+  }
+  /* Page container: the 1200 px centre column with the 24 px gutter. */
+  .wrap {
+    @apply mx-auto w-full max-w-container;
+    padding-inline: var(--gutter);
+  }
+  /* Vertical rhythm between sections (tokens.css --section-y: 112, lg 128). */
   .section {
-    @apply py-24 lg:py-28 xl:py-36;
+    padding-block: var(--section-y);
   }
 
   /* ---- Type ---- */
@@ -274,5 +879,33 @@
   *::before,
   *::after {
     scroll-behavior: auto !important;
+  }
+  /* Hover slides and the step-aside keep their end state, without the movement. */
+  .draw,
+  .link,
+  .readout,
+  .navlink,
+  .cta,
+  .cta *,
+  .cta-ghost,
+  .navm__panel,
+  .navm__bars i {
+    transition: none !important;
+  }
+  /* The CTA shows its hover end state at rest: the arrow in place, the clip in. */
+  .cta__clip {
+    clip-path: inset(0 0 0 4px);
+  }
+  .cta__fill {
+    right: var(--cta-h);
+  }
+  .cta__label {
+    translate: 4px 0;
+  }
+  .cta__arrow:first-child {
+    translate: 0 0 !important;
+  }
+  .cta__arrow:last-child {
+    translate: 26px 0 !important;
   }
 }
