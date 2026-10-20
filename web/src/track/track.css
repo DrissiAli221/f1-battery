@@ -179,7 +179,8 @@
   transform: translate(var(--x), var(--y));
   transition: opacity 0.25s;
 }
-/* The dot, D across, on the line; the road lines simply pass behind it. */
+/* The dot, D across, on the line. The road lines are cut off around it: a ring in the ground
+   colour, 0.1 D wide, sits between the disc and the lines (the reference crop). */
 .tmap__tag-dot {
   position: absolute;
   left: calc(var(--D) * -0.5);
@@ -188,6 +189,7 @@
   height: var(--D);
   border-radius: 50%;
   background: var(--team);
+  box-shadow: 0 0 0 calc(var(--D) * 0.1) var(--road-ground);
 }
 /* The chip: 0.7 D tall, type 0.5 D at medium weight with wide tracking, a small radius; --tx/--ty from the layout pass. */
 .tmap__tag-chip {
@@ -228,5 +230,5 @@
   z-index: 2;
 }
 .tmap__tag.is-on .tmap__tag-dot {
-  box-shadow: none;
+  box-shadow: 0 0 0 calc(var(--D) * 0.1) var(--road-ground);
 }
