@@ -8,7 +8,7 @@ export const REGIME_VAR: Record<RegimeKey, string> = {
   plateau: "var(--regime-plateau)",
   lift: "var(--regime-lift)",
   brake: "var(--regime-brake)",
-  other: "var(--regime-other)",
+  other: "transparent", // unlabelled bins draw nothing on the line
 };
 
 export const REGIME_WORD: Record<RegimeKey, string> = {

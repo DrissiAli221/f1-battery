@@ -176,11 +176,11 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   // apart and 0.08 D thick, the middle line 0.06 D, chevrons 0.15 D, corner rings 0.8 D.
   const k = Math.max(0.8, Math.min(2.6, ((W - padding.l - padding.r) / REF_W) * 1.15));
   const D = 15 * k;
-  const gap = 0.55 * D;
-  const edgeW = Math.max(1, 0.08 * D);
+  const gap = 0.58 * D;
+  const edgeW = Math.max(1, 0.12 * D);
   const outer = gap + edgeW;
-  const lineW = Math.max(1, 0.06 * D);
-  const chev = 0.15 * D;
+  const lineW = Math.max(1, 0.065 * D);
+  const chev = 0.14 * D;
 
   // Tags: HTML, positioned from the ticker (live) or from props (static).
   const tagEls = useRef(new Map<number | string, HTMLDivElement>());
@@ -207,14 +207,14 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     });
     // Corner rings too, when drawn.
     if (corners) for (const c of T.corners) boxes.push({ x: c.lx - 0.4 * D, y: c.ly - 0.4 * D, w: 0.8 * D, h: 0.8 * D });
-    const h = 0.75 * D;
-    const lift = 0.5 * D + 0.3 * D; // dot radius plus the air above it (the crop shows ~0.3 D)
+    const h = 0.7 * D;
+    const lift = 0.5 * D + 0.25 * D; // dot radius plus the air above it
     for (const [i, t] of sorted.entries()) {
       const q = T.pose(t.d);
       const el = tagEls.current.get(t.id);
       const chip = el?.querySelector<HTMLElement>(".tmap__tag-chip");
-      const w = chip?.offsetWidth || 1.5 * D;
-      const end = w * 0.32;
+      const w = chip?.offsetWidth || 1.6 * D;
+      const end = w * 0.3;
       const first: [number, number][] = i % 2 ? [[end, 0], [-end, 0]] : [[-end, 0], [end, 0]];
       const SLOTS: [number, number][] = [...first, [0, 0], [-end, -(h + 3)], [end, -(h + 3)], [0, -(h + 3)], [-end, -2 * (h + 3)], [end, -2 * (h + 3)]];
       let pick: [number, number] = SLOTS[0];
@@ -341,7 +341,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
 
           {/* Colour down the middle: regimes, trails, drivers' lines, with direction chevrons. */}
           <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-            {runs.map((r, i) => (
+            {runs.filter((r) => r.colour !== "transparent").map((r, i) => (
               <path
                 key={i}
                 d={T.sub(r.d0, Math.min(r.d1, T.lap - 0.01), r.offset ?? 0)}
@@ -354,7 +354,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
           {arrows && (
             <g className="tmap__chevrons" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={Math.max(0.8, 0.05 * D)}>
               {runs
-                .filter((r) => r.kind !== "band")
+                .filter((r) => r.kind !== "band" && r.colour !== "transparent")
                 .flatMap((r, i) =>
                   chevrons(T, r, 3.6 * D).map((c, j) => (
                     <path
@@ -368,18 +368,19 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             </g>
           )}
 
-          {/* Ticks: estimates with their interval. */}
+          {/* Ticks: estimates with their interval, drawn quietly in grey so they never compete with a car. */}
           <g className="tmap__ticks" pointerEvents="none">
             {ticks.map((t) => {
               const side = t.side ?? 1;
-              const inner = side === 1 ? outer / 2 + 2 : -(outer / 2 + 2);
-              const far = side === 1 ? outer / 2 + 0.6 * D : -(outer / 2 + 0.6 * D);
+              const inner = side === 1 ? outer / 2 + 0.08 * D : -(outer / 2 + 0.08 * D);
+              const far = side === 1 ? outer / 2 + 0.42 * D : -(outer / 2 + 0.42 * D);
+              const tw = Math.max(1, 0.05 * D);
               return (
-                <g key={t.id} stroke={t.colour} fill="none" className={t.on ? "is-on" : ""}>
+                <g key={t.id} stroke={t.on ? "#d6d6dc" : "#8a8a93"} fill="none" className={t.on ? "is-on" : ""}>
                   {t.lo !== null && t.lo !== undefined && t.hi !== null && t.hi !== undefined && (
-                    <path d={bracket(T, t.lo, t.hi, far - (side === 1 ? 3 : -3), side === 1 ? 3 : -3)} strokeWidth={1.25} opacity={0.9} />
+                    <path d={bracket(T, t.lo, t.hi, far - (side === 1 ? 0.12 * D : -0.12 * D), side === 1 ? 0.12 * D : -0.12 * D)} strokeWidth={tw * 0.8} opacity={0.8} />
                   )}
-                  <line {...tickLine(T, t.d, inner, far)} strokeWidth={t.on ? 2.5 : 2} />
+                  <line {...tickLine(T, t.d, inner, far)} strokeWidth={tw} />
                 </g>
               );
             })}
