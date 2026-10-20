@@ -47,6 +47,10 @@ Endpoints:
   label per 50 m distance bin for that lap (from `model_result` variable
   `regime_bin_<n>` stored as value 0..3, or a compact JSON column if Phase 4
   chooses one; the API hides the storage).
+- `GET /api/sessions/{key}/straights/{straightId}/profile?driver=&model=` →
+  median speed (kph) and acceleration (m/s2) per 50 m bin from the straight's
+  start (`speed_bin_<n>`, `accel_bin_<n>` at lap_number 0), with the lap-0
+  cut-off median and interval; empty `bins` when the run has no profile rows.
 - `GET /api/compare?session=&drivers=a,b&straight=&model=` → the two drivers'
   per-lap cut-off series side by side.
 

@@ -86,6 +86,12 @@ class ApiIT {
         res(j, run, 1, 1, null, "regime_bin_1", 1, null, null);
         res(j, run, 1, 1, null, "regime_bin_10", 3, null, null);
         res(j, run, 1, 1, null, "regime_bin_2", 2, null, null);
+        // Straight profile for driver 1, straight 1 (bin 10 inserted before bin 2 to check numeric order).
+        res(j, run, 1, 0, 1, "speed_bin_0", 268.0, null, null);
+        res(j, run, 1, 0, 1, "accel_bin_0", 3.2, null, null);
+        res(j, run, 1, 0, 1, "speed_bin_10", 301.0, null, null);
+        res(j, run, 1, 0, 1, "speed_bin_2", 290.0, null, null);
+        res(j, run, 1, 0, 1, "accel_bin_2", 1.0, null, null);
     }
 
     static java.sql.Timestamp ts(String s) {
@@ -218,6 +224,32 @@ class ApiIT {
     }
 
     @Test
+    void straightProfileJoinsSpeedAndAccelPerBin() throws Exception {
+        mvc.perform(get("/api/sessions/" + SESSION + "/straights/1/profile?driver=1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bin_m", is(50)))
+                .andExpect(jsonPath("$.straight_id", is(1)))
+                .andExpect(jsonPath("$.model_version", is("proxy-v1")))
+                .andExpect(jsonPath("$.bins", hasSize(3)))
+                .andExpect(jsonPath("$.bins[0].v_kph", is(268)))
+                .andExpect(jsonPath("$.bins[0].a_ms2", is(3.2)))
+                .andExpect(jsonPath("$.bins[1].bin", is(2)))
+                .andExpect(jsonPath("$.bins[1].d_start_m", is(100)))
+                .andExpect(jsonPath("$.bins[2].bin", is(10)))
+                .andExpect(jsonPath("$.bins[2].a_ms2").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.cutoff_median_m", is(706.0)))
+                .andExpect(jsonPath("$.ci_low_m", is(695.0)))
+                .andExpect(jsonPath("$.ci_high_m", is(715.0)));
+        // No profile rows: 200 with empty bins, cut-off absent for a straight without one.
+        mvc.perform(get("/api/sessions/" + SESSION + "/straights/2/profile?driver=1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bins", hasSize(0)))
+                .andExpect(jsonPath("$.cutoff_median_m").value(org.hamcrest.Matchers.nullValue()));
+        mvc.perform(get("/api/sessions/" + SESSION + "/straights/1/profile?driver=44"))
+                .andExpect(jsonPath("$.bins", hasSize(0)));
+    }
+
+    @Test
     void compareReturnsBothSeries() throws Exception {
         mvc.perform(get("/api/compare?session=" + SESSION + "&drivers=1,44&straight=1"))
                 .andExpect(jsonPath("$.drivers", hasSize(2)))
@@ -236,6 +268,7 @@ class ApiIT {
         mvc.perform(get("/api/sessions/424242/drivers")).andExpect(status().isNotFound());
         mvc.perform(get("/api/sessions/424242/laps")).andExpect(status().isNotFound());
         mvc.perform(get("/api/sessions/424242/laps/1/regimes?driver=1")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/sessions/424242/straights/1/profile?driver=1")).andExpect(status().isNotFound());
     }
 
     @Test
