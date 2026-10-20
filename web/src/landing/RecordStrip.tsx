@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import log from "../content/method-log.json";
+import { Card, SectionHead } from "../components/system";
 import { href } from "../lib/router";
 import { RECORD, STATUS_VAR, nums, type Status } from "./recordData";
 
@@ -27,12 +28,15 @@ export function RecordStrip({
   level = "h2",
   onPick,
   more = true,
+  card = false,
 }: {
   title?: string;
   level?: "h1" | "h2";
   /** On the method log itself: a tick scrolls to its entry instead of following the link. */
   onPick?: (id: string) => void;
   more?: boolean;
+  /** The landing's v3 form: a section head, the strip inside a card, no full-viewport rhythm. */
+  card?: boolean;
 } = {}) {
   const H = level;
   const entries = useMemo<Entry[]>(
@@ -47,24 +51,12 @@ export function RecordStrip({
   const fails = entries.filter((e) => e.status === "fail").length;
   const cur = entries[on];
 
-  return (
-    <section className="record" aria-labelledby="record-h">
-      <div className="wrap">
-        <div className="section-intro">
-          <H id="record-h" className="section-intro__title" data-reveal>
-            {title}
-          </H>
-          <p className="section-intro__text" data-reveal>
-            Every check was set before its result was seen. <span className="num">{fails}</span> of{" "}
-            <span className="num">{entries.length}</span> did not pass, and they stay in the log as recorded.
-          </p>
-        </div>
-      </div>
-
+  const strip = (
+    <>
       <div className="record__strip">
         <ol className="record__axis" style={{ ["--n" as string]: entries.length }}>
           {entries.map((e, i) => (
-            <li key={e.id} className="record__li" data-reveal style={{ ["--status" as string]: STATUS_VAR[e.status] }}>
+            <li key={e.id} className="record__li" style={{ ["--status" as string]: STATUS_VAR[e.status] }}>
               <a
                 href={href.method}
                 className={`record__tick ${i === on ? "is-on" : ""} ${e.crossed ? "is-crossed" : ""} is-${e.status.replace(" ", "-")}`}
@@ -102,7 +94,7 @@ export function RecordStrip({
         </ol>
       </div>
 
-      <div className="wrap record__readout" aria-hidden="true">
+      <div className={`${card ? "" : "wrap "}record__readout`} aria-hidden="true">
         <p className="record__readout-k">
           <span className="num">{when(cur.date)}</span> · {cur.phase} ·{" "}
           <span className="record__key" style={{ ["--status" as string]: STATUS_VAR[cur.status] }}>
@@ -111,6 +103,49 @@ export function RecordStrip({
         </p>
         <p className="record__readout-v">{nums(cur.line)}</p>
       </div>
+    </>
+  );
+  const intro = (
+    <>
+      Every check was set before its result was seen. <span className="num">{fails}</span> of <span className="num">{entries.length}</span> did not
+      pass, and they stay in the log as recorded.
+    </>
+  );
+
+  if (card) {
+    return (
+      <section className="lp-section wrap" aria-labelledby="record-h">
+        <SectionHead
+          label="Method log"
+          title={<span id="record-h">{title}</span>}
+          aside={
+            more ? (
+              <a href={href.method} className="lp-more">
+                Open the method log
+              </a>
+            ) : undefined
+          }
+        >
+          <p>{intro}</p>
+        </SectionHead>
+        <Card className="record record--card">{strip}</Card>
+      </section>
+    );
+  }
+
+  return (
+    <section className="record" aria-labelledby="record-h">
+      <div className="wrap">
+        <div className="section-intro">
+          <H id="record-h" className="section-intro__title" data-reveal>
+            {title}
+          </H>
+          <p className="section-intro__text" data-reveal>
+            {intro}
+          </p>
+        </div>
+      </div>
+      {strip}
       {more && (
         <p className="wrap record__more">
           <a href={href.method} className="link">

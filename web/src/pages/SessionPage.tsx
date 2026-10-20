@@ -1,49 +1,50 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { Readout } from "../components/Readout";
-import { SectionIntro } from "../components/Section";
+import { SessionHeader } from "../components/SessionHeader";
+import { Card, CardHead, Label, SectionHead, Skeleton, Stat, Tabs } from "../components/system";
 import { CutoffChart, type ChartDriver } from "../explorer/CutoffChart";
 import { useCutoffs, useRegimes, useSessionData } from "../explorer/data";
 import { DriverSelect } from "../explorer/DriverSelect";
 import { LapAxis } from "../explorer/LapAxis";
 import { defaultStraight, regimeIndex, rel, relMedian, useProfile, useStraightProfile } from "../explorer/profile";
-import { createStore, useStore, type Store } from "../explorer/store";
-import { StraightPanel, type PanelReading } from "../explorer/StraightPanel";
-import { Tower } from "../explorer/Tower";
-import { REGIME_VAR, TrackMap, type MarkDriver } from "../explorer/TrackMap";
-import { REGIME_WORD } from "../instrument/driver";
-import { date, int } from "../lib/format";
+import { createStore } from "../explorer/store";
+import { StraightPanel, type Strip } from "../explorer/StraightPanel";
+import { SessionTower } from "../explorer/Tower";
+import { int } from "../lib/format";
 import { href, useQueryState } from "../lib/router";
 import { driverCode, teamColour } from "../lib/teams";
 import { regimeRuns } from "../lib/track";
 import { straightName } from "../lib/types";
 import { scrollToTarget, usePage } from "../motion";
+import { circuitPhoto, useCircuit } from "../track/circuits";
+import { REGIME_VAR, REGIME_WORD, REGIMES } from "../track/regimes";
+import { TrackMap, type MapRun, type MapTag, type MapTick } from "../track/TrackMap";
 import "../explorer/explorer.css";
 
 const num = (v: string | null) => (v !== null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : null);
-const NB = " ";
+const NB = " ";
+
+type TabKey = "map" | "straight" | "bylap" | "timing";
+const TAB_ID: Record<TabKey, string> = { map: "ss-map", straight: "ss-straight", bylap: "ss-bylap", timing: "ss-timing" };
 
 /*
- * The session explorer (DESIGN.md "Session page"): one instrument, no cards. A header with the
- * circuit at display size and the two driver pickers; the stage (the map in columns 1 to 7,
- * the straight in 8 to 12, one shared cursor); the race as a lap axis; then, with room, the
- * cut-off by lap and the tower. State that can be shared lives in the query string
- * (?driver=&compare=&straight=&lap=); the cursor lives in a store so a pointer move never
- * re-renders the page.
+ * The session page as a broadcast console (DESIGN.md v3 "Pages → Session"): the venue photo
+ * fading into the ground with the session header over its lower edge and the two driver
+ * pickers; a sticky sub-nav; the stage card (the track map as the hero, the straight panel
+ * beside it, one shared cursor); the lap scrubber; the cut-off by lap; the tower. Shareable
+ * state lives in the query string (?driver=&compare=&straight=&lap=); the cursor lives in a
+ * store so a pointer move never re-renders the page.
  */
 export function SessionPage({ sessionKey }: { sessionKey: number }) {
   const data = useSessionData(sessionKey);
   const [query, setQuery] = useQueryState();
   const [playing, setPlaying] = useState(false);
   const [cursor] = useState(() => createStore<number | null>(null));
-  const [reading] = useState(() => createStore<PanelReading | null>(null));
 
   const { session, drivers, withResults, medians, laps, straights, lap: lapLen } = data;
+  const circuit = useCircuit(session?.circuit_key);
   const has = !!session?.has_results;
-  const enabled = useMemo(
-    () => new Set((has ? withResults : drivers).map((d) => d.driver_number)),
-    [has, withResults, drivers],
-  );
+  const enabled = useMemo(() => new Set((has ? withResults : drivers).map((d) => d.driver_number)), [has, withResults, drivers]);
 
   // Selection: the query string first (shareable), validated against the data, then defaults.
   const qDriver = num(query.get("driver"));
@@ -89,8 +90,14 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
     if (!playing) setRegLap(lapNo);
   }, [lapNo, playing]);
   const regimes = useRegimes(sessionKey, driver, regLap, has);
-  const runs = useMemo(() => (regimes.data && lapLen ? regimeRuns(regimes.data.bins, lapLen) : []), [regimes.data, lapLen]);
   const regIdx = useMemo(() => regimeIndex(regimes.data?.bins), [regimes.data]);
+  const runs = useMemo<MapRun[]>(
+    () =>
+      regimes.data && lapLen
+        ? regimeRuns(regimes.data.bins, lapLen).map((r) => ({ d0: r.d0, d1: r.d1, colour: REGIME_VAR[r.label], kind: "trail" as const }))
+        : [],
+    [regimes.data, lapLen],
+  );
 
   // The speed profiles (D30): the selected driver, and the compare driver as a second trace.
   const pState = useProfile(sessionKey, straightId, driver, has);
@@ -99,6 +106,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
   const cProfile = useStraightProfile(cState, straight, lapLen, null);
 
   const lapCutLap = straightId !== null && lapNo !== null ? pCut?.get(lapNo)?.get(straightId) ?? null : null;
+  const cLapCutLap = straightId !== null && lapNo !== null ? cCut?.get(lapNo)?.get(straightId) ?? null : null;
   const lapCut = straight && lapLen ? rel(straight, lapCutLap, lapLen) : null;
   const median = straight && lapLen ? relMedian(straight, pMed?.get(straight.straight_id), lapLen) : null;
   const cMedian = straight && lapLen ? relMedian(straight, cMed?.get(straight.straight_id), lapLen) : null;
@@ -133,19 +141,19 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
   }, [playing, setQuery]);
 
   const root = usePage<HTMLDivElement>(undefined, [data.ready, session !== null, data.summary !== null]);
-  const onReading = useCallback((r: PanelReading) => reading.set(r), [reading]);
+  const tab = useActiveTab(has);
 
   if (data.sessionsError) {
     return (
-      <div ref={root} className="xp">
-        <p className="wrap xp-plain">The session could not be loaded: {data.sessionsError.message}</p>
+      <div ref={root} className="ss">
+        <p className="wrap ss-plain">The session could not be loaded: {data.sessionsError.message}</p>
       </div>
     );
   }
   if (!session && data.sessionsLoaded) {
     return (
-      <div ref={root} className="xp">
-        <h1 className="wrap xp-plain">
+      <div ref={root} className="ss">
+        <h1 className="wrap ss-plain">
           There is no session {sessionKey}.{" "}
           <a className="link" href={href.sessions()}>
             Back to the sessions
@@ -156,7 +164,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
   }
   if (!session) {
     return (
-      <div ref={root} className="xp">
+      <div ref={root} className="ss">
         <PageSkeleton />
       </div>
     );
@@ -173,284 +181,339 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
 
   const pCode = pDriver ? driverCode(pDriver) : "";
   const cCode = cDriver ? driverCode(cDriver) : "";
-  const pMark: MarkDriver | null = pDriver ? { code: pCode, colour: "var(--ink)", medians: pMed } : null;
-  const cMark: MarkDriver | null = cDriver ? { code: cCode, colour: teamColour(cDriver), medians: cMed } : null;
+  const pTeam = pDriver ? teamColour(pDriver) : "var(--ink)";
+  const cTeam = cDriver ? teamColour(cDriver) : "var(--ink)";
   const nLaps = Math.max(0, ...[...laps.values()].map((l) => l.length));
   const sName = straight ? straightName(straight) : "";
   const regLapShown = regimes.data?.lap ?? null;
   const mode = pState.kind === "ready" ? "ready" : pState.kind === "loading" ? "loading" : "none";
-  // Per-lap cut-offs on the selected straight, for the fallback drawing without a profile.
-  const stripOf = (code: string, colour: string, cuts: typeof pCut, med: typeof median) => ({
+  const photo = circuitPhoto(session.circuit_key);
+
+  // ---- the map's marks: medians per straight as ticks with brackets, the shown lap as a tag
+  const ticks: MapTick[] = [];
+  for (const s of straights) {
+    const pm = pMed?.get(s.straight_id);
+    if (pm) ticks.push({ id: `p${s.straight_id}`, d: pm.m, lo: pm.lo, hi: pm.hi, colour: "#fff", side: 1, on: s.straight_id === straightId });
+    const cm = cMed?.get(s.straight_id);
+    if (cm) ticks.push({ id: `c${s.straight_id}`, d: cm.m, lo: cm.lo, hi: cm.hi, colour: cTeam, side: -1, on: s.straight_id === straightId });
+  }
+  const tags: MapTag[] = [];
+  if (pDriver && lapCutLap !== null) tags.push({ id: "lap-p", code: pCode, colour: pTeam, d: lapCutLap, on: true, note: `L${lapNo}` });
+  if (cDriver && cLapCutLap !== null) tags.push({ id: "lap-c", code: cCode, colour: cTeam, d: cLapCutLap, note: `L${lapNo}` });
+
+  // Per-lap cut-offs on the selected straight, for the strip drawn without a speed profile.
+  const stripOf = (code: string, colour: string, cuts: typeof pCut, med: typeof median): Strip => ({
     code,
     colour,
     median: med,
-    cuts: straight && lapLen ? [...(cuts ?? new Map()).values()].flatMap((m) => (m.has(straight.straight_id) ? [rel(straight, m.get(straight.straight_id), lapLen) as number] : [])) : [],
+    cuts:
+      straight && lapLen
+        ? [...(cuts ?? new Map()).values()].flatMap((m) => (m.has(straight.straight_id) ? [rel(straight, m.get(straight.straight_id), lapLen) as number] : []))
+        : [],
   });
-  const strips = [
-    ...(pDriver ? [stripOf(pCode, "var(--ink)", pCut, median)] : []),
-    ...(cDriver ? [stripOf(cCode, teamColour(cDriver), cCut, cMedian)] : []),
-  ];
+  const strips: Strip[] = [...(pDriver ? [stripOf(pCode, "var(--ink)", pCut, median)] : []), ...(cDriver ? [stripOf(cCode, cTeam, cCut, cMedian)] : [])];
   const chartDrivers: ChartDriver[] = [];
-  if (pDriver) chartDrivers.push({ number: pDriver.driver_number, code: pCode, colour: "var(--ink)", hollow: false, cutoffs: pCut, median: straight ? pMed?.get(straight.straight_id) : undefined });
-  if (cDriver) chartDrivers.push({ number: cDriver.driver_number, code: cCode, colour: teamColour(cDriver), hollow: true, cutoffs: cCut, median: straight ? cMed?.get(straight.straight_id) : undefined });
+  if (pDriver) chartDrivers.push({ number: pDriver.driver_number, code: pCode, colour: pTeam, hollow: false, cutoffs: pCut, median: straight ? pMed?.get(straight.straight_id) : undefined });
+  if (cDriver) chartDrivers.push({ number: cDriver.driver_number, code: cCode, colour: cTeam, hollow: true, cutoffs: cCut, median: straight ? cMed?.get(straight.straight_id) : undefined });
+
+  const facts = [
+    ...(nLaps > 0 ? [{ label: "Laps", value: int(nLaps) }] : []),
+    ...(lapLen ? [{ label: "Lap length", value: `${int(lapLen)}${NB}m` }] : []),
+    ...(has && drivers.length ? [{ label: "With a cut-off", value: `${withResults.length} of ${drivers.length}` }] : []),
+  ];
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "map", label: "Track map" },
+    { key: "straight", label: "Straight" },
+    ...(has ? [{ key: "bylap" as const, label: "Cut-off by lap" }, { key: "timing" as const, label: "Timing" }] : []),
+  ];
 
   return (
-    <div ref={root} className="xp">
-      {/* ---------- Header: the circuit, the session, the two drivers ---------- */}
-      <div className="wrap xp-head">
-        <div className="xp-head__title">
-          <h1 className="xp-h1" data-intro>
-            {session.circuit_short_name ?? `Session ${sessionKey}`}
-          </h1>
-          <p className="xp-head__meta" data-intro>
-            {session.session_name} · {date(session.date_start, "short").replace(/ /g, NB)}
-            {nLaps > 0 && ` · ${nLaps}${NB}laps`}
-            {lapLen && ` · ${int(lapLen)}${NB}m${NB}a${NB}lap`}
+    <div ref={root} className="ss">
+      {/* ---------- The venue, fading into the ground ---------- */}
+      <div className={`ss-photo ${photo ? "" : "ss-photo--none"}`} aria-hidden="true">
+        {photo && <img src={photo} alt="" decoding="async" />}
+        <span className="ss-photo__scrim" />
+      </div>
+
+      {/* ---------- Header: the event, the facts, the two drivers ---------- */}
+      <div className="wrap ss-head" data-intro>
+        <SessionHeader
+          session={session}
+          facts={facts}
+          aside={
+            <div className="ss-pick">
+              <DriverSelect drivers={drivers} value={driver} onChange={pickDriver} enabled={enabled} label="Driver" align="right" />
+              {has && (
+                <>
+                  <span className="ss-vs" aria-hidden="true">
+                    vs
+                  </span>
+                  <DriverSelect drivers={drivers} value={compare} onChange={pickCompare} enabled={enabled} label="Compare" allowNone exclude={driver} align="right" />
+                </>
+              )}
+            </div>
+          }
+        />
+        {!has && (
+          <p className="ss-notice" role="status">
+            {data.outlineError
+              ? "This session has not been ingested yet: no outline, laps or model results."
+              : "Model results are not published for this session yet: the map shows the circuit only, without cut-offs or regimes."}
           </p>
-        </div>
-        <div className="xp-head__pick" data-intro>
-          <DriverSelect drivers={drivers} value={driver} onChange={pickDriver} enabled={enabled} label="Driver" align="right" />
-          {has && (
-            <>
-              <span className="xp-vs" aria-hidden="true">
-                vs
-              </span>
-              <DriverSelect drivers={drivers} value={compare} onChange={pickCompare} enabled={enabled} label="Compare with" allowNone exclude={driver} align="right" />
-            </>
-          )}
+        )}
+      </div>
+
+      {/* ---------- Sub-nav: jumps to the sections below ---------- */}
+      <div className="ss-nav">
+        <div className="wrap">
+          <Tabs
+            items={tabs}
+            value={tab}
+            label="Sections"
+            onChange={(k) => {
+              const el = document.getElementById(TAB_ID[k]);
+              if (el) scrollToTarget(el, -(window.innerWidth >= 1024 ? 136 : 72));
+            }}
+          />
         </div>
       </div>
-      {!has && (
-        <p className="wrap xp-plain xp-plain--s" role="status">
-          Model results are not published for this session yet: the map shows the circuit only, without cut-offs or regimes.
-        </p>
-      )}
 
       {/* ---------- The stage: map and straight, one cursor ---------- */}
-      <section className="wrap xp-stage" aria-labelledby="xp-sname">
-        <div className="xp-stage__map" data-reveal>
-          <div className="xp-stage__mapbox">
-            {data.outline && data.outline.points.length > 1 && pMark ? (
-              <TrackMap
-                outline={data.outline}
-                straights={straights}
-                runs={runs}
-                primary={pMark}
-                compare={cMark}
-                selected={straightId}
-                onSelect={pickStraight}
-                lapCut={lapCutLap}
-                cursor={cursor}
-                length={length || null}
-                animateKey={String(sessionKey)}
-              />
-            ) : data.outlineError ? (
-              <p className="xp-plain xp-plain--s">The circuit outline could not be loaded: {data.outlineError.message}</p>
-            ) : data.outline ? (
-              <p className="xp-plain xp-plain--s">The reference lap has no position samples, so there is no map for this circuit.</p>
-            ) : (
-              <div className="xp-skel-map" aria-label="Drawing the circuit" role="img" />
-            )}
-          </div>
-          {straights.length > 0 && (
-            <ul className="xp-strlist" aria-label="Straights">
-              {straights.map((s) => (
-                <li key={s.straight_id}>
-                  <button
-                    type="button"
-                    className="xp-strbtn"
-                    aria-pressed={s.straight_id === straightId}
-                    onClick={() => pickStraight(s.straight_id)}
-                  >
-                    <span className="num">S{s.straight_id}</span> {straightName(s)}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="xp-stage__side" data-reveal>
-          {straight && lapLen ? (
-            <>
-              <div className="xp-side__head">
-                <p className="xp-side__sid">
-                  S{straight.straight_id} · {int(length)}
-                  {NB}m
-                </p>
-                <h2 id="xp-sname" className="xp-side__name">
-                  {sName}
-                </h2>
-              </div>
-              {has && (
-                <dl className="xp-figs">
-                  <div>
-                    <dt>{pCode} median est.</dt>
-                    <dd>
-                      {median ? `${int(median.m)}${NB}m` : "none"}
-                      {median && median.lo !== null && median.hi !== null && (
-                        <span className="xp-figs__ci">
-                          {int(median.lo)}–{int(median.hi)}
-                        </span>
-                      )}
-                    </dd>
-                  </div>
-                  {cDriver && (
-                    <div>
-                      <dt>{cCode} median est.</dt>
-                      <dd>
-                        {cMedian ? `${int(cMedian.m)}${NB}m` : "none"}
-                        {cMedian && cMedian.lo !== null && cMedian.hi !== null && (
-                          <span className="xp-figs__ci">
-                            {int(cMedian.lo)}–{int(cMedian.hi)}
-                          </span>
-                        )}
-                      </dd>
-                    </div>
-                  )}
-                  <div>
-                    {/* Until the laps and their cut-offs arrive, hold the space rather than claim "no cut-off". */}
-                    {lapNo !== null && pCut !== null ? (
-                      <>
-                        <dt>
-                          {pCode} lap {lapNo} est.
-                        </dt>
-                        <dd>{lapCut !== null ? `${int(lapCut)}${NB}m` : "no cut-off"}</dd>
-                      </>
-                    ) : (
-                      <>
-                        <dt>{pCode} lap est.</dt>
-                        <dd aria-busy="true">
-                          <span className="xp-figs__skel" />
-                        </dd>
-                      </>
-                    )}
-                  </div>
-                </dl>
+      <section className="wrap ss-stage-sec" aria-labelledby="ss-sname">
+        {data.outlineError ? (
+          <Card className="ss-stage ss-stage--empty">
+            <div id="ss-map" className="ss-empty">
+              <span id="ss-straight">
+                <Label as="p">Not ingested yet</Label>
+                No circuit outline has been ingested for this session yet, so there is no map, no straights and no speed profile.
+              </span>
+            </div>
+          </Card>
+        ) : (
+        <Card className="ss-stage" style={{ ["--team" as string]: pTeam }}>
+          <div className="ss-map" id="ss-map" data-reveal>
+            <div className="ss-map__top">
+              <Label>{regLapShown !== null && has ? `${pCode} · lap ${regLapShown} regimes` : "Track map"}</Label>
+            </div>
+            <div className="ss-map__box">
+              {data.outline && data.outline.points.length > 1 ? (
+                <TrackMap
+                  outline={data.outline}
+                  circuit={circuit}
+                  straights={straights}
+                  selected={straightId}
+                  onSelect={pickStraight}
+                  runs={runs}
+                  ticks={has ? ticks : []}
+                  tags={has ? tags : []}
+                  cursor={straight ? { store: cursor, straight, length: length || null } : null}
+                  corners
+                  compass
+                  scale
+                  sf
+                  straightLabels
+                  label={`${session.circuit_short_name ?? "Circuit"} track map; select a straight`}
+                  className="ss-tmap"
+                />
+              ) : data.outlineError ? (
+                <p className="ss-empty">No circuit outline has been ingested for this session yet, so there is no map.</p>
+              ) : data.outline ? (
+                <p className="ss-empty">The reference lap has no position samples, so there is no map for this circuit.</p>
+              ) : (
+                <Skeleton className="ss-map__skel" />
               )}
-              {has ? (
-                pState.kind === "error" ? (
-                  <p className="xp-plain xp-plain--s">The speed profile could not be loaded: {pState.error.message}</p>
-                ) : (
-                  <StraightPanel
-                    mode={mode}
-                    profile={pProfile}
-                    compare={cProfile && cDriver ? { profile: cProfile, colour: teamColour(cDriver) } : null}
-                    length={length}
-                    d0={straight.d0}
-                    lap={lapLen}
-                    regimes={regIdx}
-                    median={median}
-                    lapCut={lapCut}
-                    lapNo={lapNo}
-                    cursor={cursor}
-                    onReading={onReading}
-                    labels={{ circuit: session.circuit_short_name ?? undefined, straight: sName, driver: pCode }}
-                    strips={strips}
-                  />
-                )
-              ) : null}
-              {has && (
-                <ul className="xp-legend">
-                  {mode === "ready" && (
-                    <li>
-                      <i className="xp-sw" style={{ background: "var(--ink)", height: 2 }} /> {pCode}, median speed of clean laps (est.)
+            </div>
+            {(straights.length > 0 || has) && (
+            <div className="ss-map__foot">
+              {straights.length > 0 && (
+                <ul className="ss-strs" aria-label="Straights">
+                  {straights.map((s) => (
+                    <li key={s.straight_id}>
+                      <button type="button" className="ss-str" aria-pressed={s.straight_id === straightId} onClick={() => pickStraight(s.straight_id)}>
+                        <b>S{s.straight_id}</b> {s.into ?? straightName(s)}
+                      </button>
                     </li>
-                  )}
-                  {mode === "ready" && cProfile && cDriver && (
-                    <li>
-                      <i className="xp-sw" style={{ background: teamColour(cDriver), height: 1 }} /> {cCode}
-                    </li>
-                  )}
-                  <li>
-                    <i className="xp-sw xp-sw--hatch" /> cut-off interval (95{NB}%)
-                  </li>
-                  {regLapShown !== null &&
-                    (["deploy", "plateau", "lift", "brake"] as const).map((k) => (
-                      <li key={k}>
-                        <i className="xp-sw" style={{ background: REGIME_VAR[k] }} /> {REGIME_WORD[k]}
-                      </li>
-                    ))}
-                  {regLapShown !== null && <li className="xp-legend__k">regimes of lap {regLapShown}</li>}
+                  ))}
                 </ul>
               )}
-            </>
-          ) : (
-            <div className="xp-straight">
-              <div className="st st--panel">
-                <div className="st__plot" aria-busy="true">
-                  <div className="st__skeleton" />
-                </div>
-              </div>
+              {has && (
+                <ul className="ss-key">
+                  {pDriver && (
+                    <li>
+                      <i className="ss-key__tick" style={{ background: "#fff" }} /> {pCode} median est.
+                    </li>
+                  )}
+                  {cDriver && (
+                    <li>
+                      <i className="ss-key__tick" style={{ background: cTeam }} /> {cCode} median est.
+                    </li>
+                  )}
+                  {regLapShown !== null &&
+                    REGIMES.map((k) => (
+                      <li key={k}>
+                        <i className="ss-key__sw" style={{ background: REGIME_VAR[k] }} /> {REGIME_WORD[k]}
+                      </li>
+                    ))}
+                </ul>
+              )}
             </div>
-          )}
-        </div>
-      </section>
+            )}
+          </div>
 
-      {/* ---------- The race: laps as the distance axis ---------- */}
-      <section className="wrap xp-scrub" aria-label="Laps" data-reveal>
-        {pLaps.length ? (
-          <LapAxis
-            laps={pLaps}
-            lap={lapNo}
-            onLap={(n) => {
-              setPlaying(false);
-              pickLap(n);
-            }}
-            playing={playing}
-            onPlay={() => {
-              if (!playing && pLaps[pLaps.length - 1]?.lap_number === lapNo) pickLap(pLaps[0].lap_number);
-              setPlaying((p) => !p);
-            }}
-            withCut={withCut}
-            code={pCode}
-          />
-        ) : data.ready ? (
-          <p className="xp-plain xp-plain--s">No timed laps for this driver.</p>
-        ) : (
-          <div className="xp-skel-axis" role="img" aria-label="Loading the laps" />
+          <div className="ss-side" id="ss-straight" data-reveal>
+            <CardHead
+              className="ss-side__head"
+              title={<span id="ss-sname">{straight ? sName : "Straight"}</span>}
+              aside={straight ? <span className="ss-mono">S{straight.straight_id} · {int(length)}{NB}m</span> : null}
+            />
+            {straight && lapLen ? (
+              has ? (
+                <div className="ss-side__body">
+                  <div className="ss-figs">
+                    <Stat
+                      label={`${pCode} median est.`}
+                      value={median ? int(median.m) : "–"}
+                      unit={median ? "m" : undefined}
+                      note={median && median.lo !== null && median.hi !== null ? `${int(median.lo)}–${int(median.hi)} m, 95 % interval` : median ? undefined : "no cut-off here"}
+                    />
+                    {lapNo !== null && pCut !== null ? (
+                      <Stat
+                        label={`Lap ${lapNo} est.`}
+                        value={lapCut !== null ? int(lapCut) : "–"}
+                        unit={lapCut !== null ? "m" : undefined}
+                        note={lapCut !== null ? "this lap's cut-off" : "no cut-off this lap"}
+                        className="ss-figs__lap"
+                      />
+                    ) : (
+                      <div className="stat" aria-busy="true">
+                        <div className="stat__label">Lap est.</div>
+                        <Skeleton className="ss-figs__skel" />
+                      </div>
+                    )}
+                  </div>
+                  {cDriver && (
+                    <p className="ss-cmp">
+                      <i style={{ background: cTeam }} />
+                      <span className="ss-cmp__code">{cCode}</span> median est.{" "}
+                      <b>{cMedian ? `${int(cMedian.m)}${NB}m` : "none"}</b>
+                      {cMedian && cMedian.lo !== null && cMedian.hi !== null && (
+                        <span className="ss-cmp__ci">
+                          {int(cMedian.lo)}–{int(cMedian.hi)}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {pState.kind === "error" ? (
+                    <p className="ss-plain ss-plain--s">The speed profile could not be loaded: {pState.error.message}</p>
+                  ) : (
+                    <div className="ss-chart">
+                      <StraightPanel
+                        mode={mode}
+                        profile={pProfile}
+                        compare={cProfile && cDriver ? { profile: cProfile, colour: cTeam, code: cCode } : null}
+                        code={pCode}
+                        length={length}
+                        d0={straight.d0}
+                        lap={lapLen}
+                        regimes={regIdx}
+                        regLap={regLapShown}
+                        lapCut={lapCut}
+                        lapNo={lapNo}
+                        lapColour={pTeam}
+                        cursor={cursor}
+                        label={sName}
+                        strips={strips}
+                      />
+                    </div>
+                  )}
+                  <p className="ss-caption">
+                    {mode === "ready"
+                      ? `Median of clean laps, 50${NB}m bins (est.). Strip under the axis: regimes of lap ${regLapShown ?? "–"}.`
+                      : `One tick per lap at its cut-off over each driver's median (est.). Strip under the axis: regimes of lap ${regLapShown ?? "–"}. The speed profile for this straight is not published yet.`}
+                  </p>
+                </div>
+              ) : (
+                <div className="ss-side__body">
+                  <Stat label="Straight length" value={int(length)} unit="m" note={`S${straight.straight_id} of ${straights.length} on this circuit`} />
+                  <ul className="ss-slist" aria-label="Straights">
+                    {straights.map((s) => (
+                      <li key={s.straight_id}>
+                        <button type="button" aria-pressed={s.straight_id === straightId} onClick={() => pickStraight(s.straight_id)}>
+                          <b>S{s.straight_id}</b>
+                          <span>{straightName(s)}</span>
+                          <span className="ss-mono">{int(s.len)}{NB}m</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="ss-caption">No cut-offs, regimes or speed profiles are published for this session yet.</p>
+                </div>
+              )
+            ) : data.ready && !straights.length ? (
+              <div className="ss-side__body">
+                <p className="ss-plain ss-plain--s">No straights are defined for this circuit yet.</p>
+              </div>
+            ) : (
+              <div className="ss-side__body">
+                <Skeleton className="ss-side__skel" />
+              </div>
+            )}
+          </div>
+        </Card>
         )}
+
+        {/* ---------- The race: laps as the scrubber ---------- */}
+        <Card className="ss-laps" style={{ ["--team" as string]: pTeam }}>
+          {pLaps.length ? (
+            <LapAxis
+              laps={pLaps}
+              lap={lapNo}
+              onLap={(n) => {
+                setPlaying(false);
+                pickLap(n);
+              }}
+              playing={playing}
+              onPlay={() => {
+                if (!playing && pLaps[pLaps.length - 1]?.lap_number === lapNo) pickLap(pLaps[0].lap_number);
+                setPlaying((p) => !p);
+              }}
+              withCut={withCut}
+              code={pCode}
+            />
+          ) : data.ready ? (
+            <p className="ss-plain ss-plain--s">{laps.size ? "No timed laps for this driver." : "No laps have been ingested for this session yet."}</p>
+          ) : (
+            <Skeleton className="ss-laps__skel" />
+          )}
+        </Card>
       </section>
 
       {/* ---------- Cut-off by lap ---------- */}
       {has && straight && lapLen && pDriver && (
-        <section className="wrap xp-sec" aria-labelledby="xp-bylap">
-          <SectionIntro
-            id="xp-bylap"
-            title={
-              <>
-                Cut‑off by lap · S{straight.straight_id}
-                <span className="xp-sec__cap">{sName}</span>
-              </>
-            }
-          >
-            One dot per lap with a cut-off, in metres from the start of the straight. Each band is a driver's median with its 95{NB}%
-            interval, an estimate. Click a dot to put that lap on the stage.
-          </SectionIntro>
-          <div className="xp-sec__body" data-reveal>
-            <CutoffChart
-              straight={straight}
-              lapLen={lapLen}
-              laps={pLaps}
-              selectedLap={lapNo}
-              onLap={pickLap}
-              drivers={chartDrivers}
-              loading={pCut === null}
-            />
-          </div>
+        <section className="wrap ss-sec" id="ss-bylap" aria-labelledby="ss-bylap-h">
+          <SectionHead label={`S${straight.straight_id} · ${sName}`} title={<span id="ss-bylap-h">Cut-off by lap</span>}>
+            One dot per lap with a cut-off, in metres into the straight. Each band is a driver's median with its 95{NB}% interval, an estimate. Click a
+            dot to put that lap on the stage.
+          </SectionHead>
+          <Card className="ss-card">
+            <CardHead title={`${pCode}${cDriver ? ` vs ${cCode}` : ""} · ${sName}`} aside={<span className="ss-mono">metres into the straight</span>} />
+            <div className="card__body">
+              <CutoffChart straight={straight} lapLen={lapLen} laps={pLaps} selectedLap={lapNo} onLap={pickLap} drivers={chartDrivers} loading={pCut === null} />
+            </div>
+          </Card>
         </section>
       )}
 
       {/* ---------- The tower ---------- */}
       {has && lapLen && (
-        <section className="wrap xp-sec" aria-labelledby="xp-tower">
-          <SectionIntro id="xp-tower" title="Median cut‑off per straight">
-            Every driver with a cut-off, ranked by {straight ? `S${straight.straight_id}` : "the selected straight"}, latest first. The bar on
-            the right is the share of green laps spent deploying, on the plateau, lifting and braking. Select a row to put that driver on the stage.
-          </SectionIntro>
-          <div className="xp-sec__body">
+        <section className="wrap ss-sec" id="ss-timing" aria-labelledby="ss-timing-h">
+          <SectionHead label="Timing" title={<span id="ss-timing-h">Median cut-off per straight</span>}>
+            Every driver with a cut-off, ranked by {straight ? `S${straight.straight_id}` : "the selected straight"}, latest first. The bar is the share of
+            green laps spent deploying, on the plateau, lifting and braking.
+          </SectionHead>
+          <Card className="ss-card ss-tower">
             {data.summary ? (
-              <Tower
+              <SessionTower
                 rows={data.summary}
                 straights={straights}
                 lapLen={lapLen}
@@ -461,44 +524,60 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
                   pickDriver(n);
                   scrollToTarget(0);
                 }}
+                onCompare={pickCompare}
               />
             ) : (
-              <div className="xp-skel-rows" role="img" aria-label="Loading the tower" />
+              <Skeleton className="ss-tower__skel" />
             )}
-          </div>
+          </Card>
         </section>
       )}
-
-      {has && <PageReadout reading={reading} code={pCode} lapNo={regLapShown ?? lapNo} sid={straight?.straight_id ?? null} />}
     </div>
   );
 }
 
-/** The fixed bottom-right readout: where the cursor is, what the car is doing there. */
-function PageReadout({ reading, code, lapNo, sid }: { reading: Store<PanelReading | null>; code: string; lapNo: number | null; sid: number | null }) {
-  const r = useStore(reading);
-  if (!r) return null;
-  const parts = [`${int(r.d)}${NB}m`];
-  if (r.v !== null) parts.push(`${int(r.v)}${NB}kph`);
-  if (r.regime) parts.push(REGIME_WORD[r.regime]);
-  return (
-    <Readout label="Cursor">
-      <p className="xp-ro__main">{parts.join(" · ")}</p>
-      <p className="xp-ro__sub">
-        {code} · lap {lapNo ?? "–"}
-        {sid !== null && ` · S${sid}`}
-      </p>
-    </Readout>
-  );
+/** The tab whose section is under the sub-nav. On desktop the map and the straight share a row. */
+function useActiveTab(has: boolean): TabKey {
+  const [tab, setTab] = useState<TabKey>("map");
+  useEffect(() => {
+    let raf = 0;
+    const read = () => {
+      raf = 0;
+      const line = (window.innerWidth >= 1024 ? 136 : 72) + 40;
+      let cur: TabKey = "map";
+      const mapTop = document.getElementById(TAB_ID.map)?.getBoundingClientRect().top ?? 0;
+      for (const k of ["map", "straight", "bylap", "timing"] as TabKey[]) {
+        const el = document.getElementById(TAB_ID[k]);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (k === "straight" && Math.abs(top - mapTop) < 40) continue;
+        if (top <= line) cur = k;
+      }
+      setTab(cur);
+    };
+    const on = () => {
+      if (!raf) raf = requestAnimationFrame(read);
+    };
+    window.addEventListener("scroll", on, { passive: true });
+    read();
+    return () => {
+      window.removeEventListener("scroll", on);
+      cancelAnimationFrame(raf);
+    };
+  }, [has]);
+  return tab;
 }
 
 function PageSkeleton() {
   return (
-    <div className="wrap" role="img" aria-label="Loading the session">
-      <div className="xp-head xp-head--skel">
-        <div className="xp-skel-title" />
+    <div role="img" aria-label="Loading the session">
+      <div className="ss-photo ss-photo--none" />
+      <div className="wrap ss-head">
+        <Skeleton className="ss-skel-title" />
       </div>
-      <div className="xp-skel-stage" />
+      <div className="wrap ss-stage-sec">
+        <Skeleton className="ss-skel-stage" />
+      </div>
     </div>
   );
 }

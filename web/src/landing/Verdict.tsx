@@ -1,6 +1,8 @@
 import findings from "../content/findings.json";
 import notes from "../content/findings-notes.json";
-import { fixed } from "../lib/format";
+import { Cta } from "../components/Cta";
+import { Card, SectionHead, Stat } from "../components/system";
+import { fixed, int } from "../lib/format";
 import { href } from "../lib/router";
 import { N } from "./recordData";
 
@@ -9,75 +11,62 @@ export const FROZEN_ISO: string = (notes as { frozen?: string }).frozen ?? "2026
 export const frozenText = () =>
   new Date(`${FROZEN_ISO}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
-// The axis under the odds ratio: wide enough for the interval, 1.0 (no effect) and the bar.
-const LO = 0.7;
-const HI = 1.4;
-const pct = (v: number) => `${((v - LO) / (HI - LO)) * 100}%`;
-/** The smallest effect HYPOTHESIS.md would have called real: an odds ratio of 1.3 per SD. */
-const BAR = 1.3;
-
 /*
- * Statement plus one fact (DESIGN.md "VERDICT"). The odds ratio is an estimate, so it carries
- * its construction: the 95 % interval drawn as a bracket on a short axis, with 1.0 marked.
+ * The verdict (DESIGN.md v3 "Pages → Landing"): four stat tiles and one sentence. Every
+ * number is read from src/content/findings.json (the committed findings), never typed here.
+ * The odds ratio is an estimate, so its tile carries the 95 % interval.
  */
 export function Verdict() {
   const run = findings.runs.point;
-  const frozen = frozenText();
+  const s = findings.sample;
   return (
-    <section id="verdict" className="verdict wrap" aria-labelledby="verdict-h">
-      <div className="verdict__grid">
-        <div className="verdict__main">
-          <h2 id="verdict-h" tabIndex={-1} className="verdict__h" data-reveal>
+    <section id="verdict" className="lp-section wrap" aria-labelledby="verdict-h">
+      <SectionHead
+        label={
+          <>
+            The verdict · frozen <span className="num">{frozenText()}</span>
+          </>
+        }
+        title={
+          <span id="verdict-h" tabIndex={-1}>
             No effect.
-          </h2>
-          <p className="verdict__p" data-reveal>
-            {notes.verdict_sentence}
-          </p>
+          </span>
+        }
+        aside={<p className="verdict__caveat">{notes.caveat}</p>}
+      >
+        <p className="verdict__p">{notes.verdict_sentence}</p>
+      </SectionHead>
 
-          <figure className="or" data-reveal>
-            <p className="or__num num" aria-hidden="true">
-              <N>{fixed(run.or, 2)}</N>
-            </p>
-            <div className="or__axis" aria-hidden="true">
-              <span className="or__line" />
-              {[0.8, 0.9, 1.1, 1.2].map((v) => (
-                <span key={v} className="or__tick" style={{ left: pct(v) }}>
-                  <span className="or__tl num">{fixed(v, 1)}</span>
-                </span>
-              ))}
-              <span className="or__tick or__tick--one" style={{ left: pct(1) }}>
-                <span className="or__tl num">1.0</span>
-              </span>
-              <span className="or__tick or__tick--bar" style={{ left: pct(BAR) }}>
-                <span className="or__tl num">{fixed(BAR, 1)}</span>
-              </span>
-              <span className="or__bracket" style={{ left: pct(run.lo), width: `calc(${pct(run.hi)} - ${pct(run.lo)})` }} />
-              <span className="or__dot" style={{ left: pct(run.or) }} />
-            </div>
-            <figcaption className="or__cap">
-              Odds ratio of being passed per standard deviation earlier cut-off (est.), point{" "}
-              <N>{fixed(run.or, 2)}</N>, 95&nbsp;% interval{" "}
-              <N>{`${fixed(run.lo, 2)}–${fixed(run.hi, 2)}`}</N>
-              . The interval spans <N>1.0</N>, no effect; the frozen bar was{" "}
-              <N>{fixed(BAR, 1)}</N>.
-            </figcaption>
-          </figure>
+      <Card className="verdict" as="div">
+        <div className="verdict__stats" data-reveal>
+          <Stat
+            className="verdict__stat"
+            label="Odds ratio (est.)"
+            value={<N>{fixed(run.or, 2)}</N>}
+            note={
+              <>
+                <N>{`${fixed(run.lo, 2)}–${fixed(run.hi, 2)}`}</N> interval, 95&nbsp;%
+              </>
+            }
+          />
+          <Stat className="verdict__stat" label="Passes tested" value={<span className="num">{int(s.events_tested)}</span>} note="Events in the model" />
+          <Stat
+            className="verdict__stat"
+            label="Non-passes tested"
+            value={<span className="num">{int(s.non_events_tested)}</span>}
+            note="Close following, no pass"
+          />
+          <Stat className="verdict__stat" label="Sessions" value={<span className="num">{int(s.sessions_in_model)}</span>} note="Sessions in the model" />
         </div>
-
-        <aside className="verdict__side" aria-label="Caveat">
-          <p className="verdict__frozen num" data-reveal>
-            Frozen {frozen}
+        <div className="verdict__foot">
+          <p className="verdict__line">
+            Odds of being passed per standard deviation earlier cut-off. The interval spans <N>1.0</N>, no effect.
           </p>
-          <p className="verdict__caveat" data-reveal>
-            {notes.caveat}
-          </p>
-          <p data-reveal>
-            <a href={href.findings} className="link verdict__link">
-              Read the findings
-            </a>
-          </p>
-        </aside>
-      </div>
+          <Cta href={href.findings} size="sm">
+            Read the findings
+          </Cta>
+        </div>
+      </Card>
     </section>
   );
 }

@@ -1,9 +1,10 @@
 /*
- * The findings charts, redrawn in the system (DESIGN.md "Drawing rule"): no boxes, hairline
- * axes, estimates shown with their construction. An odds ratio is a tick (the point estimate)
- * over a bracket (its 95 % interval), the same bracket the straight draws under its cut-off.
- * Positions are percentages of the plot column, so the rows need no measuring; only the
- * histogram measures its width.
+ * The findings charts on the shared grid (DESIGN.md v3): gridlines in the line colour at every
+ * tick, axis numbers in mono 11 px muted, marks in ink (p < 0.05 or the observed value) and
+ * muted (the rest). Red is kept for the reference a chart is read against: the pre-registered
+ * bar where there is one, otherwise 1 (no change). An odds ratio is a tick (the point
+ * estimate) over a bracket (its 95 % interval). Positions are percentages of the plot column,
+ * so the rows need no measuring; only the histogram measures its width.
  */
 import { useId } from "react";
 import { useSize } from "../lib/useSize";
@@ -40,59 +41,64 @@ export function Forest({
   const [a, b] = domain.map(Math.log);
   const pct = (v: number) => ((Math.log(Math.min(domain[1], Math.max(domain[0], v))) - a) / (b - a)) * 100;
   return (
-    <figure className={`fx-forest ${bar ? "fx-forest--bar" : ""}`} data-reveal>
-      <div className="fx-forest__over" aria-hidden="true">
-        <span />
-        <div className="fx-forest__lines">
-          <span className="fx-forest__ref" style={{ left: `${pct(1)}%` }}>
-            {!bar && <span className="fx-forest__reflabel">1{NB}={NB}no change</span>}
-          </span>
-          {bar && (
-            <span className="fx-forest__bar" style={{ left: `${pct(bar)}%` }}>
-              <span className="fx-forest__barlabel">bar {fixed(bar, 1)}</span>
+    <figure className={`fx-forest ${bar ? "fx-forest--bar" : "fx-forest--ref"}`} data-reveal>
+      <div className="fx-forest__body">
+        <div className="fx-forest__over" aria-hidden="true">
+          <span />
+          <div className="fx-forest__lines">
+            {ticks.map((t) => (
+              <span key={t} className="fx-forest__grid" style={{ left: `${pct(t)}%` }} />
+            ))}
+            <span className="fx-forest__ref" style={{ left: `${pct(1)}%` }}>
+              {!bar && <span className="fx-forest__reflabel">1{NB}={NB}no change</span>}
             </span>
-          )}
-        </div>
-      </div>
-      <ul>
-        {rows.map((r) => (
-          <li key={r.label} className={`fx-forest__row ${r.strong ? "is-strong" : ""}`}>
-            <p className="fx-forest__label">
-              {r.label}
-              {r.sub && <span>{r.sub}</span>}
-            </p>
-            <div className="fx-forest__plot" aria-hidden="true">
-              {/* Phones: the reference lines are drawn per row, so they never cross the labels. */}
-              <span className="fx-forest__ref fx-forest__ref--row" style={{ left: `${pct(1)}%` }} />
-              {bar && <span className="fx-forest__bar fx-forest__bar--row" style={{ left: `${pct(bar)}%` }} />}
-              <span className="fx-forest__ci" style={{ left: `${pct(r.lo)}%`, width: `${pct(r.hi) - pct(r.lo)}%` }} />
-              <span className="fx-forest__pt" style={{ left: `${pct(r.or)}%` }} />
-            </div>
-            <p className="fx-forest__num">
-              <span className="sr-only">odds ratio </span>
-              {fixed(r.or, 2)}
-              <span>
-                <span className="sr-only">95{NB}% interval </span>
-                {fixed(r.lo, 2)}–{fixed(r.hi, 2)}
+            {bar && (
+              <span className="fx-forest__bar" style={{ left: `${pct(bar)}%` }}>
+                <span className="fx-forest__barlabel">bar {fixed(bar, 1)}</span>
               </span>
-            </p>
-          </li>
-        ))}
-      </ul>
-      <div className="fx-forest__axis" aria-hidden="true">
-        <span />
-        <div className="fx-forest__ticks">
-          {ticks.map((t) => (
-            <span key={t} style={{ left: `${pct(t)}%` }}>
-              {t}
-            </span>
+            )}
+          </div>
+        </div>
+        <ul>
+          {rows.map((r) => (
+            <li key={r.label} className={`fx-forest__row ${r.strong ? "is-strong" : ""}`}>
+              <p className="fx-forest__label">
+                {r.label}
+                {r.sub && <span>{r.sub}</span>}
+              </p>
+              <div className="fx-forest__plot" aria-hidden="true">
+                {/* Phones: the reference lines are drawn per row, so they never cross the labels. */}
+                <span className="fx-forest__ref fx-forest__ref--row" style={{ left: `${pct(1)}%` }} />
+                {bar && <span className="fx-forest__bar fx-forest__bar--row" style={{ left: `${pct(bar)}%` }} />}
+                <span className="fx-forest__ci" style={{ left: `${pct(r.lo)}%`, width: `${pct(r.hi) - pct(r.lo)}%` }} />
+                <span className="fx-forest__pt" style={{ left: `${pct(r.or)}%` }} />
+              </div>
+              <p className="fx-forest__num">
+                <span className="sr-only">odds ratio </span>
+                {fixed(r.or, 2)}
+                <span>
+                  <span className="sr-only">95{NB}% interval </span>
+                  {fixed(r.lo, 2)}–{fixed(r.hi, 2)}
+                </span>
+              </p>
+            </li>
           ))}
+        </ul>
+        <div className="fx-forest__axis" aria-hidden="true">
+          <span />
+          <div className="fx-forest__ticks">
+            {ticks.map((t, i) => (
+              <span key={t} className={i % 2 ? "is-minor" : undefined} style={{ left: `${pct(t)}%` }}>
+                {t}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
       <p className="fx-forest__key" aria-hidden="true">
-        Dashed: 1, no change{bar ? `. Red: the pre-registered bar, ${fixed(bar, 1)}` : ""}.
+        {bar ? `Dashed: 1, no change. Red: the pre-registered bar, ${fixed(bar, 1)}.` : "Red: 1, no change."}
       </p>
-      <figcaption className="sr-only">{caption}</figcaption>
+      <figcaption className="fx-caption">{caption}</figcaption>
     </figure>
   );
 }
@@ -103,7 +109,7 @@ export interface Histogram {
   counts: number[];
 }
 
-/** Shuffled coefficients as bars in the line colour; the observed one as the cursor line. */
+/** Shuffled coefficients as muted bars; the observed one as a line in ink. */
 export function PermutationChart({ h, observed, q95, n }: { h: Histogram; observed: number; q95: number; n: number }) {
   const uid = useId().replace(/:/g, "");
   const [ref, { w: W }] = useSize<HTMLDivElement>();
@@ -129,6 +135,9 @@ export function PermutationChart({ h, observed, q95, n }: { h: Histogram; observ
                 <line x1="0" y1="0" x2="0" y2="6" className="fx-hist__hatch" />
               </pattern>
             </defs>
+            {[-0.2, -0.1, 0, 0.1, 0.2].map((t) => (
+              <line key={`g${t}`} className="fx-hist__grid" x1={sx(t)} x2={sx(t)} y1={top - 14} y2={base} />
+            ))}
             {/* Estimated band: the central 95 % of the permutations, hatched. */}
             <rect x={sx(-q95)} y={top - 14} width={sx(q95) - sx(-q95)} height={base - top + 14} fill={`url(#${uid}-h)`} />
             {h.counts.map((c, i) =>
@@ -159,13 +168,13 @@ export function PermutationChart({ h, observed, q95, n }: { h: Histogram; observ
           </svg>
         )}
       </div>
-      <figcaption className="fx-hist__legend">
+      <figcaption className="fx-hist__legend fx-caption">
         <span>
-          <i style={{ background: "var(--line-strong)" }} />
+          <i style={{ background: "var(--muted)", opacity: 0.55 }} />
           {n.toLocaleString("en-US")} shuffles, cut-off coefficient in log-odds per SD
         </span>
         <span>
-          <i style={{ backgroundImage: "repeating-linear-gradient(45deg, var(--line-strong) 0 1px, transparent 1px 5px)" }} />
+          <i style={{ backgroundImage: "repeating-linear-gradient(45deg, var(--muted) 0 1px, transparent 1px 5px)" }} />
           central 95{NB}% of the shuffles, ±<span className="fx-mono">{num(q95, 3)}</span>
         </span>
       </figcaption>

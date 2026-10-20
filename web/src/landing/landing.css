@@ -1,458 +1,652 @@
 /*
- * The landing's sections (DESIGN.md "Composition plan"). Tokens only; no CSS transform on any
- * element GSAP moves (the data-reveal and data-intro wrappers): hover motion lives on children.
- * Every :hover sits inside (hover: hover) and has a :focus-visible twin.
+ * The landing and the sessions index (DESIGN.md v3 "Pages → Landing / Sessions"). Tokens only;
+ * no CSS transform on any element GSAP moves (the data-reveal and data-intro wrappers): hover
+ * changes colour and borders only. Every :hover sits inside (hover: hover) with a
+ * :focus-visible twin.
  */
 
-/* ================= 2. Verdict: statement plus one fact (rhythm: normal) =================
-   Normal above (one section pad after the hero); nothing below: the next section's own top
-   (64 px phones, 120 px desktop) is the whole gap, so the fact is not followed by a void. */
-.verdict {
-  padding-block: var(--section-y) 0;
-}
-.verdict__grid {
-  display: grid;
-  gap: var(--stack) var(--gutter);
-}
-@media (min-width: 1024px) {
-  .verdict__grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-  .verdict__main {
-    grid-column: 1 / 9;
-  }
-  .verdict__side {
-    grid-column: 9 / 13;
-    padding-top: calc(var(--t-section) * 0.2);
-  }
-}
-.verdict__h {
-  font-size: var(--t-section);
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: var(--tr-section);
-  color: var(--ink-head);
-  outline: none;
-}
-.verdict__p {
-  max-width: 34ch;
-  margin-top: var(--head-gap);
-  font-size: clamp(20px, 1rem + 0.7vw, 28px);
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  text-wrap: pretty;
-}
-
-/* The odds ratio: a big mono numeral over its interval, drawn as a bracket on a short axis. */
-.or {
-  margin: var(--stack) 0 0;
-}
-.or__num {
-  font-size: clamp(4.5rem, 2rem + 8vw, 9rem);
-  font-weight: 500;
-  line-height: 0.85;
-  letter-spacing: -0.05em;
-  color: var(--ink-head);
-}
 /* The decimal point in Geist Mono (recordData.tsx <N>). */
 .num-pt {
   margin-inline: -0.14em;
 }
-.or__num .num-pt {
-  margin-inline: -0.2em;
+
+/* ================= Rhythm ================= */
+.lp-section {
+  padding-top: var(--section-y);
 }
-.or__axis {
-  position: relative;
-  height: 52px;
-  max-width: 560px;
-  margin-top: 28px;
+.lp > .lp-section:last-child {
+  padding-bottom: var(--section-y);
 }
-.or__line {
-  position: absolute;
-  inset: 22px 0 auto 0;
-  border-top: 1px solid var(--line-strong);
+.lp .shead__copy p,
+.lp .shead__aside p {
+  margin: 0;
 }
-.or__tick {
-  position: absolute;
-  top: 22px;
-  width: 1px;
-  height: 7px;
-  background: var(--line-strong);
-}
-.or__tl {
-  position: absolute;
-  top: 12px;
-  left: 0;
-  translate: -50% 0;
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.or__tick--one {
-  top: 0;
-  height: 30px;
-  background: var(--ink);
-}
-.or__tick--one .or__tl {
-  top: 34px;
+.lp-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: var(--t-ui);
+  font-weight: 700;
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
   color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 4px;
+  transition: color 0.2s, border-color 0.2s;
 }
-.or__tick--bar {
-  top: 4px;
-  height: 25px;
-  background: repeating-linear-gradient(180deg, var(--muted) 0 3px, transparent 3px 6px);
+.lp-more .num {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
 }
-.or__tick--bar .or__tl {
-  top: 30px;
+@media (hover: hover) {
+  .lp-more:hover {
+    color: #fff;
+    border-color: #fff;
+  }
 }
-.or__bracket {
-  position: absolute;
-  top: 9px;
-  height: 13px;
-  border: 1.5px solid var(--ink);
-  border-bottom: 0;
+.lp-more:focus-visible {
+  border-color: #fff;
 }
-.or__dot {
-  position: absolute;
-  top: 22px;
-  width: 11px;
-  height: 11px;
-  translate: -50% -50%;
-  border-radius: var(--radius-avatar);
-  background: var(--ink-head);
-  box-shadow: 0 0 0 3px var(--page-bg);
+@media (min-width: 1024px) {
+  .lp .shead__aside {
+    justify-self: end;
+    text-align: right;
+  }
 }
-.or__cap {
-  max-width: 58ch;
-  margin-top: 16px;
+.lp-empty {
+  color: var(--muted);
+}
+
+/* ================= Hero additions ================= */
+.lp-hero__pill {
+  margin: 0 0 20px;
+}
+.lp-hero__pill .pill {
+  height: 26px;
+  padding: 0 12px;
+  background: rgba(3, 3, 3, 0.55);
+  backdrop-filter: blur(8px);
+}
+.lp-hero__pill .num {
+  font-family: var(--font-display);
+}
+
+/* ================= Last race ================= */
+.last {
+  overflow: hidden;
+}
+.last__head {
+  padding: var(--card-pad);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.last__grid {
+  display: grid;
+}
+@media (min-width: 1024px) {
+  .last__grid {
+    grid-template-columns: minmax(0, 1fr) 400px;
+  }
+}
+.last__map {
+  position: relative;
+  height: 400px;
+  padding: 8px;
+}
+@media (min-width: 768px) {
+  .last__map {
+    height: 520px;
+    padding: 16px 24px;
+  }
+}
+.last__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: var(--card-pad);
+  border-top: 1px solid var(--line);
+}
+@media (min-width: 1024px) {
+  .last__side {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+}
+.last__side-h {
+  margin: 0;
+}
+.last__tower {
+  width: calc(100% + 2 * var(--card-pad));
+  margin-inline: calc(-1 * var(--card-pad));
+}
+.last__tower th:first-child,
+.last__tower td:first-child {
+  padding-left: var(--card-pad);
+}
+.last__tower th:last-child,
+.last__tower td:last-child {
+  padding-right: var(--card-pad);
+}
+.last__cta {
+  margin-top: auto;
+  padding-top: 8px;
+}
+.last__none {
+  color: var(--muted);
+  font-size: var(--t-ui);
+}
+.last__cap {
+  margin: 0;
+  padding: 14px var(--card-pad);
+  border-top: 1px solid var(--line);
   font-size: var(--t-ui);
   line-height: 1.5;
   color: var(--muted);
 }
-.verdict__frozen {
-  font-size: var(--t-ui);
+.last__skel-head {
+  height: 52px;
+  width: min(420px, 100%);
+}
+.last__skel-map {
+  position: absolute;
+  inset: 24px;
+  border-radius: var(--radius-panel);
+}
+.last__skel-rows {
+  display: grid;
+  gap: 10px;
+}
+.last__skel-row {
+  height: 30px;
+}
+
+/* ================= Verdict ================= */
+.verdict__p {
+  font-size: 18px;
+  line-height: 1.45;
   color: var(--ink);
 }
 .verdict__caveat {
-  max-width: 40ch;
-  margin-top: 16px;
+  max-width: 44ch;
+  font-size: var(--t-ui);
+  line-height: 1.55;
+  color: var(--muted);
+}
+@media (min-width: 1024px) {
+  .lp .verdict__caveat {
+    margin-left: auto;
+    text-align: left;
+  }
+}
+.verdict__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 1024px) {
+  .verdict__stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.verdict__stat {
+  padding: 28px var(--card-pad) 24px;
+  border-bottom: 1px solid var(--line);
+}
+.verdict__stat:nth-child(odd) {
+  border-right: 1px solid var(--line);
+}
+@media (min-width: 1024px) {
+  .verdict__stat {
+    padding: 36px 28px 32px;
+  }
+  .verdict__stat:not(:last-child) {
+    border-right: 1px solid var(--line);
+  }
+}
+.verdict__stat .stat__value {
+  margin-top: 10px;
+}
+.verdict__stat:first-child .stat__value {
+  color: #fff;
+}
+.verdict__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  padding: 18px var(--card-pad);
+}
+.verdict__line {
+  margin: 0;
+  max-width: 60ch;
+  font-size: var(--t-ui);
   line-height: 1.5;
   color: var(--muted);
 }
-.verdict__link {
-  display: inline-block;
-  margin-top: 28px;
-  padding-block: 2px;
-  color: var(--ink-head);
-}
 
-/* ================= 3. How it is read: sticky narrative (rhythm: airy) =================
-   The air is inside: chapters a screen apart. Outside, 64 / 120 px above (after the verdict)
-   and the same below; the intro carries no extra head room. */
+/* ================= How it is read ================= */
 .how {
-  --how-y: 64px;
-  padding-block: var(--how-y);
+  display: grid;
+  gap: 24px;
 }
 @media (min-width: 1024px) {
   .how {
-    --how-y: 120px;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 40px;
+    align-items: start;
   }
 }
-.how .how__intro {
-  padding-top: 0;
+.how__chapters {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.how__grid {
-  display: flex;
-  flex-direction: column;
-  margin-top: var(--grid-top);
-}
-.how__stage {
-  order: -1;
-  position: sticky;
-  top: 88px; /* under the floating nav pill */
-  z-index: 2;
-  padding-bottom: 20px;
-  background: var(--page-bg);
-}
-.how__stage .st--panel .st__plot {
-  height: clamp(150px, 22svh, 260px);
-}
-/* Tablets: the stage holds the top of the screen on an opaque ground; each chapter enters
-   just under it. */
 .how__chapter {
-  display: flex;
-  align-items: flex-start;
-  min-height: 46svh;
-  padding-top: 24px;
-}
-.how__chapter:last-child {
-  min-height: 56svh;
-}
-/* Phones: no sticky stage (it would cut through the chapter text on a short screen). The
-   drawing sits above the three chapters, which read as a plain list. */
-@media (max-width: 767px) {
-  .how__stage {
-    position: static;
-    padding-bottom: 8px;
-  }
-  .how__chapter,
-  .how__chapter:last-child {
-    min-height: 0;
-    padding-top: 32px;
-  }
-  .how__chapter .how__title {
-    color: var(--ink-head);
-  }
-  .how__chapter .how__text {
-    color: var(--ink);
-  }
-}
-@media (min-width: 1024px) {
-  .how__grid {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 0 var(--gutter);
-  }
-  .how__chapters {
-    grid-column: 1 / 5;
-    grid-row: 1;
-  }
-  .how__stage {
-    grid-column: 5 / 13;
-    grid-row: 1;
-    align-self: start;
-    top: max(calc(var(--header-h) + 40px), calc(50svh - 230px));
-    padding-bottom: 0;
-    background: none;
-  }
-  .how__stage .st--panel .st__plot {
-    height: clamp(240px, 36svh, 380px);
-  }
-  .how__chapter {
-    align-items: center;
-    min-height: 78svh;
-    padding-top: 0;
-  }
-}
-.how__title {
-  max-width: 16ch;
-  font-size: clamp(24px, 1rem + 1.3vw, 36px);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--muted);
-  transition: color 0.5s;
-}
-.how__text {
-  max-width: 36ch;
-  margin-top: 14px;
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-.how__chapter.is-on .how__title {
-  color: var(--ink-head);
-}
-.how__chapter.is-on .how__text {
-  color: var(--ink);
-}
-
-/* Chapter 3 lights the construction: the bracket, the hatched interval and the cut-off. */
-[data-step="2"] .st__bracket {
-  stroke: var(--accent);
-  stroke-width: 2;
-}
-[data-step="2"] .st__ci {
-  opacity: 1;
-}
-[data-step="2"] .st__cutline {
-  stroke: var(--accent);
-}
-.st__bracket,
-.st__cutline,
-.st__ci {
-  transition: stroke 0.5s, opacity 0.5s;
-}
-
-/* Reduced motion: no sticky stage; each chapter carries its own small trace. */
-.how__still {
   display: grid;
-  gap: var(--stack);
-  margin-top: var(--grid-top);
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  padding: 18px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.25s, border-color 0.25s;
 }
-@media (min-width: 1024px) {
-  .how__still-item {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 0 var(--gutter);
-    align-items: center;
-  }
-  .how__still-item > .how__title,
-  .how__still-item > .how__text {
-    grid-column: 1 / 5;
-  }
-  .how__still-item > .how__mini {
-    grid-column: 5 / 13;
-    grid-row: 1 / span 2;
-  }
-}
-.how__still .how__title {
-  color: var(--ink-head);
-}
-.how__still .how__text {
-  color: var(--ink);
-}
-.how__mini {
-  margin-top: 20px;
-}
-.how__mini .st--panel .st__plot {
-  height: 170px;
-}
-
-/* ================= 4. The season: index list (rhythm: tight) ================= */
-.season {
-  padding-block: var(--rhythm-tight) var(--section-y);
-}
-.season .section-intro {
-  padding-top: var(--head-top);
-}
-.season__head,
-.season__row {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  grid-template-areas:
-    "name name name cut"
-    "date type . ."
-    "trace trace trace trace";
-  gap: 6px 16px;
-  align-items: baseline;
-}
-.season__head {
-  display: none;
-  margin-top: var(--grid-top);
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
-  font-size: var(--t-ui-s);
-  color: var(--muted);
-}
-.season__list {
-  margin-top: var(--grid-top);
-  border-top: 1px solid var(--line);
-}
-.season__row {
-  padding-block: 18px;
-  border-bottom: 1px solid var(--line);
-  text-decoration: none;
-  outline-offset: -2px;
-}
-.season__name {
-  grid-area: name;
-  justify-self: start;
-  font-size: clamp(20px, 0.9rem + 1vw, 30px);
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  color: var(--ink-head);
-  background: linear-gradient(var(--accent) 0 0) left bottom / 0% 2px no-repeat;
-  transition: background-size 0.45s cubic-bezier(0.165, 0.84, 0.44, 1);
-}
-.season__date {
-  grid-area: date;
-  font-size: var(--t-ui);
-  color: var(--muted);
-}
-.season__type {
-  grid-area: type;
-  font-size: var(--t-ui);
-  color: var(--muted);
-}
-.season__cut {
-  grid-area: cut;
-  justify-self: end;
-  font-size: 15px;
-  color: var(--ink);
-  white-space: nowrap;
-}
-.season__est {
-  font-size: var(--t-ui-s);
-  color: var(--muted);
-}
-.season__trace {
-  position: relative;
-  grid-area: trace;
-  display: block;
-  height: 32px;
-  margin-top: 10px;
-}
-/* No published profile yet: the axis alone, dashed, mid-height. */
-.season__axis {
-  display: block;
-  height: 17px;
-  border-bottom: 1px dashed var(--line-strong);
-}
-.season__row.is-hot .season__name,
-.season__row:focus-visible .season__name {
-  background-size: 100% 2px;
+.how__chapter.is-on {
+  background: var(--surface-1);
+  border-color: var(--line);
 }
 @media (hover: hover) {
-  .season__row:hover .season__name {
-    background-size: 100% 2px;
+  .how__chapter:not(.is-on):hover {
+    background: rgba(255, 255, 255, 0.02);
   }
 }
-@media (min-width: 900px) {
-  .season__head,
-  .season__row {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 4fr);
-    grid-template-areas: "name date type cut trace";
-    gap: 0 var(--gutter);
-    align-items: center;
-  }
-  .season__head {
-    display: grid;
-  }
-  .season__head span:nth-child(1) {
-    grid-area: name;
-  }
-  .season__head span:nth-child(2) {
-    grid-area: date;
-  }
-  .season__head span:nth-child(3) {
-    grid-area: type;
-  }
-  .season__head-cut {
-    grid-area: cut;
-    justify-self: end;
-  }
-  .season__head-trace {
-    grid-area: trace;
-  }
-  .season__list {
-    margin-top: 0;
-    border-top: 0;
-  }
-  .season__row {
-    min-height: 76px;
-    padding-block: 14px;
-  }
-  .season__trace {
-    margin-top: 0;
-  }
+.how__chapter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
-.season__empty {
-  padding-block: 24px;
+.how__n {
+  padding-top: 3px;
+  font-size: var(--t-mono);
+  color: var(--faint);
+}
+.how__chapter.is-on .how__n {
+  color: var(--accent);
+}
+.how__body {
+  display: grid;
+  gap: 6px;
+}
+.how__title {
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--muted);
+  transition: color 0.25s;
+}
+.how__text {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--faint);
+  transition: color 0.25s;
+}
+.how__chapter.is-on .how__title {
+  color: var(--ink);
+}
+.how__chapter.is-on .how__text {
   color: var(--muted);
 }
-.season__all {
-  margin-top: var(--stack);
-  font-size: 16px;
+.how__card {
+  padding: var(--card-pad);
 }
-.season__all .link {
-  display: inline-block;
-  padding-block: 2px;
-  color: var(--ink-head);
+@media (min-width: 1024px) {
+  .how__card {
+    padding: 28px 28px 20px;
+  }
 }
-.season__count {
+.how__card .st--panel .st__plot {
+  height: clamp(240px, 30vw, 360px);
+}
+.how__cap {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: var(--t-ui-s);
+  line-height: 1.5;
+  color: var(--faint);
+}
+
+/* ================= Session cards (season grid) ================= */
+.sgrid {
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .sgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .sgrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+.scard {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  padding: var(--card-pad);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.25s, background-color 0.25s;
+}
+@media (hover: hover) {
+  .scard:hover {
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+  }
+  .scard:hover .sil path {
+    stroke: var(--muted);
+  }
+}
+.scard:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (min-width: 768px) {
+  .scard {
+    gap: 28px;
+    min-height: 248px;
+  }
+}
+.scard--skel {
+  min-height: 220px;
+  background: linear-gradient(90deg, var(--surface-1) 0%, var(--surface-2) 50%, var(--surface-1) 100%);
+  background-size: 200% 100%;
+}
+.scard__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  gap: 16px;
+  align-items: start;
+}
+.scard__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.scard__meta .num {
+  font-family: inherit;
+}
+.scard__flag {
+  height: 18px;
+  border-radius: 2px;
+}
+.scard__gp {
+  font-family: var(--font-display);
+  font-size: var(--t-title);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.scard__circuit {
+  margin: 6px 0 0;
+  font-size: var(--t-ui);
+  color: var(--muted);
+}
+.sil {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: visible;
+}
+.sil path {
+  fill: none;
+  stroke: var(--road-edge);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  transition: stroke 0.25s;
+}
+.sil--none {
+  display: block;
+}
+
+/* The number block: the median cut-off or its absence. */
+.scut {
+  display: grid;
+  gap: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.scut__v {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+.scut__n {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.scut__n--none {
+  color: var(--faint);
+}
+.scut__u {
+  font-family: var(--font-mono);
+  font-size: var(--t-ui);
+  color: var(--muted);
+}
+.scut__k {
+  margin: 0;
+  font-size: var(--t-ui-s);
+  line-height: 1.45;
+  color: var(--muted);
+}
+.scut .pill {
+  justify-self: start;
+}
+.scut__skel {
+  height: 40px;
+  width: 128px;
+}
+.scut__skel--k {
+  height: 12px;
+  width: 200px;
+}
+
+/* ================= Sessions page ================= */
+.sx-top {
+  display: grid;
+  gap: 20px;
+  padding-top: 24px;
+}
+@media (min-width: 1024px) {
+  .sx-top {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    padding-top: 72px;
+  }
+}
+.sx-top__main {
+  display: grid;
+  gap: 12px;
+}
+.sx-top__main > * {
+  margin: 0;
+}
+.sx-h1 {
+  font-size: var(--t-hero);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: var(--tr-section);
+  color: var(--ink);
+}
+.sx-intro {
+  max-width: var(--measure);
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--muted);
+}
+.sx-count {
+  margin: 0;
+  font-size: var(--t-ui);
+  color: var(--muted);
+}
+.sx-count .num {
+  color: var(--ink);
+}
+.sx-tabs {
+  margin-top: 40px;
+}
+.sx-tabs .tabs {
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+.sx-index {
+  display: grid;
+  gap: 20px;
+  padding-top: 32px;
+  padding-bottom: var(--section-y);
+}
+.sx-skel {
+  display: grid;
+  gap: 20px;
+}
+.sx-meeting--skel {
+  height: 240px;
+}
+.sx-meeting__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 64px;
+  gap: 16px;
+  align-items: center;
+  padding: var(--card-pad);
+  border-bottom: 1px solid var(--line);
+}
+@media (min-width: 768px) {
+  .sx-meeting__head {
+    grid-template-columns: auto minmax(0, 1fr) 80px;
+    gap: 20px;
+  }
+}
+.sx-meeting__flag {
+  height: 28px;
+  border-radius: 3px;
+}
+.sx-meeting__gp {
+  font-family: var(--font-display);
+  font-size: var(--t-title);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.sx-meeting__sub {
+  margin: 4px 0 0;
+  font-size: var(--t-ui);
+  color: var(--muted);
+}
+.sx-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  overflow: hidden;
+}
+@media (max-width: 767px) {
+  .stile {
+    padding: 16px;
+  }
+  .stile__head {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stile .scut__n {
+    font-size: 28px;
+  }
+}
+@media (min-width: 1024px) {
+  .sx-tiles {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+.sx-tiles > li {
+  display: flex;
+  background: var(--surface-1);
+  /* Hairlines between tiles, none around an empty cell. */
+  box-shadow: 0 0 0 1px var(--line);
+}
+.stile {
+  display: grid;
+  align-content: space-between;
+  gap: 20px;
+  width: 100%;
+  padding: var(--card-pad);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 0.25s;
+}
+@media (hover: hover) {
+  .stile:hover {
+    background: var(--surface-2);
+  }
+}
+.stile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.stile__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+}
+.stile__type {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.stile__date {
+  font-size: var(--t-ui);
+  color: var(--muted);
+}
+.stile .scut {
+  border-top: 0;
+  padding-top: 0;
+}
+.stile .scut__n {
+  font-size: 32px;
+}
+.stile.is-muted .stile__type {
   color: var(--muted);
 }
 
@@ -703,4 +897,91 @@
   .st__ci {
     transition: none !important;
   }
+}
+
+/* ---- The record on the landing: inside a card, normal rhythm, v3 type ---- */
+.record.record--card {
+  display: block;
+  min-height: 0;
+  padding: 28px 0 24px;
+}
+.record--card .record__strip {
+  margin-top: 0;
+}
+.record--card .record__strip::before {
+  left: 0;
+  right: 0;
+}
+.record--card .record__readout {
+  margin-top: 28px;
+  padding: 20px var(--card-pad) 0;
+  border-top: 1px solid var(--line);
+}
+@media (min-width: 900px) {
+  .record.record--card {
+    --tick-h: 120px;
+    padding: 28px 0 24px;
+  }
+  .record--card .record__strip {
+    margin-top: 0;
+  }
+  .record--card .record__readout-v {
+    font-size: var(--t-title);
+  }
+}
+
+.last__mapbox {
+  position: relative;
+  height: 100%;
+}
+.ladder {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ladder__lines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.ladder__lines path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.32);
+  stroke-width: 1;
+}
+.ladder__lines circle {
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+.ladder__chip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  height: 22px;
+  padding: 0 7px 0 0;
+  translate: 0 -50%;
+  overflow: hidden;
+  border-radius: var(--radius-chip);
+  background: var(--surface-3);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ladder__chip b {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 6px;
+  background: var(--team);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+}
+.ladder__chip .num {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
 }

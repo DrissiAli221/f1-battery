@@ -1,9 +1,7 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useMemo, useState, type ReactNode } from "react";
+import { Card, SectionHead } from "../components/system";
 import { Straight, type StraightLabels } from "../instrument/Straight";
 import type { Profile } from "../instrument/driver";
-import { ease, prefersReducedMotion } from "../motion";
 import { N } from "./recordData";
 
 /** The estimator's crossing level and speed floor (docs/phase4-estimator.md, model A_THRESH). */
@@ -61,82 +59,46 @@ const CHAPTERS: { title: ReactNode; text: ReactNode }[] = [
 ];
 
 /*
- * Sticky narrative (DESIGN.md "HOW IT IS READ"): the instrument at panel size sits in a CSS
- * sticky stage (col 5 to 12) while three chapters scroll in col 1 to 4. One ScrollTrigger per
- * chapter tweens the cursor's position in the taper ease; the instrument reads it every tick
- * (its "progress" input), so nothing re-renders per frame. Reduced motion: no sticky stage,
- * each chapter carries its own small trace with the cursor parked.
+ * How it is read (DESIGN.md v3 "Pages → Landing"): three short chapters beside the speed
+ * trace on a card. No pin and no idle creep: the cursor is parked where the active chapter
+ * points (hover, focus or tap a chapter to move it), the first chapter to begin with.
  */
 export function HowItIsRead({ profile, labels, pending = false }: { profile: Profile | null; labels: StraightLabels; pending?: boolean }) {
-  const [reduced] = useState(() => prefersReducedMotion());
   const [step, setStep] = useState(0);
-  const root = useRef<HTMLElement>(null);
-  const progress = useRef({ current: 0 }).current;
   const stops = useMemo(() => (profile ? chapterStops(profile) : null), [profile]);
 
-  useLayoutEffect(() => {
-    const el = root.current;
-    if (!el || reduced || !profile || !stops) return;
-    const L = profile.length_m || 1;
-    progress.current = stops[0] / L;
-    const ctx = gsap.context(() => {
-      el.querySelectorAll<HTMLElement>("[data-chapter]").forEach((ch, i) => {
-        ScrollTrigger.create({
-          trigger: ch,
-          start: "top 62%",
-          end: "bottom 62%",
-          invalidateOnRefresh: true,
-          onToggle: (self) => {
-            if (!self.isActive) return;
-            setStep(i);
-            gsap.to(progress, { current: stops[i] / L, duration: 1.2, ease: ease.taper, overwrite: true });
-          },
-        });
-      });
-    }, el);
-    return () => ctx.revert();
-  }, [profile, stops, reduced, progress]);
-
   return (
-    <section ref={root} className={`how wrap ${reduced ? "how--still" : ""}`} aria-labelledby="how-h">
-      <div className="section-intro how__intro">
-        <h2 id="how-h" className="section-intro__title" data-reveal>
-          How it is read
-        </h2>
-        <p className="section-intro__text" data-reveal>
-          F1 shows speed, not the battery. Three readings of the same trace turn one into the other.
-        </p>
-      </div>
+    <section className="lp-section wrap" aria-labelledby="how-h">
+      <SectionHead label="Method" title={<span id="how-h">How it is read</span>}>
+        <p>F1 shows speed, not the battery. Three readings of the same trace turn one into the other.</p>
+      </SectionHead>
 
-      {reduced ? (
-        <ol className="how__still">
+      <div className="how">
+        <ol className="how__chapters">
           {CHAPTERS.map((c, i) => (
-            <li key={i} className="how__still-item">
-              <h3 className="how__title">{c.title}</h3>
-              <p className="how__text">{c.text}</p>
-              <div className="how__mini" data-step={i}>
-                <Straight profile={profile} pending={pending} size="panel" readout="none" d={stops ? stops[i] : 0} labels={i === 2 ? labels : undefined} />
-              </div>
+            <li key={i}>
+              <button
+                type="button"
+                className={`how__chapter ${step === i ? "is-on" : ""}`}
+                aria-pressed={step === i}
+                onPointerEnter={(e) => e.pointerType === "mouse" && setStep(i)}
+                onFocus={() => setStep(i)}
+                onClick={() => setStep(i)}
+              >
+                <span className="how__n num">{String(i + 1).padStart(2, "0")}</span>
+                <span className="how__body">
+                  <span className="how__title">{c.title}</span>
+                  <span className="how__text">{c.text}</span>
+                </span>
+              </button>
             </li>
           ))}
         </ol>
-      ) : (
-        <div className="how__grid">
-          <ol className="how__chapters">
-            {CHAPTERS.map((c, i) => (
-              <li key={i} data-chapter className={`how__chapter ${step === i ? "is-on" : ""}`} aria-current={step === i ? "step" : undefined}>
-                <div data-reveal>
-                  <h3 className="how__title">{c.title}</h3>
-                  <p className="how__text">{c.text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <div className="how__stage" data-step={step}>
-            <Straight profile={profile} pending={pending} size="panel" d={{ mode: "progress", progress }} labels={labels} />
-          </div>
-        </div>
-      )}
+        <Card className="how__card">
+          <Straight profile={profile} pending={pending} size="panel" d={stops ? stops[step] : 0} labels={labels} />
+          <p className="how__cap">Median speed per 50&nbsp;m bin over the clean laps of one driver on one straight; the bracket is the cut-off's interval (est.).</p>
+        </Card>
+      </div>
     </section>
   );
 }

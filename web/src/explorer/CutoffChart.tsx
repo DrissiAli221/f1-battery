@@ -5,6 +5,7 @@ import { useSize } from "../lib/useSize";
 import type { Lap } from "../lib/types";
 import type { Cutoffs, Median } from "./data";
 import { lapKind } from "./LapAxis";
+import "../instrument/telemetry.css";
 
 export interface ChartDriver {
   number: number;
@@ -28,18 +29,18 @@ interface Props {
 }
 
 /*
- * Cut-off per lap on the selected straight, in metres from the straight's start. Measured laps
- * are dots (the selected driver filled in ink, the compare driver hollow in team colour); each
- * driver's session median is an estimate, so it is drawn with its construction: the bootstrap
- * interval as a hatched band and the median as a dashed line. The current lap is the accent
- * line; clicking a dot moves there.
+ * Cut-off per lap on the selected straight, in metres into the straight. Measured laps are
+ * dots in team colour (the compare driver hollow); each driver's session median is an
+ * estimate, so it is drawn with its construction: the bootstrap interval as a hatched band,
+ * the median as a line, labelled "median est.". The shown lap's dot is ringed; clicking a
+ * dot puts that lap on the stage.
  */
 export function CutoffChart({ straight, lapLen, laps, selectedLap, onLap, drivers, loading }: Props) {
   const [ref, { w: W }] = useSize<HTMLDivElement>();
   // Before the first measure, assume the phone size (the chart is below the fold on desktop).
   const narrow = W < 640;
-  const H = narrow ? 300 : 400;
-  const M = { l: narrow ? 44 : 56, r: 8, t: 28, b: 44 };
+  const H = narrow ? 300 : 380;
+  const M = { l: narrow ? 44 : 56, r: 12, t: 28, b: 44 };
   const sid = straight.straight_id;
   const rel = (d: number) => along(straight, d, lapLen);
 
@@ -81,125 +82,138 @@ export function CutoffChart({ straight, lapLen, laps, selectedLap, onLap, driver
     .join(". ");
 
   return (
-    <div ref={ref} className="xp-chart">
-      {/* The legend; below 640 px it also carries the medians, which would overprint the dots in the plot. */}
-      <ul className="xp-legend xp-legend--top">
+    <div ref={ref} className="cc">
+      <ul className="cc__legend">
         {series.map((s) => (
           <li key={s.dr.number}>
-            <i className="xp-dotsw" style={s.dr.hollow ? { border: `1.5px solid ${s.dr.colour}` } : { background: s.dr.colour }} /> {s.dr.code}
-            {narrow && showData && s.med && (
-              <span className="xp-legend__k">
-                median est. <span className="xp-legend__v">{int(s.med.m)}&nbsp;m</span>
+            <i className="cc__dot" style={s.dr.hollow ? { boxShadow: `inset 0 0 0 1.5px ${s.dr.colour}` } : { background: s.dr.colour }} />
+            <span className="cc__code">{s.dr.code}</span>
+            {showData && s.med && (
+              <span className="cc__med">
+                median est. <b>{int(s.med.m)}&nbsp;m</b>
               </span>
             )}
           </li>
         ))}
         <li>
-          <i className="xp-sw" style={{ background: "var(--accent)", width: 2, height: 12 }} /> lap {selectedLap ?? "–"}
+          <i className="cc__ring" /> lap {selectedLap ?? "–"}
         </li>
       </ul>
       <div style={{ height: H }}>
-      {W > 0 && (
-        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label={`Cut-off per lap on ${straight.label}. ${loading ? "Loading." : summary}`}>
-          <defs>
-            {series.map((s) => (
-              <pattern key={s.dr.number} id={`xp-band-${s.dr.number}`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="6" stroke={s.dr.colour} strokeWidth="1" strokeOpacity="0.55" />
-              </pattern>
+        {W > 0 && (
+          <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label={`Cut-off per lap on ${straight.label}. ${loading ? "Loading." : summary}`}>
+            <defs>
+              {series.map((s) => (
+                <pattern key={s.dr.number} id={`cc-band-${s.dr.number}`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                  <line x1="0" y1="0" x2="0" y2="6" stroke={s.dr.colour} strokeWidth="1" strokeOpacity="0.45" />
+                </pattern>
+              ))}
+            </defs>
+
+            {/* Grid and axes */}
+            {y.ticks(narrow ? 4 : 6).map((t) => (
+              <g key={t}>
+                <line x1={M.l} x2={W - M.r} y1={y(t)} y2={y(t)} className="tl__grid" />
+                <text x={M.l - 10} y={y(t) + 4} textAnchor="end" className="tl__num">
+                  {t < 0 ? `−${int(-t)}` : int(t)}
+                </text>
+              </g>
             ))}
-          </defs>
+            {x
+              .ticks(narrow ? 5 : 10)
+              .filter(Number.isInteger)
+              .map((t) => (
+                <line key={t} x1={x(t)} x2={x(t)} y1={M.t} y2={H - M.b} className="tl__grid" />
+              ))}
+            <text x={M.l - 10} y={M.t - 14} textAnchor="end" className="tl__unit">
+              m
+            </text>
+            <line x1={M.l} x2={W - M.r} y1={H - M.b} y2={H - M.b} className="tl__axis" />
+            {laps.map((l) => {
+              const k = lapKind(l);
+              return <line key={l.lap_number} x1={x(l.lap_number)} x2={x(l.lap_number)} y1={H - M.b + 2} y2={H - M.b + (k === "green" ? 6 : 9)} className={`lx__t lx__t--${k}`} />;
+            })}
+            {x
+              .ticks(narrow ? 5 : 10)
+              .filter(Number.isInteger)
+              .map((t) => (
+                <text key={t} x={x(t)} y={H - M.b + 26} textAnchor="middle" className="tl__num">
+                  {t}
+                </text>
+              ))}
+            <text x={W - M.r} y={H - 4} textAnchor="end" className="tl__unit">
+              lap
+            </text>
 
-          {/* Axes */}
-          {y.ticks(narrow ? 4 : 6).map((t) => (
-            <g key={t}>
-              <line x1={M.l} x2={W - M.r} y1={y(t)} y2={y(t)} className="xp-gridline" />
-              <text x={M.l - 10} y={y(t) + 4} textAnchor="end" className="xp-svgnum">
-                {t < 0 ? `−${int(-t)}` : int(t)}
-              </text>
-            </g>
-          ))}
-          <text x={M.l - 10} y={M.t - 12} textAnchor="end" className="xp-svgnum">
-            m
-          </text>
-          <line x1={M.l} x2={W - M.r} y1={H - M.b} y2={H - M.b} className="xp-axisline" />
-          {laps.map((l) => {
-            const k = lapKind(l);
-            return <line key={l.lap_number} x1={x(l.lap_number)} x2={x(l.lap_number)} y1={H - M.b} y2={H - M.b + (k === "green" ? 4 : 7)} className={`xp-lt xp-lt--${k}`} />;
-          })}
-          {x
-            .ticks(narrow ? 5 : 10)
-            .filter(Number.isInteger)
-            .map((t) => (
-              <text key={t} x={x(t)} y={H - M.b + 24} textAnchor="middle" className="xp-svgnum">
-                {t}
-              </text>
-            ))}
-          <text x={W - M.r} y={H - 4} textAnchor="end" className="xp-svgnum">
-            lap
-          </text>
-
-          {/* Medians: estimates, drawn hatched with a dashed line. */}
-          {showData &&
-            series.map((s, i) =>
-              s.med ? (
-                <g key={`m${s.dr.number}`}>
-                  {s.med.lo !== null && s.med.hi !== null && (
-                    <rect
-                      x={M.l}
-                      width={W - M.l - M.r}
-                      y={y(clampY(s.med.hi))}
-                      height={Math.max(2, y(clampY(s.med.lo)) - y(clampY(s.med.hi)))}
-                      fill={`url(#xp-band-${s.dr.number})`}
-                    />
-                  )}
-                  <line x1={M.l} x2={W - M.r} y1={y(clampY(s.med.m))} y2={y(clampY(s.med.m))} stroke={s.dr.colour} strokeWidth={1} strokeDasharray="4 4" />
-                  {!narrow && (
-                    <text x={W - M.r} y={y(clampY(s.med.m)) + (i === 0 ? -6 : 14)} textAnchor="end" className="xp-svgnum" style={{ fill: s.dr.colour }}>
-                      {s.dr.code} median est. {int(s.med.m)}&nbsp;m
-                    </text>
-                  )}
-                </g>
-              ) : null,
-            )}
-
-          {selectedLap !== null && <line x1={x(selectedLap)} x2={x(selectedLap)} y1={M.t - 8} y2={H - M.b} className="xp-chart__now" />}
-
-          {showData &&
-            series.map((s) =>
-              s.pts.map((p) => {
-                const out = p.y < d0 || p.y > d1;
-                const cy = y(clampY(p.y));
-                const cx = x(p.lap);
-                const on = p.lap === selectedLap;
-                return (
-                  <g key={`${s.dr.number}-${p.lap}`} className="xp-dot" onClick={() => onLap(p.lap)}>
-                    <title>{`${s.dr.code}, lap ${p.lap}: ${int(p.y)} m`}</title>
-                    <circle cx={cx} cy={cy} r={12} fill="transparent" />
-                    {out ? (
-                      <path
-                        d={p.y > d1 ? `M${cx - 4},${cy + 5}L${cx + 4},${cy + 5}L${cx},${cy - 2}Z` : `M${cx - 4},${cy - 5}L${cx + 4},${cy - 5}L${cx},${cy + 2}Z`}
-                        fill={s.dr.hollow ? "none" : s.dr.colour}
-                        stroke={s.dr.colour}
-                      />
-                    ) : (
-                      <circle
-                        className="xp-dot__c"
-                        cx={cx}
-                        cy={cy}
-                        r={on ? 5.5 : 3.5}
-                        fill={s.dr.hollow ? "var(--page-bg)" : s.dr.colour}
-                        stroke={on ? "var(--accent)" : s.dr.colour}
-                        strokeWidth={on ? 2 : s.dr.hollow ? 1.5 : 0}
+            {/* Medians: estimates, a hatched band with the median line, labelled. */}
+            {showData &&
+              series.map((s, i) =>
+                s.med ? (
+                  <g key={`m${s.dr.number}`}>
+                    {s.med.lo !== null && s.med.hi !== null && (
+                      <rect
+                        x={M.l}
+                        width={W - M.l - M.r}
+                        y={y(clampY(s.med.hi))}
+                        height={Math.max(2, y(clampY(s.med.lo)) - y(clampY(s.med.hi)))}
+                        fill={`url(#cc-band-${s.dr.number})`}
                       />
                     )}
+                    <line x1={M.l} x2={W - M.r} y1={y(clampY(s.med.m))} y2={y(clampY(s.med.m))} stroke={s.dr.colour} strokeWidth={1.25} strokeOpacity={0.9} />
+                    {!narrow && (
+                      <g transform={`translate(${i === 0 ? M.l + 10 : W - M.r - 10},${y(clampY(s.med.m)) + (i === 0 ? -8 : 16)})`}>
+                        <text className="cc__label" style={{ fill: s.dr.colour }} textAnchor={i === 0 ? "start" : "end"}>
+                          {s.dr.code}
+                          <tspan className="cc__label-k" dx="8">
+                            median est.{" "}
+                          </tspan>
+                          <tspan className="cc__label-v">{int(s.med.m)}&nbsp;m</tspan>
+                        </text>
+                      </g>
+                    )}
                   </g>
-                );
-              }),
-            )}
-        </svg>
-      )}
+                ) : null,
+              )}
+
+            {selectedLap !== null && <line x1={x(selectedLap)} x2={x(selectedLap)} y1={M.t} y2={H - M.b} className="cc__now" />}
+
+            {showData &&
+              series.map((s) =>
+                s.pts.map((p) => {
+                  const out = p.y < d0 || p.y > d1;
+                  const cy = y(clampY(p.y));
+                  const cx = x(p.lap);
+                  const on = p.lap === selectedLap;
+                  return (
+                    <g key={`${s.dr.number}-${p.lap}`} className="cc__pt" onClick={() => onLap(p.lap)}>
+                      <title>{`${s.dr.code}, lap ${p.lap}: ${int(p.y)} m`}</title>
+                      <circle cx={cx} cy={cy} r={12} fill="transparent" />
+                      {on && <circle cx={cx} cy={cy} r={9} fill="none" stroke="#fff" strokeWidth={1.5} />}
+                      {out ? (
+                        <path
+                          d={p.y > d1 ? `M${cx - 4},${cy + 5}L${cx + 4},${cy + 5}L${cx},${cy - 2}Z` : `M${cx - 4},${cy - 5}L${cx + 4},${cy - 5}L${cx},${cy + 2}Z`}
+                          fill={s.dr.hollow ? "none" : s.dr.colour}
+                          stroke={s.dr.colour}
+                        />
+                      ) : (
+                        <circle
+                          className="cc__c"
+                          cx={cx}
+                          cy={cy}
+                          r={on ? 5 : 4}
+                          fill={s.dr.hollow ? "var(--surface-1)" : s.dr.colour}
+                          stroke={s.dr.colour}
+                          strokeWidth={s.dr.hollow ? 1.5 : 0}
+                        />
+                      )}
+                    </g>
+                  );
+                }),
+              )}
+          </svg>
+        )}
       </div>
-      {!loading && !ys.length && <p className="xp-note">No cut-off on this straight for the selected drivers.</p>}
+      {!loading && !ys.length && <p className="ss-note">No cut-off on this straight for the selected drivers.</p>}
     </div>
   );
 }

@@ -1,13 +1,22 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Avatar } from "../components/Driver";
-import { driverCode, driverName, teamColour } from "../lib/teams";
+import { deepTeamColour, driverCode, driverName, headshotHd, teamColour } from "../lib/teams";
 import type { Driver } from "../lib/types";
 
+/** The driver's photo on the deep team colour (formula1.com headshot), or the code if it fails. */
+function Face({ d, size }: { d: Driver; size: number }) {
+  const [failed, setFailed] = useState(false);
+  const src = headshotHd(d, size * 2);
+  return (
+    <span className="dsel__face" style={{ width: size, height: size, background: deepTeamColour(d.team_colour) }}>
+      {src && !failed ? <img src={src} alt="" decoding="async" onError={() => setFailed(true)} /> : <span>{driverCode(d)}</span>}
+    </span>
+  );
+}
+
 /*
- * The header's driver picker: the headshot on its team-colour ring and the three-letter code
- * (Orbitron, its one use on this page besides tower positions). It opens a plain list on
- * ground-2 with one hairline: no popover chrome. Arrow keys move through the list, Escape
- * closes it and returns focus to the button.
+ * The header's driver picker, a broadcast input: surface-3, the team bar at its left edge, the
+ * driver's photo, the code in Titillium and the name. It opens a list card on surface-3.
+ * Arrow keys move through the list, Escape closes it and returns focus to the button.
  */
 export function DriverSelect({
   drivers,
@@ -82,45 +91,51 @@ export function DriverSelect({
   };
 
   return (
-    <div ref={box} className="xp-pick" data-align={align}>
+    <div ref={box} className="dsel" data-align={align} style={{ ["--team" as string]: current ? teamColour(current) : "var(--line-2)" }}>
+      <span className="dsel__label label" aria-hidden="true">
+        {label}
+      </span>
       <button
         ref={button}
         type="button"
-        className="xp-pick__btn"
+        className="dsel__btn"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? `${id}-list` : undefined}
         onClick={() => setOpen((o) => !o)}
       >
         <span className="sr-only">{label}: </span>
+        <i className="dsel__bar" aria-hidden="true" />
         {current ? (
           <>
-            <Avatar d={current} size={44} />
-            <span className="xp-pick__txt">
-              <span className="xp-pick__code">{driverCode(current)}</span>
-              <span className="xp-pick__name">{driverName(current)}</span>
+            <Face d={current} size={36} />
+            <span className="dsel__txt">
+              <span className="dsel__code">{driverCode(current)}</span>
+              <span className="dsel__name">{driverName(current)}</span>
             </span>
           </>
         ) : (
           <>
-            <span className="xp-pick__empty" aria-hidden="true" />
-            <span className="xp-pick__txt">
-              <span className="xp-pick__add">{allowNone ? "Compare" : "Driver"}</span>
-              <span className="xp-pick__name">{allowNone ? "add a driver" : "choose"}</span>
+            <span className="dsel__face dsel__face--empty" style={{ width: 36, height: 36 }} aria-hidden="true">
+              +
+            </span>
+            <span className="dsel__txt">
+              <span className="dsel__code dsel__code--muted">{allowNone ? "None" : "Driver"}</span>
+              <span className="dsel__name">{allowNone ? "add a driver" : "choose"}</span>
             </span>
           </>
         )}
-        <svg className="xp-pick__chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+        <svg className="dsel__chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
           <path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" />
         </svg>
       </button>
       {open && (
-        <ul ref={list} id={`${id}-list`} className="xp-pick__list" role="listbox" aria-label={label} onKeyDown={onListKey} data-lenis-prevent>
+        <ul ref={list} id={`${id}-list`} className="dsel__list" role="listbox" aria-label={label} onKeyDown={onListKey} data-lenis-prevent>
           {allowNone && (
             <li role="presentation">
-              <button type="button" role="option" aria-selected={value === null} className="xp-pick__opt" onClick={() => pick(null)}>
-                <span className="xp-pick__bar" style={{ background: "var(--line-strong)" }} />
-                <span className="xp-pick__none">No comparison</span>
+              <button type="button" role="option" aria-selected={value === null} className="dsel__opt" onClick={() => pick(null)}>
+                <span className="dsel__obar" style={{ background: "var(--line-strong)" }} />
+                <span className="dsel__none">No comparison</span>
               </button>
             </li>
           )}
@@ -133,15 +148,15 @@ export function DriverSelect({
                   role="option"
                   aria-selected={value === d.driver_number}
                   disabled={!ok}
-                  className="xp-pick__opt"
+                  className="dsel__opt"
                   onClick={() => pick(d.driver_number)}
                 >
-                  <span className="xp-pick__bar" style={{ background: teamColour(d) }} />
-                  <Avatar d={d} size={28} />
-                  <span className="xp-pick__code xp-pick__code--s">{driverCode(d)}</span>
-                  <span className="xp-pick__meta">
+                  <span className="dsel__obar" style={{ background: teamColour(d) }} />
+                  <Face d={d} size={28} />
+                  <span className="dsel__ocode">{driverCode(d)}</span>
+                  <span className="dsel__meta">
                     {driverName(d)}
-                    {!ok && <span className="xp-pick__why">, no cut-off</span>}
+                    {!ok && <span className="dsel__why"> · no cut-off</span>}
                   </span>
                 </button>
               </li>

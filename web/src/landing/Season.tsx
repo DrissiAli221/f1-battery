@@ -1,129 +1,56 @@
-import { useMemo, useState } from "react";
-import { CutTicks } from "../components/CutTicks";
-import { Straight } from "../instrument/Straight";
-import { int } from "../lib/format";
+import { useMemo } from "react";
+import { SectionHead } from "../components/system";
 import { href } from "../lib/router";
 import type { SessionRow } from "../lib/types";
-import { useRowData } from "../findings/sessionRow";
+import { SessionCard } from "./SessionCard";
 
-const ROWS = 10;
-
-const day = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }) : "–";
+/** Cards on the landing: three rows at desktop width. The sessions page has the rest. */
+const CARDS = 9;
 
 /*
- * Index list (DESIGN.md "THE SEASON"): one row per race or sprint with results, newest first.
- * Each row loads its numbers and its own trace only once it comes near the viewport (data.ts
- * spaces those requests). Hover or keyboard focus: the circuit name's underline draws, the
- * row's trace lights and its cursor runs.
+ * The season (DESIGN.md v3 "Pages → Landing"): the latest races and sprints with results as
+ * cards, newest first, three per row at lg, two at md, one on phones. Each card loads its
+ * number when it nears the viewport (SessionCard), through the shared rate-limit bucket.
  */
 export function Season({ sessions, loading }: { sessions: SessionRow[]; loading: boolean }) {
-  const rows = useMemo(
+  const cards = useMemo(
     () =>
       sessions
         .filter((s) => s.has_results && (s.session_name === "Race" || s.session_name === "Sprint"))
         .sort((a, b) => (b.date_start ?? "").localeCompare(a.date_start ?? ""))
-        .slice(0, ROWS),
+        .slice(0, CARDS),
     [sessions],
   );
   const total = useMemo(() => sessions.filter((s) => s.has_results).length, [sessions]);
 
   return (
-    <section className="season wrap" aria-labelledby="season-h">
-      <div className="section-intro">
-        <h2 id="season-h" className="section-intro__title" data-reveal>
-          The season
-        </h2>
-        <p className="section-intro__text" data-reveal>
-          The latest races and sprints. Each row is the session's main straight: every driver's median cut-off as a tick,
-          the session median drawn taller and printed in metres from the start of that straight.
-        </p>
-      </div>
-
-      <div className="season__head" aria-hidden="true">
-        <span>Circuit</span>
-        <span>Date</span>
-        <span>Session</span>
-        <span className="season__head-cut">Median cut-off (est.)</span>
-        <span className="season__head-trace">Main straight, one tick per driver (est.)</span>
-      </div>
-      {loading && !rows.length ? (
-        <p className="season__empty">Loading the season.</p>
-      ) : !rows.length ? (
-        <p className="season__empty">No published races or sprints yet.</p>
-      ) : (
-        <ul className="season__list">
-          {rows.map((s) => (
-            <SeasonRow key={s.session_key} session={s} />
-          ))}
-        </ul>
-      )}
-      <p className="season__all" data-reveal>
-        <a href={href.sessions()} className="link">
-          All sessions
-        </a>
-        {total > 0 && (
-          <span className="season__count">
-            {" "}
-            <span className="num">{total}</span> with published estimates
-          </span>
-        )}
-      </p>
-    </section>
-  );
-}
-
-function SeasonRow({ session }: { session: SessionRow }) {
-  const [hot, setHot] = useState(false);
-  // Ten rows, about 30 requests with the circuits shared: they are all queued at once through
-  // the rate-limit bucket (findings/throttle.ts), so the list is filled before it is reached.
-  const row = useRowData(session, true);
-  const cut = row.cutoff;
-  const pending = row.state !== "done";
-  const circuit = session.circuit_short_name ?? `Session ${session.session_key}`;
-
-  return (
-    <li className="season__li" data-reveal>
-      <a
-        href={href.session(session.session_key)}
-        className={`season__row ${hot ? "is-hot" : ""}`}
-        aria-busy={pending || undefined}
-        onPointerEnter={(e) => e.pointerType === "mouse" && setHot(true)}
-        onPointerLeave={() => setHot(false)}
-        onFocus={() => setHot(true)}
-        onBlur={() => setHot(false)}
+    <section className="lp-section wrap" aria-labelledby="season-h">
+      <SectionHead
+        label="The season"
+        title={<span id="season-h">Race by race</span>}
+        aside={
+          <a href={href.sessions()} className="lp-more">
+            All sessions{total > 0 && <span className="num"> · {total} with estimates</span>}
+          </a>
+        }
       >
-        <span className="season__name">{circuit}</span>
-        <span className="season__date num">{day(session.date_start)}</span>
-        <span className="season__type">{session.session_name}</span>
-        <span className="season__cut">
-          {cut !== null ? (
-            <>
-              <span className="num">{int(cut)}</span>&nbsp;m <span className="season__est">est.</span>
-            </>
-          ) : pending ? (
-            <>
-              <span className="shimmer shimmer--num" aria-hidden="true" />
-              <span className="sr-only">loading</span>
-            </>
-          ) : (
-            <>
-              <span className="num">–</span> <span className="season__est">no cut-off</span>
-            </>
-          )}
-        </span>
-        <span className="season__trace" aria-hidden="true">
-          {row.profile ? (
-            <Straight profile={row.profile} size="row" active={hot} />
-          ) : row.length !== null && row.ticks.length ? (
-            <CutTicks ticks={row.ticks} length={row.length} median={cut} active={hot} />
-          ) : pending ? (
-            <span className="shimmer shimmer--axis" />
-          ) : (
-            <span className="season__axis" />
-          )}
-        </span>
-      </a>
-    </li>
+        <p>The latest races and sprints, newest first, with the median cut-off on each main straight (est.).</p>
+      </SectionHead>
+      {loading && !cards.length ? (
+        <div className="sgrid" aria-busy="true">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="card scard scard--skel" />
+          ))}
+        </div>
+      ) : !cards.length ? (
+        <p className="lp-empty">No published races or sprints yet.</p>
+      ) : (
+        <div className="sgrid">
+          {cards.map((s) => (
+            <SessionCard key={s.session_key} session={s} />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

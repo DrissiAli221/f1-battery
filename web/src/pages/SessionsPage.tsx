@@ -1,29 +1,25 @@
 /*
- * Sessions `#/sessions`: the landing's index list at full size (DESIGN.md "The season"),
- * grouped by race weekend, newest first. Each row draws its own small trace (the session's
- * main-straight profile for one driver) instead of a floating image; its numbers load when
- * the row nears the viewport, through the rate-limit bucket. Hover or focus: the session
- * name's underline draws and the row's trace lights and runs its cursor.
+ * Sessions `#/sessions` (DESIGN.md v3 "Pages → Sessions"): every ingested session, grouped by
+ * race weekend, newest first. Each weekend is a card: flag, Grand Prix, circuit and dates with
+ * the circuit's outline (local index, no request), then one tile per session with its median
+ * cut-off on the main straight (est.), or a "no estimates" pill. Numbers load a few weekends
+ * ahead of the reader through the rate-limit bucket (findings/throttle.ts); no traces.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CutTicks } from "../components/CutTicks";
-import { Readout } from "../components/Readout";
-import { Straight } from "../instrument/Straight";
+import { Card, Flag, Label, Tabs } from "../components/system";
+import { useNearView } from "../findings/sessionRow";
 import { useList } from "../lib/api";
-import { int } from "../lib/format";
 import { href, useQueryState } from "../lib/router";
 import type { SessionRow } from "../lib/types";
 import { usePage } from "../motion";
-import { useNearView, useRowData } from "../findings/sessionRow";
-import "../findings/findings.css";
+import { circuitMeta, eventName } from "../track/circuits";
+import { SessionTile, dayMonth } from "../landing/SessionCard";
+import { Silhouette } from "../landing/Silhouette";
+import "../landing/landing.css";
 
 const TYPES = ["Race", "Sprint", "Qualifying", "Sprint Qualifying"] as const;
-const NB = " ";
 /** Weekends loaded ahead of the one nearest the viewport. */
-const PREFETCH = 3;
-
-const dayMonth = (iso: string, withYear: boolean) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: withYear ? "numeric" : undefined, timeZone: "UTC" });
+const PREFETCH = 2;
 
 /** "4–6 Sept 2026", "30 May – 1 Jun 2026". */
 function range(list: SessionRow[]): string {
@@ -33,28 +29,20 @@ function range(list: SessionRow[]): string {
   const b = new Date(ds[ds.length - 1]);
   if (a.getUTCDate() === b.getUTCDate() && a.getUTCMonth() === b.getUTCMonth()) return dayMonth(ds[0], true);
   if (a.getUTCMonth() === b.getUTCMonth()) return `${a.getUTCDate()}–${dayMonth(ds[ds.length - 1], true)}`;
-  return `${dayMonth(ds[0], false)} – ${dayMonth(ds[ds.length - 1], true)}`;
-}
-
-function Arrow() {
-  return (
-    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-      <path d="M2.5 8h11M9 3.5 13.5 8 9 12.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  );
+  return `${dayMonth(ds[0])} – ${dayMonth(ds[ds.length - 1], true)}`;
 }
 
 export function SessionsPage() {
   const sessions = useList<SessionRow>("/sessions");
   const [query] = useQueryState();
   const type = query.get("type");
-  const all = sessions.data ?? [];
+  const all = useMemo(() => sessions.data ?? [], [sessions.data]);
   const counts = useMemo(() => {
     const c = new Map<string, number>();
     for (const s of all) c.set(s.session_name, (c.get(s.session_name) ?? 0) + 1);
     return c;
   }, [all]);
-  // Grouped by meeting, newest weekend first; sessions inside a weekend in running order.
+  // Grouped by meeting, newest weekend first; sessions inside a weekend newest first too.
   const meetings = useMemo(() => {
     const by = new Map<number, SessionRow[]>();
     for (const s of all) {
@@ -63,66 +51,64 @@ export function SessionsPage() {
       by.get(s.meeting_key)!.push(s);
     }
     return [...by.values()]
-      .map((list) => list.sort((a, b) => (a.date_start ?? "").localeCompare(b.date_start ?? "")))
+      .map((list) => list.sort((a, b) => (b.date_start ?? "").localeCompare(a.date_start ?? "")))
       .sort((a, b) => (b[0].date_start ?? "").localeCompare(a[0].date_start ?? ""));
   }, [all, type]);
   const root = usePage<HTMLDivElement>(undefined, [meetings]);
-  // Rows load a weekend at a time: the first weekends at once, then each weekend that comes
-  // near the viewport also starts the next three, so the list is filled ahead of the reader.
+  // A weekend nearing the viewport also starts the next two, so numbers are in before they are read.
   const [reach, setReach] = useState(0);
   const seen = useCallback((i: number) => setReach((r) => Math.max(r, i)), []);
   const withResults = all.filter((s) => s.has_results).length;
 
+  const tabs = [
+    { key: "all", label: "All", count: sessions.data ? all.length : undefined },
+    ...TYPES.filter((t) => counts.has(t)).map((t) => ({ key: t as string, label: t, count: counts.get(t) })),
+  ];
+
   return (
-    <div ref={root}>
+    <div ref={root} className="lp sx">
       <section className="wrap sx-top" aria-labelledby="sx-h1">
-        <div data-intro>
+        <div className="sx-top__main" data-intro>
+          <Label as="p">2026 season</Label>
           <h1 id="sx-h1" className="sx-h1">
             Sessions
           </h1>
-          {/* Always rendered (it sits in the flow on phones): a shimmer until the list arrives, no shift. */}
-          <Readout label="Sessions">
-            {sessions.data ? (
-              <>
-                {all.length} sessions · {withResults} with estimates
-              </>
-            ) : (
-              <span className="shimmer shimmer--num" aria-hidden="true" />
-            )}
-          </Readout>
-        </div>
-        <div data-intro data-delay="0.1">
           <p className="sx-intro">
-            Every ingested 2026 session, newest weekend first. Each row draws the main straight with every driver’s median cut-off as a
-            tick and prints the session median (est.), in metres from the start of the straight. Open one to read every straight, lap by lap.
+            Every ingested session, newest weekend first, with the median cut-off on each main straight (est.). Open one to read every straight, lap
+            by lap.
           </p>
-          <nav className="sx-filter" aria-label="Filter by session type">
-            <a href={href.sessions()} aria-current={!type ? "true" : undefined}>
-              All <span>{sessions.data ? all.length : ""}</span>
-            </a>
-            {TYPES.filter((t) => counts.has(t)).map((t) => (
-              <a key={t} href={href.sessions(t)} aria-current={type === t ? "true" : undefined}>
-                {t} <span>{counts.get(t)}</span>
-              </a>
-            ))}
-          </nav>
         </div>
+        <p className="sx-count" data-intro>
+          {sessions.data ? (
+            <>
+              <span className="num">{all.length}</span> sessions · <span className="num">{withResults}</span> with estimates
+            </>
+          ) : (
+            <span className="shimmer shimmer--num" aria-hidden="true" />
+          )}
+        </p>
       </section>
 
-      <section className={`wrap sx-index fx-section--tight ${sessions.data ? "" : "is-loading"}`} aria-label="Sessions by race weekend">
-        {sessions.error && <p className="sx-intro">The session list could not be loaded: {sessions.error.message}</p>}
-        {sessions.loading && <p className="sx-intro">Loading the sessions.</p>}
-        {sessions.data && meetings.length === 0 && <p className="sx-intro">No sessions of this type yet.</p>}
-        {meetings.length > 0 && (
-          <div className="sx-legend" aria-hidden="true">
-            <span>Session</span>
-            <span>Date</span>
-            <span>Drivers with a cut</span>
-            <span>Median cut-off, main straight (est.)</span>
-            <span>Main straight, one tick per driver (est.)</span>
-            <span />
+      <div className="wrap sx-tabs" data-intro>
+        <Tabs
+          label="Filter by session type"
+          items={tabs}
+          value={type ?? "all"}
+          onChange={(k) => {
+            window.location.hash = k === "all" ? href.sessions() : href.sessions(k);
+          }}
+        />
+      </div>
+
+      <section className={`wrap sx-index ${sessions.data ? "" : "is-loading"}`} aria-label="Sessions by race weekend">
+        {sessions.error && <p className="lp-empty">The session list could not be loaded: {sessions.error.message}</p>}
+        {sessions.loading && (
+          <div className="sx-skel" aria-busy="true">
+            <div className="card sx-meeting sx-meeting--skel" />
+            <div className="card sx-meeting sx-meeting--skel" />
           </div>
         )}
+        {sessions.data && meetings.length === 0 && <p className="lp-empty">No sessions of this type yet.</p>}
         {meetings.map((m, i) => (
           <Meeting key={m[0].meeting_key} sessions={m} index={i} due={i <= reach + PREFETCH} onNear={seen} />
         ))}
@@ -134,102 +120,34 @@ export function SessionsPage() {
 function Meeting({ sessions, index, due, onNear }: { sessions: SessionRow[]; index: number; due: boolean; onNear: (i: number) => void }) {
   const first = sessions[0];
   const id = `sx-m-${first.meeting_key}`;
-  const [ref, near] = useNearView<HTMLElement>("600px 0px");
+  const meta = circuitMeta(first.circuit_key);
+  const [ref, near] = useNearView<HTMLDivElement>("600px 0px");
   useEffect(() => {
     if (near) onNear(index);
   }, [near, index, onNear]);
   return (
-    <section ref={ref} className="sx-meeting" aria-labelledby={id}>
-      <div className="sx-meeting__head" data-reveal>
-        <h2 id={id} className="sx-h2">
-          {first.circuit_short_name ?? "Unknown circuit"}
-        </h2>
-        <p className="sx-meeting__dates">{range(sessions)}</p>
-      </div>
-      <ul className="sx-rows">
-        {sessions.map((s) => (
-          <li key={s.session_key} data-reveal>
-            <Row s={s} due={due || near} />
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/** A loading value: a short shimmer bar in the number's place, never an ellipsis. */
-function Pending() {
-  return (
-    <>
-      <span className="shimmer shimmer--num" aria-hidden="true" />
-      <span className="sr-only">loading</span>
-    </>
-  );
-}
-
-function Row({ s, due }: { s: SessionRow; due: boolean }) {
-  const data = useRowData(s, due);
-  const [lit, setLit] = useState(false);
-  const muted = !s.has_results;
-  const pending = !muted && data.state !== "done";
-  const date = s.date_start ? dayMonth(s.date_start, false) : "no date";
-  const hasTicks = data.length !== null && data.ticks.length > 0;
-  return (
-    <a
-      href={href.session(s.session_key)}
-      className={`sx-row ${muted ? "is-muted" : ""}`}
-      aria-busy={pending || undefined}
-      onPointerEnter={(e) => e.pointerType === "mouse" && setLit(true)}
-      onPointerLeave={() => setLit(false)}
-      onFocus={() => setLit(true)}
-      onBlur={() => setLit(false)}
-    >
-      <span className="sx-row__name draw">{s.session_name}</span>
-      <span className="sx-row__meta">
-        <span className="sx-row__date">{date}</span>
-        {muted ? (
-          <>
-            <span className="sx-row__n">no estimates</span>
-            <span className="sx-row__cut" />
-          </>
-        ) : (
-          <>
-            <span className="sx-row__n">
-              {data.drivers !== null ? <b>{data.drivers}</b> : pending ? <Pending /> : <b>–</b>}
-              <span className="sx-row__k">{NB}{data.drivers === 1 ? "driver" : "drivers"} with a cut</span>
-            </span>
-            <span className="sx-row__cut">
-              {data.cutoff !== null ? (
-                <b>
-                  {int(data.cutoff)}
-                  {NB}m
-                </b>
-              ) : pending ? (
-                <Pending />
-              ) : (
-                <b>–</b>
-              )}
-              <span className="sx-row__k">
-                {NB}median cut-off{data.straightName ? `, ${data.straightName.toLowerCase()}` : ""} (est.)
-              </span>
-            </span>
-          </>
-        )}
-      </span>
-      <span className={`sx-row__trace ${data.profile || hasTicks ? "" : "is-empty"}`} aria-hidden="true">
-        {data.profile ? (
-          <Straight profile={data.profile} size="row" active={lit} />
-        ) : hasTicks ? (
-          <CutTicks ticks={data.ticks} length={data.length as number} median={data.cutoff} active={lit} />
-        ) : pending ? (
-          <span className="shimmer shimmer--axis" />
-        ) : (
-          <span className="sx-row__axis" />
-        )}
-      </span>
-      <span className="sx-row__go">
-        <Arrow />
-      </span>
-    </a>
+    <div ref={ref}>
+      <Card as="section" className="sx-meeting">
+        <div className="sx-meeting__head" data-reveal>
+          <Flag iso2={meta?.iso2} title={meta?.country} size={80} className="sx-meeting__flag" />
+          <div className="sx-meeting__id">
+            <h2 id={id} className="sx-meeting__gp">
+              {eventName(first.circuit_key, first.circuit_short_name)}
+            </h2>
+            <p className="sx-meeting__sub">
+              {meta?.name ?? first.circuit_short_name ?? "Unknown circuit"} · <span className="num">{range(sessions)}</span>
+            </p>
+          </div>
+          <Silhouette circuitKey={first.circuit_key} className="sx-meeting__sil" />
+        </div>
+        <ul className="sx-tiles" aria-labelledby={id}>
+          {sessions.map((s) => (
+            <li key={s.session_key} data-reveal>
+              <SessionTile session={s} due={due || near} />
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </div>
   );
 }

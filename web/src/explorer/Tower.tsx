@@ -1,13 +1,12 @@
-import { useState } from "react";
-import { Avatar } from "../components/Driver";
+import { useRef, useState } from "react";
+import { Tower, type TowerColumn, type TowerRow } from "../components/Tower";
 import { int } from "../lib/format";
-import { driverCode, driverName, teamColour } from "../lib/teams";
+import { driverCode } from "../lib/teams";
 import { along, type TrackStraight } from "../lib/track";
 import type { RegimeLabel, SummaryDriver } from "../lib/types";
+import { REGIME_VAR, REGIME_WORD, REGIMES } from "../track/regimes";
 import type { Median } from "./data";
-import { REGIME_VAR } from "./TrackMap";
 
-const REGIMES: RegimeLabel[] = ["deploy", "plateau", "lift", "brake"];
 const SHOWN = 10;
 
 interface Props {
@@ -18,6 +17,11 @@ interface Props {
   primary: number | null;
   compare: number | null;
   onPick: (driver: number) => void;
+  onCompare: (driver: number | null) => void;
+}
+
+interface Row extends TowerRow {
+  s: SummaryDriver;
 }
 
 const medOf = (r: SummaryDriver, sid: number): Median | null => {
@@ -26,14 +30,15 @@ const medOf = (r: SummaryDriver, sid: number): Median | null => {
 };
 
 /*
- * The tower: one row per driver, ranked by the median cut-off on the selected straight
- * (latest first). Position in Orbitron, the team bar, a small headshot, the code; then each
- * straight's median in mono, metres from the straight's start, with its interval drawn as a
- * tiny bracket on a scale shared by every driver for that straight; then the share of green
- * laps in each regime. A row is a button: it selects that driver.
+ * "Median cut-off per straight" on the shared timing tower: one row per driver, ranked by the
+ * selected straight's median (latest first); one column per straight with the median in
+ * metres into the straight and its 95 % interval as a half-width; the share of green laps in
+ * each regime as a stacked bar. Estimates carry no sector colours. A row selects the driver;
+ * shift-click or the "vs" button sets the compare driver.
  */
-export function Tower({ rows, straights: allStraights, lapLen, selected, primary, compare, onPick }: Props) {
+export function SessionTower({ rows, straights: allStraights, lapLen, selected, primary, compare, onPick, onCompare }: Props) {
   const [all, setAll] = useState(false);
+  const shift = useRef(false);
   // Only straights where someone has a cut-off get a column (Singapore: one of seven).
   const straights = allStraights.filter((s) => s.straight_id === selected || rows.some((r) => medOf(r, s.straight_id)));
   const sel = straights.find((s) => s.straight_id === selected) ?? straights[0];
@@ -46,92 +51,103 @@ export function Tower({ rows, straights: allStraights, lapLen, selected, primary
     .filter((r) => r.straights.some((s) => s.cutoff_distance_median_m !== null))
     .sort((a, b) => key(b) - key(a) || a.driver_number - b.driver_number);
   const without = rows.filter((r) => !ranked.includes(r));
-  const visible = all ? ranked : ranked.slice(0, SHOWN);
+  const visible: Row[] = (all ? ranked : ranked.slice(0, SHOWN)).map((s, i) => ({ driver: s, pos: i + 1, s }));
 
-  const scales = new Map(
-    straights.map((s) => {
-      const vals = ranked.flatMap((r) => {
-        const m = medOf(r, s.straight_id);
-        return m ? [m.lo ?? m.m, m.hi ?? m.m].map((v) => rel(s, v)) : [];
-      });
-      const lo = vals.length ? Math.min(...vals) : 0;
-      const hi = vals.length ? Math.max(...vals) : 1;
-      return [s.straight_id, { lo, hi: hi > lo ? hi : lo + 1 }];
-    }),
-  );
-  const pct = (s: TrackStraight, v: number) => {
-    const sc = scales.get(s.straight_id)!;
-    return 4 + ((rel(s, v) - sc.lo) / (sc.hi - sc.lo)) * 92;
-  };
-  const cols = { "--n": straights.length } as React.CSSProperties;
+  const columns: TowerColumn<Row>[] = [
+    ...straights.map(
+      (st): TowerColumn<Row> => ({
+        key: `s${st.straight_id}`,
+        num: true,
+        head: (
+          <span className={`tw-sh ${st.straight_id === sel?.straight_id ? "is-on" : ""}`} title={st.label ?? undefined}>
+            S{st.straight_id}
+            <span className="tw-sh__n">{st.into ?? st.label}</span>
+          </span>
+        ),
+        cell: (r) => {
+          const v = medOf(r.s, st.straight_id);
+          const on = st.straight_id === sel?.straight_id;
+          if (!v) return <span className="tw-none">–</span>;
+          const half = v.lo !== null && v.hi !== null ? (rel(st, v.hi) - rel(st, v.lo)) / 2 : null;
+          return (
+            <span className={`tw-m ${on ? "is-on" : ""}`}>
+              {int(rel(st, v.m))}
+              <span className="tw-ci">{half !== null ? `±${int(half)}` : ""}</span>
+            </span>
+          );
+        },
+      }),
+    ),
+    {
+      key: "regimes",
+      head: "Regimes",
+      width: "150px",
+      cell: (r) => <RegimeShare shares={r.s.regime_shares} />,
+    },
+    {
+      key: "vs",
+      head: <span className="sr-only">Compare</span>,
+      width: "56px",
+      cell: (r) => {
+        const n = r.driver.driver_number;
+        if (n === primary) return null;
+        const on = n === compare;
+        return (
+          <button
+            type="button"
+            className={`tw-vs ${on ? "is-on" : ""}`}
+            aria-pressed={on}
+            aria-label={on ? `Stop comparing with ${driverCode(r.driver)}` : `Compare with ${driverCode(r.driver)}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCompare(on ? null : n);
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            vs
+          </button>
+        );
+      },
+    },
+  ];
 
   return (
-    <div className="xp-tower" style={cols}>
-      <div className="xp-tower__head" aria-hidden="true">
-        <span />
-        <span />
-        <span>Driver</span>
-        {straights.map((s) => (
-          <span key={s.straight_id} className={`xp-tower__sh ${s.straight_id === sel?.straight_id ? "is-on" : ""}`}>
-            <span className="num">S{s.straight_id}</span> <span className="xp-tower__sn">{s.label}</span>
-          </span>
-        ))}
-        <span>Regimes</span>
+    <div className="tw">
+      <div
+        className="tw__scroll"
+        data-lenis-prevent-horizontal
+        onClickCapture={(e) => {
+          shift.current = e.shiftKey;
+        }}
+        onKeyDownCapture={(e) => {
+          shift.current = e.shiftKey;
+        }}
+      >
+        <Tower
+          rows={visible}
+          columns={columns}
+          selected={primary}
+          caption={`Median cut-off per straight, ranked by S${sel?.straight_id ?? ""}`}
+          onPick={(n) => {
+            if (shift.current && n !== primary) {
+              shift.current = false;
+              onCompare(n === compare ? null : n);
+              return;
+            }
+            onPick(n);
+          }}
+          className="tw__table"
+        />
       </div>
-      <ol className="xp-tower__list">
-        {visible.map((r, i) => {
-          const isP = r.driver_number === primary;
-          const isC = r.driver_number === compare;
-          return (
-            <li key={r.driver_number} data-reveal className={`xp-row ${isP ? "is-primary" : ""} ${isC ? "is-compare" : ""}`}>
-              <button
-                type="button"
-                className="xp-row__btn"
-                style={{ "--team": teamColour(r) } as React.CSSProperties}
-                onClick={() => onPick(r.driver_number)}
-              >
-                <span className="xp-row__in">
-                  <span className="xp-row__pos">{i + 1}</span>
-                  <span className="xp-row__bar" />
-                  <span className="xp-row__who">
-                    <Avatar d={r} size={28} />
-                    <span className="xp-row__code">{driverCode(r)}</span>
-                    <span className="xp-row__name">{r.last_name ?? driverName(r)}</span>
-                  </span>
-                  {straights.map((s) => {
-                    const v = medOf(r, s.straight_id);
-                    const on = s.straight_id === sel?.straight_id;
-                    return (
-                      <span key={s.straight_id} className={`xp-row__cell ${on ? "is-on" : ""}`}>
-                        <span className="xp-row__m">{v ? `${int(rel(s, v.m))}` : "–"}</span>
-                        {v && (
-                          <svg className="xp-row__br" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
-                            {v.lo !== null && v.hi !== null && (
-                              <path d={`M${pct(s, v.lo)},2V6H${pct(s, v.hi)}V2`} vectorEffect="non-scaling-stroke" />
-                            )}
-                            <line x1={pct(s, v.m)} x2={pct(s, v.m)} y1={0} y2={8} vectorEffect="non-scaling-stroke" className="xp-row__tick" />
-                          </svg>
-                        )}
-                      </span>
-                    );
-                  })}
-                  <RegimeShare shares={r.regime_shares} />
-                </span>
-                <span className="sr-only">{isP ? ", selected" : isC ? ", compared" : ", select this driver"}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-      <div className="xp-tower__foot">
+      <div className="tw__foot">
         {ranked.length > SHOWN && (
-          <button type="button" className="cta-ghost" onClick={() => setAll((a) => !a)} aria-expanded={all}>
-            {all ? "Show the first 10" : `Show all ${ranked.length}`}
+          <button type="button" className="ss-btn" onClick={() => setAll((a) => !a)} aria-expanded={all}>
+            {all ? `Show the first ${SHOWN}` : `Show all ${ranked.length}`}
           </button>
         )}
-        <p className="xp-note">
-          Metres from the start of each straight, median over green laps (est.); the bracket is the 95&nbsp;% interval on a scale shared by
-          every driver for that straight.
+        <p className="ss-note">
+          Metres into each straight, median over green laps (est.), ± half the 95&nbsp;% interval. Select a row to put that driver on the stage;
+          shift-click or "vs" to compare.
           {without.length > 0 && ` No cut-off on any straight: ${without.map((r) => driverCode(r)).join(", ")}.`}
         </p>
       </div>
@@ -141,9 +157,9 @@ export function Tower({ rows, straights: allStraights, lapLen, selected, primary
 
 function RegimeShare({ shares }: { shares: Partial<Record<RegimeLabel, number>> }) {
   const total = REGIMES.reduce((a, k) => a + (shares[k] ?? 0), 0);
-  if (!total) return <span className="xp-row__share" />;
+  if (!total) return <span className="tw-share tw-share--empty" />;
   return (
-    <span className="xp-row__share" title={REGIMES.map((k) => `${k} ${Math.round(((shares[k] ?? 0) / total) * 100)} %`).join(", ")}>
+    <span className="tw-share" title={REGIMES.map((k) => `${REGIME_WORD[k]} ${Math.round(((shares[k] ?? 0) / total) * 100)} %`).join(", ")}>
       {REGIMES.map((k) => (
         <span key={k} style={{ width: `${((shares[k] ?? 0) / total) * 100}%`, background: REGIME_VAR[k] }} />
       ))}

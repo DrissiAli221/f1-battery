@@ -1,129 +1,80 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { Straight, type StraightLabels } from "../instrument/Straight";
-import { REGIME_WORD, type Profile, type Regime } from "../instrument/driver";
+import { useId, useMemo, useRef } from "react";
+import { useEasedCursor, seekKey } from "../instrument/cursor";
+import type { Profile } from "../instrument/driver";
+import { SpeedChart } from "../instrument/SpeedChart";
+import "../instrument/telemetry.css";
 import { int } from "../lib/format";
 import { useSize } from "../lib/useSize";
 import type { RegimeLabel } from "../lib/types";
+import { REGIME_VAR, REGIME_WORD } from "../track/regimes";
 import type { Median } from "./data";
 import { regimeAtLap } from "./profile";
-import { useStore, type Store } from "./store";
-import { REGIME_VAR } from "./TrackMap";
+import type { Store } from "./store";
 
-/** What the page readout shows: one value per bin, never per frame. */
-export interface PanelReading {
-  d: number;
-  v: number | null;
-  regime: Regime | null;
+export interface Strip {
+  code: string;
+  colour: string;
+  /** Per-lap cut-offs, metres into the straight. */
+  cuts: number[];
+  median: Median | null;
 }
 
 interface Props {
-  /** "loading" draws the axis skeleton; "none" draws the regime bins only; else the trace. */
+  /** "loading" draws the frame's skeleton; "none" draws the per-lap cut-off strip; else the speed chart. */
   mode: "loading" | "none" | "ready";
   profile: Profile | null;
-  compare: { profile: Profile; colour: string } | null;
+  compare: { profile: Profile; colour: string; code: string } | null;
+  code: string;
   /** Straight length, m (from the profile when it exists, else the curated window). */
   length: number;
-  /** The straight's start, lap distance (to read the lap's regime bins in the fallback). */
+  /** The straight's start, lap distance (to read the lap's regime bins in the strip). */
   d0: number;
   lap: number;
   regimes: Map<number, RegimeLabel> | null;
-  /** Session median cut-off with its interval, metres along the straight. */
-  median: Median | null;
-  /** The shown lap's cut-off, metres along the straight. */
+  regLap: number | null;
   lapCut: number | null;
   lapNo: number | null;
+  lapColour: string;
   cursor: Store<number | null>;
-  onReading: (r: PanelReading) => void;
-  labels: StraightLabels;
-  /** Fallback only: each driver's per-lap cut-offs (m along the straight) and median. */
-  strips?: { code: string; colour: string; cuts: number[]; median: Median | null }[];
+  label: string;
+  strips: Strip[];
 }
 
 /*
- * The straight at panel size, driven by the page: `d` lives in a store the map and the
- * readout share. Pointer (move and press) and keyboard on the plot set it; the instrument
- * eases to it. The shown lap's own cut-off is drawn on top as a small tick on the axis.
+ * The stage's right column body: the speed chart when the straight's profile is published,
+ * otherwise the per-lap cut-off strip on the same grid (the published per-lap results over
+ * each driver's median estimate). Both follow the page's shared cursor.
  */
 export function StraightPanel(p: Props) {
-  const d = useStore(p.cursor);
-  const plotBox = useRef<HTMLDivElement>(null);
-  const L = p.profile?.length_m ?? p.length;
-
-  const onMove = (e: React.PointerEvent) => {
-    if (e.pointerType !== "mouse" || p.mode !== "ready") return;
-    const plot = plotBox.current?.querySelector<HTMLElement>(".st__plot");
-    if (!plot) return;
-    const r = plot.getBoundingClientRect();
-    if (e.clientY > r.bottom) return;
-    p.cursor.set(Math.max(0, Math.min(L, ((e.clientX - r.left) / r.width) * L)));
-  };
-
-  const onStraightReading = useCallback(
-    (r: { d: number; v: number; regime: Regime }) => p.onReading({ d: r.d, v: r.v, regime: r.regime }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.onReading],
-  );
-
-  if (p.mode === "loading") {
+  if (p.mode === "loading") return <div className="tl tl--skel skel" aria-busy="true" aria-label="Loading the speed profile" />;
+  if (p.mode === "ready" && p.profile) {
     return (
-      <div className="xp-straight">
-        <Straight profile={null} size="panel" readout="none" labels={p.labels} />
-      </div>
+      <SpeedChart profile={p.profile} code={p.code} compare={p.compare} cursor={p.cursor} lapCut={p.lapCut} lapNo={p.lapNo} lapColour={p.lapColour} label={p.label} />
     );
   }
-  if (p.mode !== "ready" || !p.profile) {
-    return <RegimeAxis {...p} d={d ?? 0} />;
-  }
-
-  return (
-    <div ref={plotBox} className="xp-straight" onPointerMove={onMove}>
-      <div className="xp-straight__in">
-        <Straight
-          profile={p.profile}
-          compare={p.compare}
-          size="panel"
-          d={d ?? p.profile.cutoff_median_m ?? L / 2}
-          onSeek={(v) => p.cursor.set(v)}
-          onReading={onStraightReading}
-          readout="none"
-          labels={p.labels}
-        />
-        {p.lapCut !== null && p.lapCut >= 0 && p.lapCut <= L && (
-          <div className="xp-lapcut" style={{ left: `${(p.lapCut / L) * 100}%` }} aria-hidden="true">
-            <span className="xp-lapcut__mark" />
-            <span className="xp-lapcut__label">L{p.lapNo}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return <CutStrip {...p} />;
 }
 
-/*
- * Without a speed profile (rows not published yet): the straight's distance axis carries what
- * is published. Each driver's per-lap cut-offs as a strip of ticks (measured laps, one tick
- * each) over that driver's median estimate with its hatched interval and bracket; the shown
- * lap's regimes as the band on the axis; the lap's own cut-off as a mark. Same cursor, same
- * keyboard, same readout (without speed).
- */
-function RegimeAxis(p: Props & { d: number }) {
-  const [ref, { w: W, h: Hbox }] = useSize<HTMLDivElement>();
-  const L = p.length;
-  const strips = p.strips ?? [];
-  const n = Math.max(1, strips.length);
-  const top = 28;
-  const foot = 60; // gap above the axis (20) and the regime band with its numbers (40)
-  // Desktop: the plot fills the stage's column (flex), so the rows share its height. Phones:
-  // fixed rows, and the box holds that height before the first measure (no layout shift).
-  const fill = typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
-  const fixedH = top + n * 64 + foot;
-  const H = fill && Hbox > fixedH ? Hbox : fixedH;
-  const rowH = (H - top - foot) / n;
-  const axisY = top + n * rowH + 20;
-  const x = (m: number) => (Math.max(0, Math.min(L, m)) / (L || 1)) * W;
+const M = { l: 6, r: 10, t: 10, b: 50 };
 
-  // Where more than 25 laps fall within one 50 m bin, the ticks merge into a block: split
-  // them into two rows (alternate laps) so each stays a tick.
+/*
+ * Without a speed profile: the straight's distance axis carries what is published. One row per
+ * driver: a tick per lap at that lap's cut-off, over the driver's median estimate with its
+ * hatched interval; the shown lap's regimes as the strip under the axis; the lap's own cut-off
+ * as a chip on the axis. The tooltip says how many of the driver's laps were cut by the cursor.
+ */
+function CutStrip(p: Props) {
+  const uid = useId().replace(/:/g, "");
+  const [box, { w: W, h: H }] = useSize<HTMLDivElement>();
+  const L = p.length || 1;
+  const strips = p.strips;
+  const n = Math.max(1, strips.length);
+  const axisY = H - M.b;
+  const rowH = (axisY - M.t) / n;
+  const sx = (m: number) => M.l + (Math.max(0, Math.min(L, m)) / L) * Math.max(1, W - M.l - M.r);
+  const ready = W > 0 && H > 0;
+
+  // Where more than 25 laps fall within one 50 m bin the ticks merge: alternate laps take two rows.
   const dense = useMemo(
     () =>
       strips.some((s) => {
@@ -145,117 +96,152 @@ function RegimeAxis(p: Props & { d: number }) {
     return out;
   }, [L, p.regimes, p.d0, p.lap]);
 
-  // The readout changes on bin changes only, like the instrument's.
-  const bin = Math.floor(Math.min(p.d, L - 1) / 50);
-  const regime = regimeAtLap(p.regimes, p.d0 + p.d, p.lap);
-  const { onReading } = p;
-  useEffect(() => {
-    onReading({ d: Math.min(L, bin * 50 + 25), v: null, regime });
-  }, [bin, regime, onReading, L]);
+  const sorted = useMemo(() => strips.map((s) => [...s.cuts].sort((a, b) => a - b)), [strips]);
+  const dStep = L > 700 ? 200 : 100;
+  const dTicks: number[] = [];
+  for (let m = 0; m <= L + 1e-6; m += dStep) dTicks.push(m);
+
+  // ---- cursor
+  const curRef = useRef<SVGGElement>(null);
+  const tip = useRef<HTMLDivElement>(null);
+  const t = useRef<Record<string, HTMLElement | null>>({});
+  const slider = useRef<HTMLDivElement | null>(null);
+  useEasedCursor(
+    p.cursor,
+    (d) => {
+      if (!ready) return;
+      const x = sx(d);
+      curRef.current?.setAttribute("transform", `translate(${x.toFixed(1)},0)`);
+      const el = tip.current;
+      if (el) {
+        const gap = 22;
+        const flip = x + gap + el.offsetWidth > W - 4;
+        const left = Math.max(0, Math.min(W - el.offsetWidth, flip ? x - gap - el.offsetWidth : x + gap));
+        el.style.transform = `translate(${left.toFixed(1)}px, 0)`;
+      }
+      const tx = t.current;
+      if (tx.d) tx.d.textContent = `${int(d)} m`;
+      sorted.forEach((cuts, i) => {
+        const k = cuts.filter((c) => c <= d).length;
+        const e = tx[`c${i}`];
+        if (e) e.textContent = `${k}/${cuts.length}`;
+      });
+      const regime = regimeAtLap(p.regimes, p.d0 + d, p.lap);
+      if (tx.r) {
+        tx.r.textContent = regime ? `lap ${p.regLap ?? "–"} ${REGIME_WORD[regime]}` : "";
+        tx.r.style.setProperty("--regime", regime ? REGIME_VAR[regime] : "");
+      }
+      slider.current?.setAttribute("aria-valuenow", String(Math.round(d)));
+      slider.current?.setAttribute("aria-valuetext", `${int(d)} metres${regime ? `, ${REGIME_WORD[regime]}` : ""}`);
+    },
+    [ready, W, H, L, sorted, p.regimes, p.d0, p.lap, p.regLap],
+  );
 
   const toD = (clientX: number, el: HTMLElement) => {
     const r = el.getBoundingClientRect();
-    return Math.max(0, Math.min(L, ((clientX - r.left) / r.width) * L));
+    return Math.max(0, Math.min(L, ((clientX - r.left - M.l) / Math.max(1, r.width - M.l - M.r)) * L));
   };
-  const ticks: number[] = [];
-  for (let m = 0; m <= L; m += 200) ticks.push(m);
 
   return (
-    <figure className="xp-straight xp-regaxis">
-      <div
-        ref={ref}
-        className="xp-regaxis__plot"
-        style={fill ? { minHeight: fixedH } : { height: fixedH }}
-        role="slider"
-        tabIndex={0}
-        aria-label={`Distance along ${p.labels.straight ?? "the straight"}`}
-        aria-valuemin={0}
-        aria-valuemax={Math.round(L)}
-        aria-valuenow={Math.round(p.d)}
-        aria-valuetext={`${int(p.d)} metres, ${regime ? REGIME_WORD[regime] : "no regime"}`}
-        onPointerDown={(e) => p.cursor.set(toD(e.clientX, e.currentTarget))}
-        onPointerMove={(e) => e.pointerType === "mouse" && p.cursor.set(toD(e.clientX, e.currentTarget))}
-        onKeyDown={(e) => {
-          const step = e.key === "ArrowRight" || e.key === "ArrowUp" ? 50 : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -50 : 0;
-          let next: number | null = step ? Math.max(0, Math.min(L, Math.floor(p.d / 50) * 50 + 25 + step)) : null;
-          if (e.key === "Home") next = 0;
-          if (e.key === "End") next = L;
-          if (next === null) return;
-          e.preventDefault();
-          p.cursor.set(next);
-        }}
-      >
-        {W > 0 && (
-          <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block overflow-visible" aria-hidden="true">
-            <defs>
-              {strips.map((s, i) => (
-                <pattern key={i} id={`xp-hatch-${i}`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                  <line x1="0" y1="0" x2="0" y2="6" stroke={s.colour} strokeOpacity="0.45" strokeWidth="1" />
-                </pattern>
-              ))}
-            </defs>
-            {ticks.slice(1).map((m) => (
-              <line key={m} x1={x(m)} x2={x(m)} y1={top - 8} y2={axisY} className="xp-gridline" />
+    <div
+      ref={(el) => {
+        box(el);
+        slider.current = el;
+      }}
+      className="tl"
+      role="slider"
+      tabIndex={0}
+      aria-label={`Distance along ${p.label}`}
+      aria-valuemin={0}
+      aria-valuemax={Math.round(L)}
+      onPointerMove={(e) => e.pointerType === "mouse" && p.cursor.set(toD(e.clientX, e.currentTarget))}
+      onPointerDown={(e) => p.cursor.set(toD(e.clientX, e.currentTarget))}
+      onKeyDown={(e) => seekKey(e, p.cursor, L)}
+    >
+      {ready && (
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="tl__svg" aria-hidden="true">
+          <defs>
+            {strips.map((s, i) => (
+              <pattern key={i} id={`${uid}-h${i}`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke={s.colour} strokeOpacity="0.4" strokeWidth="1" />
+              </pattern>
             ))}
-            {strips.map((s, i) => {
-              // A label line, then the drawing band under it.
-              const y0 = top + i * rowH;
-              const b0 = y0 + 12;
-              const bh = rowH - 16;
-              const mid = b0 + bh / 2;
-              const th = Math.min(bh / 2 - 6, 8 + (rowH - 64) / 4); // tick half-height, grows with the row
-              const md = s.median;
-              return (
-                <g key={s.code}>
-                  {md && md.lo !== null && md.hi !== null && (
-                    <>
-                      <rect x={x(md.lo)} y={b0 + 4} width={Math.max(2, x(md.hi) - x(md.lo))} height={bh - 4} fill={`url(#xp-hatch-${i})`} />
-                      <path d={`M${x(md.lo)},${b0 + 8}v-4H${x(md.hi)}v4`} fill="none" stroke={s.colour} />
-                    </>
+          </defs>
+          {dTicks.map((m) => (
+            <line key={m} x1={sx(m)} x2={sx(m)} y1={M.t} y2={axisY} className="tl__grid" />
+          ))}
+          {strips.map((s, i) => {
+            const y0 = M.t + i * rowH;
+            const b0 = y0 + 30;
+            const bh = Math.max(16, rowH - 42);
+            const mid = b0 + bh / 2;
+            const th = Math.min(bh / 2 - 2, 64);
+            const md = s.median;
+            return (
+              <g key={s.code + i}>
+                {i > 0 && <line x1={M.l} x2={W - M.r} y1={y0} y2={y0} className="tl__grid" />}
+                <text x={M.l} y={y0 + 14} className="tl__code" style={{ fill: s.colour }}>
+                  {s.code}
+                  {md ? (
+                    <tspan className="tl__num" dx="10">
+                      median est. <tspan className="tl__num--ink">{int(md.m)} m</tspan>
+                      {md.lo !== null && md.hi !== null && ` ${int(md.lo)}–${int(md.hi)}`}
+                    </tspan>
+                  ) : (
+                    <tspan className="tl__num" dx="10">
+                      no cut-off here
+                    </tspan>
                   )}
-                  {s.cuts.map((c, j) => {
-                    const [a, b] = !dense ? [mid - th, mid + th] : j % 2 ? [mid + 2, mid + th + 2] : [mid - th - 2, mid - 2];
-                    return <line key={j} x1={x(c)} x2={x(c)} y1={a} y2={b} stroke={s.colour} strokeOpacity={0.55} strokeWidth={1} />;
-                  })}
-                  {md && <line x1={x(md.m)} x2={x(md.m)} y1={b0} y2={b0 + bh} stroke={s.colour} strokeWidth={2} />}
-                  <text x={0} y={y0} className="xp-svgcode" style={{ fill: s.colour }}>
-                    {s.code}
-                    {md && (
-                      <tspan className="xp-svgnum" dx="10">
-                        median est. <tspan className="xp-svgnum--ink">{int(md.m)}&nbsp;m</tspan>
-                      </tspan>
-                    )}
-                  </text>
-                </g>
-              );
-            })}
-            <line x1={0} x2={W} y1={axisY} y2={axisY} className="xp-axisline" />
-            {spans.map((s, i) => (
-              <rect key={i} x={x(s.from)} y={axisY + 1} width={Math.max(0, x(s.to) - x(s.from))} height={6} fill={s.label ? REGIME_VAR[s.label] : "var(--line)"} />
-            ))}
-            {p.lapCut !== null && p.lapCut >= 0 && p.lapCut <= L && (
-              <g transform={`translate(${x(p.lapCut)},${axisY})`}>
-                <path d="M0,0L-4.5,-8H4.5Z" fill="var(--ink)" />
-                <text x={7} y={-2} className="xp-svgnum xp-svgnum--ink">
-                  L{p.lapNo}
                 </text>
+                {md && md.lo !== null && md.hi !== null && (
+                  <rect x={sx(md.lo)} y={b0} width={Math.max(2, sx(md.hi) - sx(md.lo))} height={bh} fill={`url(#${uid}-h${i})`} />
+                )}
+                {s.cuts.map((c, j) => {
+                  const [a, b] = !dense ? [mid - th, mid + th] : j % 2 ? [mid + 2, mid + th] : [mid - th, mid - 2];
+                  return <line key={j} x1={sx(c)} x2={sx(c)} y1={a} y2={b} stroke={s.colour} strokeOpacity={0.5} strokeWidth={1} />;
+                })}
+                {md && <line x1={sx(md.m)} x2={sx(md.m)} y1={b0 - 4} y2={b0 + bh + 4} stroke={s.colour} strokeWidth={2} />}
               </g>
-            )}
-            {ticks.map((m, i) => (
-              <text key={m} x={x(m)} y={axisY + 26} textAnchor={i === 0 ? "start" : m > L - 60 ? "end" : "middle"} className="xp-svgnum">
-                {i === 0 ? "0 m" : int(m)}
+            );
+          })}
+          <line x1={M.l} x2={W - M.r} y1={axisY} y2={axisY} className="tl__axis" />
+          {spans.map((s, i) => (
+            <rect key={i} x={sx(s.from)} y={axisY + 5} width={Math.max(0, sx(s.to) - sx(s.from))} height={4} rx={1} fill={s.label ? REGIME_VAR[s.label] : "var(--line)"} />
+          ))}
+          {dTicks.map((m, i) => (
+            <text key={m} x={sx(m)} y={axisY + 28} textAnchor={i === 0 ? "start" : m > L - dStep / 2 ? "end" : "middle"} className="tl__num">
+              {i === 0 ? "0 m" : int(m)}
+            </text>
+          ))}
+          {p.lapCut !== null && p.lapCut >= 0 && p.lapCut <= L && (
+            <g transform={`translate(${sx(p.lapCut).toFixed(1)},${axisY})`}>
+              <line y1={0} y2={-10} stroke={p.lapColour} strokeWidth={2} />
+              <rect x={-17} y={-26} width={34} height={16} rx={4} fill={p.lapColour} />
+              <text y={-14.5} textAnchor="middle" className="tl__chip">
+                L{p.lapNo}
               </text>
-            ))}
-            <line x1={x(p.d)} x2={x(p.d)} y1={top - 12} y2={axisY + 8} className="xp-regaxis__cursor" />
-            <circle cx={x(p.d)} cy={axisY + 4} r={4} className="xp-map__dot-core" />
-          </svg>
-        )}
-      </div>
-      <figcaption className="xp-note">
-        One tick per lap at its cut-off, over each driver's median estimate
-        {dense ? "; where more than 25 laps fall within 50\u00a0m, alternate laps sit on two rows" : ""}. The speed profile for this straight is
-        not published yet.
-      </figcaption>
-    </figure>
+            </g>
+          )}
+          <g ref={curRef} className="tl__cursor">
+            <line x1={0} x2={0} y1={M.t} y2={axisY + 9} />
+            <circle r={4} cy={axisY} className="tl__dot tl__dot--p" />
+          </g>
+        </svg>
+      )}
+      {ready && (
+        <div ref={tip} className="tl-tip" style={{ top: M.t + 30 }} aria-hidden="true">
+          <p className="tl-tip__d" ref={(el) => (t.current.d = el)} />
+          {strips.map((s, i) => (
+            <p key={s.code + i} className="tl-tip__row">
+              <i style={{ background: s.colour }} />
+              <span className="tl-tip__k">{s.code}</span>
+              <b ref={(el) => (t.current[`c${i}`] = el)} />
+              <span className="tl-tip__u">laps cut</span>
+            </p>
+          ))}
+          <p className="tl-tip__regime" ref={(el) => (t.current.r = el)} />
+        </div>
+      )}
+    </div>
   );
 }

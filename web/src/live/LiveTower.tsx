@@ -1,10 +1,9 @@
-import { REGIME_VAR } from "../explorer/TrackMap";
-import { driverCode, driverName, teamColour } from "../lib/teams";
-import type { Driver } from "../lib/types";
+import { Pill } from "../components/system";
+import { Tower, type TowerColumn, type TowerRow as BaseRow } from "../components/Tower";
+import { REGIME_WORD } from "../track/regimes";
 import type { LiveRegime } from "./useLive";
 
-export interface TowerRow {
-  driver: Driver;
+export interface TowerRow extends BaseRow {
   /** Position in this tower's order, 1 first. */
   pos: number;
   /** Gap to the first row, already formatted ("+412 m", "+12.3 s", "+1 lap"), or null. */
@@ -12,69 +11,26 @@ export interface TowerRow {
   regime: LiveRegime | null;
 }
 
-const WORD: Record<LiveRegime, string> = {
-  deploy: "deploying",
-  plateau: "plateau",
-  lift: "lifting",
-  brake: "braking",
-  other: "other",
-};
-
 /*
- * The timing tower (DESIGN.md "Live"): position in Orbitron, the team bar, the code, the gap in
- * mono and the regime in words. A row is a button that selects the car on the map; rows light
- * their team bar and slide 4 px along x on hover and focus.
+ * The live timing tower: the shared broadcast table (components/Tower, compact) with the gap
+ * in mono and, with a feed, the car's regime as a small pill whose dot carries the regime
+ * colour. A row selects the car on the map.
  */
-export function LiveTower({
-  rows,
-  selected,
-  onPick,
-  caption,
-  live,
-}: {
-  rows: TowerRow[];
-  selected: number | null;
-  onPick: (n: number) => void;
-  caption: string;
-  /** With a feed: the regime column. */
-  live: boolean;
-}) {
-  return (
-    <div className={`lv-tower ${live ? "" : "lv-tower--flag"}`}>
-      <p className="lv-tower__cap">{caption}</p>
-      <ol className="lv-tower__list">
-        {rows.map((r) => {
-          const n = r.driver.driver_number;
-          const on = n === selected;
-          return (
-            <li key={n} className={`lv-row ${on ? "is-on" : ""}`} data-reveal>
-              <button
-                type="button"
-                className="lv-row__btn"
-                aria-pressed={on}
-                style={{ ["--team" as string]: teamColour(r.driver) }}
-                onClick={() => onPick(n)}
-              >
-                <span className="lv-row__pos">{r.pos}</span>
-                <span className="lv-row__bar" aria-hidden="true" />
-                <span className="lv-row__code">{driverCode(r.driver)}</span>
-                <span className="lv-row__name">{r.driver.last_name ?? driverName(r.driver)}</span>
-                <span className="lv-row__gap num">{r.gap ?? ""}</span>
-                {live && (
-                  <span className="lv-row__reg">
-                    {r.regime && (
-                      <>
-                        <i style={{ background: REGIME_VAR[r.regime] }} aria-hidden="true" />
-                        {WORD[r.regime]}
-                      </>
-                    )}
-                  </span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
-  );
+export function LiveTower({ rows, selected, onPick, live }: { rows: TowerRow[]; selected: number | null; onPick: (n: number) => void; live: boolean }) {
+  const columns: TowerColumn<TowerRow>[] = [
+    { key: "gap", head: "Gap", num: true, cell: (r) => r.gap ?? (r.pos === 1 ? "Leader" : ""), tone: (r) => (r.pos === 1 || r.gap === "no laps" ? "muted" : null) },
+  ];
+  if (live)
+    columns.push({
+      key: "regime",
+      head: "Regime",
+      cell: (r) =>
+        r.regime ? (
+          <Pill dot className={`lv-reg lv-reg--${r.regime}`}>
+            {REGIME_WORD[r.regime]}
+          </Pill>
+        ) : null,
+      width: "112px",
+    });
+  return <Tower rows={rows} columns={columns} selected={selected} onPick={onPick} compact showName caption={live ? "Live order by estimated distance" : "Order at the flag"} className="lv-tower" />;
 }

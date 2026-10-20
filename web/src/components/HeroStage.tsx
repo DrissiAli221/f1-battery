@@ -13,6 +13,7 @@ import { prefersReducedMotion } from "../motion";
  * It also tells the navbar it is over a hero: `html.has-hero` while mounted, and
  * `html.nav-clear` (transparent bar) until the hero's bottom passes 64 px.
  */
+// React 18 does not know `fetchPriority`; the lowercase attribute reaches the DOM as is.
 export function HeroStage({
   trace,
   photo,
@@ -82,7 +83,7 @@ export function HeroStage({
                   sizes="100vw"
                 />
               ) : null}
-              <img className="hero__photo" src={photo.src} alt={photo.alt} fetchPriority="high" decoding="async" />
+              <img className="hero__photo" src={photo.src} alt={photo.alt} decoding="async" {...{ fetchpriority: "high" }} />
             </picture>
             <div className="hero__scrim" aria-hidden="true" />
           </>

@@ -26,8 +26,8 @@ interface Props {
 
 /*
  * The race as a distance axis: one tick per lap, green laps in ink (full height where the lap
- * has a cut-off on the selected straight), pit and start laps muted, neutralised laps in a
- * light accent; the current lap in the accent with its number above. The axis is a slider:
+ * has a cut-off on the selected straight), pit and start laps faint, neutralised laps in the
+ * yellow-flag colour; the current lap in red with its number above. The axis is a slider:
  * press or drag anywhere on it, arrows step a lap, Page keys ten, Home and End the ends.
  */
 export function LapAxis({ laps, lap, onLap, playing, onPlay, withCut, code }: Props) {
@@ -40,8 +40,8 @@ export function LapAxis({ laps, lap, onLap, playing, onPlay, withCut, code }: Pr
   const last = laps[n - 1]?.lap_number ?? 1;
   const pad = 8;
   const x = (lapNo: number) => pad + ((lapNo - first) / Math.max(1, last - first)) * Math.max(1, W - 2 * pad);
-  const H = 64;
-  const base = 44;
+  const H = 58;
+  const base = 38;
 
   const toLap = (clientX: number, el: HTMLElement) => {
     const r = el.getBoundingClientRect();
@@ -59,27 +59,28 @@ export function LapAxis({ laps, lap, onLap, playing, onPlay, withCut, code }: Pr
   for (let l = Math.ceil(first / 10) * 10; l <= last; l += 10) if (l !== first) labels.push(l);
 
   return (
-    <div className="xp-laps">
-      <div className="xp-laps__head">
-        <button type="button" className="xp-play" onClick={onPlay} disabled={n < 2} aria-pressed={playing}>
+    <div className="lx">
+      <div className="lx__head">
+        <button type="button" className="lx__play" onClick={onPlay} disabled={n < 2} aria-pressed={playing}>
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
             {playing ? <path d="M2 1h3v10H2zM7 1h3v10H7z" fill="currentColor" /> : <path d="M2.5 1v10l8.5-5z" fill="currentColor" />}
           </svg>
-          <span>{playing ? "Pause" : "Play the race"}</span>
+          <span>{playing ? "Pause" : "Play"}</span>
         </button>
-        <p className="xp-laps__now">
-          <span className="xp-laps__big">
-            Lap {cur?.lap_number ?? "–"}
-            <span className="xp-laps__of"> of {last}</span>
+        <p className="lx__now">
+          <span className="lx__big">
+            <span className="lx__k">Lap</span> {cur?.lap_number ?? "–"}
+            <span className="lx__of"> of {last}</span>
           </span>
-          <span className="xp-laps__meta">
-            {code} · {cur ? lapTime(cur.lap_duration) : "–"} · {cur ? KIND_WORD[lapKind(cur)] : ""}
+          <span className="lx__meta">
+            <span className="lx__code">{code}</span> <span className="lx__time">{cur ? lapTime(cur.lap_duration) : "–"}</span>
+            {cur && <span className={`lx__kind lx__kind--${lapKind(cur)}`}>{KIND_WORD[lapKind(cur)]}</span>}
           </span>
         </p>
       </div>
       <div
         ref={ref}
-        className="xp-laps__axis"
+        className="lx__axis"
         role="slider"
         tabIndex={n ? 0 : -1}
         aria-label={`Lap, ${code}`}
@@ -111,28 +112,28 @@ export function LapAxis({ laps, lap, onLap, playing, onPlay, withCut, code }: Pr
       >
         {W > 0 && (
           <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" aria-hidden="true">
-            <line x1={0} x2={W} y1={base} y2={base} className="xp-axisline" />
+            <line x1={0} x2={W} y1={base} y2={base} className="lx__line" />
             {laps.map((l) => {
               const kind = lapKind(l);
-              const h = kind === "green" ? (withCut.has(l.lap_number) ? 22 : 12) : kind === "neutral" ? 16 : 9;
-              return <line key={l.lap_number} x1={x(l.lap_number)} x2={x(l.lap_number)} y1={base} y2={base - h} className={`xp-lt xp-lt--${kind}`} />;
+              const h = kind === "green" ? (withCut.has(l.lap_number) ? 20 : 12) : kind === "neutral" ? 16 : 8;
+              return <line key={l.lap_number} x1={x(l.lap_number)} x2={x(l.lap_number)} y1={base} y2={base - h} className={`lx__t lx__t--${kind}`} />;
             })}
             {labels.map((l) => (
-              <text key={l} x={x(l)} y={base + 18} textAnchor="middle" className="xp-svgnum">
+              <text key={l} x={x(l)} y={base + 18} textAnchor="middle" className="lx__num">
                 {l}
               </text>
             ))}
-            <text x={x(first)} y={base + 18} textAnchor="start" className="xp-svgnum">
+            <text x={x(first)} y={base + 18} textAnchor="start" className="lx__num">
               L{first}
             </text>
             {cur && (
               <g>
-                <line x1={x(cur.lap_number)} x2={x(cur.lap_number)} y1={base + 4} y2={base - 34} className="xp-lt--now" />
+                <line x1={x(cur.lap_number)} x2={x(cur.lap_number)} y1={base + 4} y2={base - 30} className="lx__t--now" />
                 <text
                   x={x(cur.lap_number)}
-                  y={8}
+                  y={9}
                   textAnchor={x(cur.lap_number) < 20 ? "start" : x(cur.lap_number) > W - 20 ? "end" : "middle"}
-                  className="xp-svgnum xp-svgnum--ink"
+                  className="lx__num lx__num--now"
                 >
                   {cur.lap_number}
                 </text>
@@ -141,15 +142,18 @@ export function LapAxis({ laps, lap, onLap, playing, onPlay, withCut, code }: Pr
           </svg>
         )}
       </div>
-      <ul className="xp-legend xp-laps__legend">
+      <ul className="lx__legend">
         <li>
-          <i className="xp-sw xp-sw--tick" style={{ background: "var(--ink)" }} /> green, tall where the lap has a cut-off here
+          <i style={{ background: "var(--ink)" }} /> green lap, tall with a cut-off here
         </li>
         <li>
-          <i className="xp-sw xp-sw--tick" style={{ background: "var(--muted)" }} /> pit, out or start lap
+          <i style={{ background: "var(--faint)" }} /> pit, out or start
         </li>
         <li>
-          <i className="xp-sw xp-sw--tick" style={{ background: "var(--accent-lite)" }} /> neutralised or slow
+          <i style={{ background: "var(--flag-yellow)" }} /> neutralised or slow
+        </li>
+        <li>
+          <i style={{ background: "var(--accent)" }} /> shown lap
         </li>
       </ul>
     </div>

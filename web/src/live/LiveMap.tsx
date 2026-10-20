@@ -1,16 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
-import { Avatar } from "../components/Driver";
-import { REGIME_VAR } from "../explorer/TrackMap";
+import { TrackMap, type MapRun, type MapTag, type TrackMapHandle } from "../track/TrackMap";
+import { REGIME_VAR } from "../track/regimes";
 import { driverCode, teamColour } from "../lib/teams";
-import { project, wrap, type TrackStraight } from "../lib/track";
-import { useSize } from "../lib/useSize";
+import { lapLength, wrap, type CircuitRef, type Projection } from "../lib/track";
 import { prefersReducedMotion } from "../motion";
 import type { Driver, Outline } from "../lib/types";
 import type { LiveState } from "./useLive";
-
-gsap.registerPlugin(DrawSVGPlugin);
 
 export interface TrailPoint {
   d: number;
@@ -19,8 +15,9 @@ export interface TrailPoint {
 
 interface Props {
   outline: Outline;
-  straights: TrackStraight[];
-  drivers: Map<number, Driver>;
+  circuit: CircuitRef | null;
+  /** Every car, in tower order. */
+  order: Driver[];
   states: LiveState[];
   selected: number | null;
   trail: TrailPoint[];
@@ -28,141 +25,140 @@ interface Props {
   paused: boolean;
 }
 
-const TAG = 26;
+/** Chip box used to keep resting tags apart, px (a three-letter code with padding, plus air). */
+const CHIP = { w: 46, h: 24 };
+/** The chip sits this far out from its dot (track.css, level 0). */
+const OUT = 22;
+
+type Box = { x: number; y: number; w: number; h: number };
+const hit = (a: Box, b: Box) => Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2;
 
 /*
- * The live map (DESIGN.md "Live"): the circuit outline as large as the box allows, the
- * straights as quiet thick segments, start/finish as a bar across the line, and one tag per
- * car: the headshot on its team-colour ring. Tags glide toward their latest estimated lap
- * distance on gsap.ticker (wrapping over the line), so a 4 Hz feed reads as motion. The
- * selected car carries its code and a trail coloured by its live regime.
+ * Rest positions without a feed: the cars queue behind the line in tower order. Each one
+ * steps back along the road until its chip clears every chip already placed, the corner
+ * numbers and the start/finish label, and its dot is far enough from the others that the
+ * map does not stack it (track.css stacks dots closer than 26 px). On a small map the lap
+ * may be too short for that; the rules then relax step by step, last to even spacing.
+ */
+function restPositions(T: Projection, n: number): number[] {
+  const s0 = T.pose(0);
+  const passes: { chip: { w: number; h: number } | null; marks: boolean }[] = [
+    { chip: CHIP, marks: true },
+    { chip: { w: 40, h: 18 }, marks: false },
+    { chip: null, marks: false },
+  ];
+  for (const pass of passes) {
+    const boxes: Box[] = pass.marks ? T.corners.map((c) => ({ x: c.lx, y: c.ly, w: 22, h: 22 })) : [];
+    if (pass.marks) boxes.push({ x: s0.x - s0.nx * 40, y: s0.y - s0.ny * 40, w: 110, h: 34 });
+    const dots: { x: number; y: number }[] = [];
+    const out: number[] = [];
+    const step = 2 * T.mpp;
+    let d = 0;
+    for (let i = 0; i < n && -d < T.lap; i++) {
+      for (;;) {
+        d -= step;
+        if (-d >= T.lap) break;
+        const q = T.pose(d);
+        if (dots.some((p) => Math.hypot(p.x - q.x, p.y - q.y) < 28)) continue;
+        if (pass.chip) {
+          const chip = { x: q.x - q.nx * OUT, y: q.y - q.ny * OUT, ...pass.chip };
+          if (boxes.some((b) => hit(chip, b))) continue;
+          boxes.push(chip);
+        }
+        dots.push(q);
+        out.push(wrap(d, T.lap));
+        break;
+      }
+    }
+    if (out.length === n) return out;
+  }
+  return Array.from({ length: n }, (_, i) => wrap(-((i + 1) * T.lap) / (n + 1), T.lap));
+}
+
+/*
+ * The live map: the shared road (src/track/TrackMap) with one team-colour tag per car. Tags
+ * glide toward their latest estimated lap distance on gsap.ticker (wrapping over the line),
+ * so a 4 Hz feed reads as motion; nothing moves while paused. The selected car carries a
+ * trail coloured by its live regime.
  *
  * Positions are `lap_distance_est` mod the outline's lap (docs/phase7-replay.md): pace and
  * wrap-around are right, the absolute place along the lap is approximate and drifts.
  */
-export function LiveMap({ outline, straights, drivers, states, selected, trail, paused }: Props) {
-  const [box, { w: W, h: H }] = useSize<HTMLDivElement>();
-  const wide = W >= 560;
-  const T = useMemo(
-    () => (W > 0 && H > 0 ? project(outline, W, H, wide ? { l: 56, r: 56, t: 48, b: 48 } : { l: 28, r: 28, t: 28, b: 28 }) : null),
-    [outline, W, H, wide],
-  );
-  const svg = useRef<SVGSVGElement>(null);
-  const tags = useRef(new Map<number, HTMLDivElement>());
+export function LiveMap({ outline, circuit, order, states, selected, trail, paused }: Props) {
+  const map = useRef<TrackMapHandle>(null);
   const shown = useRef(new Map<number, number>());
   const targets = useRef(new Map<number, number>());
+  // The map's projection, known once it has measured itself (re-read when it changes).
+  const [proj, setProj] = useState<Projection | null>(null);
+  const projRef = useRef<Projection | null>(null);
 
   for (const s of states) targets.current.set(s.driver_number, s.lap_distance_est);
 
-  // One draw-in of the outline per circuit, along the direction of travel.
-  useLayoutEffect(() => {
-    const el = svg.current;
-    if (!el || !T || prefersReducedMotion()) return;
-    const tw = gsap.fromTo(el.querySelectorAll("[data-draw]"), { drawSVG: "0%" }, { drawSVG: "100%", duration: 1.6, ease: "taper" });
-    return () => {
-      tw.progress(1).kill();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [outline, T !== null]);
-
   // The tags' clock: ease each tag toward its target distance; nothing moves while paused.
   useEffect(() => {
-    if (!T) return;
-    const place = (n: number, d: number) => {
-      const el = tags.current.get(n);
-      if (!el) return;
-      const p = T.at(d);
-      el.style.transform = `translate(${(p.x - TAG / 2).toFixed(1)}px, ${(p.y - TAG / 2).toFixed(1)}px)`;
-    };
     const tick = (_t: number, dtMs: number) => {
+      const m = map.current;
+      const T = m?.projection();
+      if (!m || !T) return;
+      if (T !== projRef.current) {
+        projRef.current = T;
+        setProj(T);
+      }
       if (paused) return;
       const k = prefersReducedMotion() ? 1 : 1 - Math.exp(-Math.min(dtMs, 50) / 250);
       for (const [n, target] of targets.current) {
         const cur = shown.current.get(n);
         if (cur === undefined) {
           shown.current.set(n, target);
-          place(n, target);
+          m.place(n, target);
           continue;
         }
         const delta = wrap(target - cur + T.lap / 2, T.lap) - T.lap / 2;
         const next = Math.abs(delta) > T.lap / 3 ? target : cur + delta * k;
         shown.current.set(n, next);
-        place(n, next);
+        m.place(n, next);
       }
     };
-    for (const [n, d] of shown.current) place(n, d);
     gsap.ticker.add(tick);
     return () => gsap.ticker.remove(tick);
-  }, [T, paused]);
+  }, [paused]);
+
+  const lap = useMemo(() => lapLength(outline), [outline]);
+  const rest = useMemo(() => (proj ? restPositions(proj, order.length) : null), [proj, order.length]);
+  const restAt = (i: number) => rest?.[i] ?? wrap(-(i + 1) * 40, lap);
+
+  const live = useMemo(() => new Set(states.map((s) => s.driver_number)), [states]);
+
+  // Every render places the tags from props, so hand over the eased distance, not the target.
+  const tags: MapTag[] = order.map((d, i) => {
+    const n = d.driver_number;
+    const has = live.has(n);
+    return {
+      id: n,
+      code: driverCode(d),
+      colour: teamColour(d),
+      d: has ? shown.current.get(n) ?? targets.current.get(n) ?? 0 : restAt(i),
+      on: n === selected,
+      dim: !has,
+    };
+  });
 
   // The selected car's trail, split into runs of one regime.
-  const trailPaths = useMemo(() => {
-    if (!T || trail.length < 2) return [];
-    const out: { d: string; regime: TrailPoint["regime"] }[] = [];
+  const runs = useMemo(() => {
+    const out: MapRun[] = [];
+    if (trail.length < 2 || !lap) return out;
     let start = 0;
     for (let i = 1; i <= trail.length; i++) {
       if (i === trail.length || trail[i].regime !== trail[start].regime) {
         const a = trail[start].d;
         const b = trail[Math.min(i, trail.length - 1)].d;
-        if (wrap(b - a, T.lap) > 1 && wrap(b - a, T.lap) < T.lap / 2) out.push({ d: T.sub(a, b), regime: trail[start].regime });
+        const len = wrap(b - a, lap);
+        if (len > 1 && len < lap / 2) out.push({ d0: a, d1: b, colour: REGIME_VAR[trail[start].regime], kind: "trail" });
         start = i;
       }
     }
     return out;
-  }, [T, trail]);
+  }, [trail, lap]);
 
-  const sf = T ? T.pose(0) : null;
-  const ids = states.map((s) => s.driver_number);
-
-  return (
-    <div ref={box} className="lv-map">
-      {T && (
-        <svg ref={svg} width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="lv-map__svg" aria-hidden="true">
-          <path d={T.pathD} className="lv-map__road" data-draw />
-          {straights.map((s) => (
-            <path key={s.straight_id} d={T.sub(s.d0, s.d1)} className="lv-map__straight" />
-          ))}
-          {trailPaths.map((p, i) => (
-            <path key={i} d={p.d} className="lv-map__trail" stroke={REGIME_VAR[p.regime]} />
-          ))}
-          {sf && (
-            <g>
-              <line
-                x1={sf.x - sf.nx * 10}
-                y1={sf.y - sf.ny * 10}
-                x2={sf.x + sf.nx * 10}
-                y2={sf.y + sf.ny * 10}
-                className="lv-map__sf"
-              />
-              <text x={sf.x - sf.nx * 24} y={sf.y - sf.ny * 24 + 4} textAnchor="middle" className="lv-map__sfl">
-                S/F
-              </text>
-            </g>
-          )}
-        </svg>
-      )}
-      {T && (
-        <div className="lv-map__tags">
-          {ids.map((n) => {
-            const d = drivers.get(n);
-            const on = n === selected;
-            return (
-              <div
-                key={n}
-                ref={(el) => {
-                  if (el) tags.current.set(n, el);
-                  else tags.current.delete(n);
-                }}
-                className={`lv-tag ${on ? "is-on" : ""}`}
-                style={{ ["--team" as string]: d ? teamColour(d) : "var(--muted)" }}
-              >
-                {d ? <Avatar d={d} size={TAG} /> : <span className="lv-tag__n num">{n}</span>}
-                {on && <span className="lv-tag__code">{d ? driverCode(d) : n}</span>}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  return <TrackMap ref={map} outline={outline} circuit={circuit} runs={runs} tags={tags} corners compass scale sf className="lv-map" label="Live track map" />;
 }
