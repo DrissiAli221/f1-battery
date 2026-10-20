@@ -74,8 +74,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to top, var(--page-bg) 0%, rgba(3, 3, 3, 0.86) 30%, rgba(3, 3, 3, 0.55) 62%, rgba(3, 3, 3, 0.7) 100%),
-    linear-gradient(to right, rgba(3, 3, 3, 0.85) 0%, rgba(3, 3, 3, 0.35) 60%, rgba(3, 3, 3, 0.2) 100%);
+    linear-gradient(to top, var(--page-bg) 0%, rgba(33, 32, 38, 0.86) 30%, rgba(33, 32, 38, 0.55) 62%, rgba(33, 32, 38, 0.7) 100%),
+    linear-gradient(to right, rgba(33, 32, 38, 0.85) 0%, rgba(33, 32, 38, 0.35) 60%, rgba(33, 32, 38, 0.2) 100%);
 }
 .fx-band__copy {
   padding-block: 72px 48px;

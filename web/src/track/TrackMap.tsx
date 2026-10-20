@@ -176,8 +176,10 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   // apart and 0.08 D thick, the middle line 0.06 D, chevrons 0.15 D, corner rings 0.8 D.
   const k = Math.max(0.8, Math.min(2.6, ((W - padding.l - padding.r) / REF_W) * 1.15));
   const D = 15 * k;
-  const gap = 0.58 * D;
-  const edgeW = Math.max(1, 0.12 * D);
+  // The ribbon is almost as wide as the dot (the crop: lines 0.85 D apart, 0.11 D thick), so
+  // a dot only just covers it and the lines visibly stop at its edge.
+  const gap = 0.85 * D;
+  const edgeW = Math.max(1, 0.11 * D);
   const outer = gap + edgeW;
   const lineW = Math.max(1, 0.065 * D);
   const chev = 0.14 * D;
@@ -289,8 +291,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
           <defs>
             <pattern id="tmap-chequer" width={0.14 * D} height={0.14 * D} patternUnits="userSpaceOnUse">
               <rect width={0.14 * D} height={0.14 * D} fill="#f2f2f4" />
-              <rect width={0.07 * D} height={0.07 * D} fill="#1a1a1f" />
-              <rect x={0.07 * D} y={0.07 * D} width={0.07 * D} height={0.07 * D} fill="#1a1a1f" />
+              <rect width={0.07 * D} height={0.07 * D} fill="#212026" />
+              <rect x={0.07 * D} y={0.07 * D} width={0.07 * D} height={0.07 * D} fill="#212026" />
             </pattern>
           </defs>
 

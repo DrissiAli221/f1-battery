@@ -13,10 +13,12 @@
   overflow: visible;
   animation: tmap-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   --D: 15px;
-  --road-line: #b0b0b8;
+  /* Sampled from the concept: the road lines are a mid grey (#919096 / #848589), the grey
+     chip #a8acaf with white type, a grey dot #8c8c8f. */
+  --road-line: #8e8e94;
   --road-line-dim: #5a5a63;
   --road-ground: var(--page-bg);
-  --tag-grey: #8d8d94;
+  --tag-grey: #a4a7ab;
 }
 @keyframes tmap-in {
   from {
@@ -44,7 +46,6 @@
   stroke: var(--road-line);
   stroke-linejoin: round;
   stroke-linecap: round;
-  opacity: 0.92;
 }
 .tmap__ground {
   fill: none;
@@ -72,14 +73,14 @@
   transition: stroke 0.25s;
 }
 .tmap__straight.is-on .tmap__lit {
-  stroke: #dedee4;
+  stroke: #c4c4cb;
 }
 .tmap__straight.is-on .tmap__lit-ground {
   stroke: var(--road-ground);
 }
 @media (hover: hover) {
   .tmap__straight.is-pick:not(.is-on):hover .tmap__lit {
-    stroke: #c9c9d0;
+    stroke: #aeaeb5;
   }
   .tmap__straight.is-pick:not(.is-on):hover .tmap__lit-ground {
     stroke: var(--road-ground);
@@ -118,12 +119,12 @@
 /* Corners: outlined, outside the bend */
 .tmap__corner {
   fill: var(--page-bg);
-  stroke: #9a9aa2;
+  stroke: #8e8e94;
 }
 .tmap__corner-n {
   font-family: var(--font-display);
   font-weight: 600;
-  fill: #d6d6dc;
+  fill: #c9c9cf;
 }
 
 /* Start/finish label */
@@ -217,7 +218,7 @@
   opacity: 0.85;
 }
 .tmap__tag.is-dim .tmap__tag-dot {
-  background: #a8a8ae;
+  background: #858588;
 }
 .tmap__tag.is-dim .tmap__tag-chip {
   background: var(--tag-grey);
