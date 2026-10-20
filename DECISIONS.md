@@ -513,3 +513,37 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   state is kept in the query string so views can be shared.
 - The page background stays PRNDL's for now and is to be revisited; it is
   a single token.
+
+## D29 — 2026-10-20 — Art direction: everything read off the speed trace
+- The view's concept, replacing the broadcast/telemetry hybrid of D26 as the
+  art direction (PRNDL primitives from D27 and the spacious rule of D28 stay):
+  F1 hides the battery, so the site reads it the only way anyone can, off the
+  speed trace, metre by metre down the straight. One instrument, "the
+  straight" (a straight's speed profile with a cursor whose position drives
+  every readout, colour and map dot), is the landing hero, the session
+  page's core and the opener of every page. The full system (palette, type,
+  grid, motion, per-page composition, build order) is in `web/DESIGN.md`.
+- Considered and rejected as the main concept: the pre-registration as a
+  performed scientific method (kept as a detail: the dated verdict), and
+  measured-solid versus estimated-hatched (kept as the drawing rule).
+  ASCII-art renderings were proposed and rejected: decoration with no link
+  to the subject.
+- The page background becomes the broadcast near-black (`#0c0c11`, one
+  token); PRNDL's grey page bg was the disliked part of D27. Orbitron is
+  limited to the wordmark, driver codes and position numbers.
+- An isometric explainer figure of the cut-off detector (anatomy skill) is
+  optional scope on the method page only, so the landing keeps one
+  signature moment.
+
+## D30 — 2026-10-20 — Straight speed profiles are cross-lap aggregates at 50 m
+- The straight instrument needs a speed profile. A per-lap profile at 10 m
+  bins would be the raw trace under another name (at 3.7 Hz a car covers
+  20–25 m between samples), which D9 forbids. The site therefore serves,
+  per driver and per straight, the median speed over all clean laps in the
+  session per 50 m bin (whole kph) and the median per-lap mean acceleration
+  per bin, stored as `speed_bin_<n>` and `accel_bin_<n>` variables on lap 0
+  of the model run next to the regime bins, and served by
+  `GET /sessions/{key}/straights/{s}/profile?driver=`.
+- Nothing of it is committed to the repository; the view fetches it at
+  runtime. No per-lap profile endpoint is built; the per-lap view keeps the
+  regime bins and the per-lap cut-off tick.
