@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect } from "react";
 import { MotionConfig } from "motion/react";
 import { Shell } from "./components/Shell";
-import { Empty, Loading } from "./components/ui";
+import { Loading } from "./components/ui";
 import { LandingPage } from "./pages/LandingPage";
-import { href, useLocation, type Route } from "./lib/router";
+import { useLocation, type Route } from "./lib/router";
 
 // The landing page ships in the main bundle; the rest load on first visit.
 const SessionsPage = lazy(() => import("./pages/SessionsPage").then((m) => ({ default: m.SessionsPage })));
@@ -16,6 +16,7 @@ const DevStraightPage = import.meta.env.DEV
   ? lazy(() => import("./pages/DevStraightPage").then((m) => ({ default: m.DevStraightPage })))
   : () => null;
 const LivePage = lazy(() => import("./pages/LivePage").then((m) => ({ default: m.LivePage })));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 const TITLES: Record<Route["name"], string> = {
   landing: "Energy/26",
@@ -45,17 +46,7 @@ function Page({ route }: { route: Route }) {
     case "dev-straight":
       return <DevStraightPage />;
     case "missing":
-      return (
-        <div className="wrap section">
-          <Empty title="Page not found">
-            Nothing lives at {route.path}.{" "}
-            <a className="prose-link" href={href.landing}>
-              Go to the start
-            </a>
-            .
-          </Empty>
-        </div>
-      );
+      return <NotFoundPage path={route.path} />;
   }
 }
 
