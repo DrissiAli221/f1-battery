@@ -215,6 +215,8 @@
 @media (min-width: 1024px) {
   .xp-stage {
     grid-template-columns: repeat(12, minmax(0, 1fr));
+    /* One fixed row: the columns fill the stage and never push it taller. */
+    grid-template-rows: minmax(0, 1fr);
     gap: 0 var(--gutter);
     height: var(--stage-h);
   }
@@ -233,6 +235,7 @@
   .xp-stage__side {
     order: 0;
     grid-column: 8 / span 5;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     padding-left: 8px;
@@ -282,10 +285,11 @@
   stroke-opacity: 0.45;
   stroke-width: 18;
 }
+/* One hover band for every straight, the selected one included (it must still answer). */
 @media (hover: hover) {
   .xp-map__seg:hover .xp-map__band {
-    stroke-opacity: 0.16;
-    stroke-width: 18;
+    stroke-opacity: 0.28;
+    stroke-width: 22;
   }
 }
 .xp-map__name {
@@ -416,6 +420,13 @@ text.xp-map__sid {
   color: var(--ink-head);
   white-space: nowrap;
 }
+.xp-figs__skel {
+  display: inline-block;
+  width: 4.5em;
+  height: 0.9em;
+  vertical-align: -0.05em;
+  border-bottom: 1px solid var(--line-strong);
+}
 .xp-figs__ci {
   margin-left: 8px;
   font-size: 12px;
@@ -470,11 +481,16 @@ text.xp-map__sid {
   white-space: nowrap;
 }
 
-/* Regime-only fallback */
+/* Regime-only fallback: on desktop the plot takes the column's free height, and the caption
+   and the legend follow it directly (no dead band between the figure and its key). */
 @media (min-width: 1024px) {
   .xp-straight.xp-regaxis {
     justify-content: flex-start;
-    padding-top: 24px;
+    margin-top: 24px;
+  }
+  .xp-regaxis__plot {
+    flex: 1;
+    min-height: 0;
   }
 }
 .xp-regaxis__plot {
@@ -553,6 +569,9 @@ text.xp-map__sid {
 }
 .xp-legend__k {
   font-family: var(--font-mono);
+}
+.xp-legend__v {
+  color: var(--ink);
 }
 .xp-legend--top {
   margin: 0 0 16px;
@@ -678,6 +697,19 @@ text.xp-map__sid {
 .xp-sec {
   padding-top: var(--rhythm-airy);
 }
+/* The first section after the lap axis sits at half the airy rhythm: it reads on from it. */
+.xp-scrub + .xp-sec {
+  padding-top: calc(var(--rhythm-airy) / 2);
+}
+.xp-sec__cap {
+  display: block;
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: var(--muted);
+}
 .xp-sec__body {
   margin-top: var(--grid-top);
 }
@@ -777,8 +809,12 @@ text.xp-map__sid {
 .xp-row.is-compare .xp-row__bar {
   opacity: 1;
 }
+.xp-row__btn {
+  transition: background-color 0.3s;
+}
 .xp-row__btn:focus-visible {
   outline-offset: -2px;
+  background: var(--ground-2);
 }
 .xp-row__btn:focus-visible .xp-row__in {
   translate: 4px 0;
@@ -788,6 +824,9 @@ text.xp-map__sid {
   height: 36px;
 }
 @media (hover: hover) {
+  .xp-row__btn:hover {
+    background: var(--ground-2);
+  }
   .xp-row__btn:hover .xp-row__in {
     translate: 4px 0;
   }

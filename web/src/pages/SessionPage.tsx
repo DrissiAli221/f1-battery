@@ -309,10 +309,22 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
                     </div>
                   )}
                   <div>
-                    <dt>
-                      {pCode} lap {lapNo ?? "–"} est.
-                    </dt>
-                    <dd>{lapCut !== null ? `${int(lapCut)}${NB}m` : "no cut-off"}</dd>
+                    {/* Until the laps and their cut-offs arrive, hold the space rather than claim "no cut-off". */}
+                    {lapNo !== null && pCut !== null ? (
+                      <>
+                        <dt>
+                          {pCode} lap {lapNo} est.
+                        </dt>
+                        <dd>{lapCut !== null ? `${int(lapCut)}${NB}m` : "no cut-off"}</dd>
+                      </>
+                    ) : (
+                      <>
+                        <dt>{pCode} lap est.</dt>
+                        <dd aria-busy="true">
+                          <span className="xp-figs__skel" />
+                        </dd>
+                      </>
+                    )}
                   </div>
                 </dl>
               )}
@@ -403,24 +415,19 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
       {/* ---------- Cut-off by lap ---------- */}
       {has && straight && lapLen && pDriver && (
         <section className="wrap xp-sec" aria-labelledby="xp-bylap">
-          <SectionIntro id="xp-bylap" title={<>Cut‑off by lap on <span className="whitespace-nowrap">{sName}</span></>}>
+          <SectionIntro
+            id="xp-bylap"
+            title={
+              <>
+                Cut‑off by lap · S{straight.straight_id}
+                <span className="xp-sec__cap">{sName}</span>
+              </>
+            }
+          >
             One dot per lap with a cut-off, in metres from the start of the straight. Each band is a driver's median with its 95{NB}%
             interval, an estimate. Click a dot to put that lap on the stage.
           </SectionIntro>
           <div className="xp-sec__body" data-reveal>
-            <ul className="xp-legend xp-legend--top">
-              <li>
-                <i className="xp-dotsw" style={{ background: "var(--ink)" }} /> {pCode}
-              </li>
-              {cDriver && (
-                <li>
-                  <i className="xp-dotsw" style={{ border: `1.5px solid ${teamColour(cDriver)}` }} /> {cCode}
-                </li>
-              )}
-              <li>
-                <i className="xp-sw" style={{ background: "var(--accent)", width: 2, height: 12 }} /> lap {lapNo ?? "–"}
-              </li>
-            </ul>
             <CutoffChart
               straight={straight}
               lapLen={lapLen}

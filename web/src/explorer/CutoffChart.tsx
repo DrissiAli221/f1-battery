@@ -36,6 +36,7 @@ interface Props {
  */
 export function CutoffChart({ straight, lapLen, laps, selectedLap, onLap, drivers, loading }: Props) {
   const [ref, { w: W }] = useSize<HTMLDivElement>();
+  // Before the first measure, assume the phone size (the chart is below the fold on desktop).
   const narrow = W < 640;
   const H = narrow ? 300 : 400;
   const M = { l: narrow ? 44 : 56, r: 8, t: 28, b: 44 };
@@ -81,6 +82,23 @@ export function CutoffChart({ straight, lapLen, laps, selectedLap, onLap, driver
 
   return (
     <div ref={ref} className="xp-chart">
+      {/* The legend; below 640 px it also carries the medians, which would overprint the dots in the plot. */}
+      <ul className="xp-legend xp-legend--top">
+        {series.map((s) => (
+          <li key={s.dr.number}>
+            <i className="xp-dotsw" style={s.dr.hollow ? { border: `1.5px solid ${s.dr.colour}` } : { background: s.dr.colour }} /> {s.dr.code}
+            {narrow && showData && s.med && (
+              <span className="xp-legend__k">
+                median est. <span className="xp-legend__v">{int(s.med.m)}&nbsp;m</span>
+              </span>
+            )}
+          </li>
+        ))}
+        <li>
+          <i className="xp-sw" style={{ background: "var(--accent)", width: 2, height: 12 }} /> lap {selectedLap ?? "–"}
+        </li>
+      </ul>
+      <div style={{ height: H }}>
       {W > 0 && (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label={`Cut-off per lap on ${straight.label}. ${loading ? "Loading." : summary}`}>
           <defs>
@@ -135,9 +153,11 @@ export function CutoffChart({ straight, lapLen, laps, selectedLap, onLap, driver
                     />
                   )}
                   <line x1={M.l} x2={W - M.r} y1={y(clampY(s.med.m))} y2={y(clampY(s.med.m))} stroke={s.dr.colour} strokeWidth={1} strokeDasharray="4 4" />
-                  <text x={W - M.r} y={y(clampY(s.med.m)) + (i === 0 ? -6 : 14)} textAnchor="end" className="xp-svgnum" style={{ fill: s.dr.colour }}>
-                    {s.dr.code} median est. {int(s.med.m)}&nbsp;m
-                  </text>
+                  {!narrow && (
+                    <text x={W - M.r} y={y(clampY(s.med.m)) + (i === 0 ? -6 : 14)} textAnchor="end" className="xp-svgnum" style={{ fill: s.dr.colour }}>
+                      {s.dr.code} median est. {int(s.med.m)}&nbsp;m
+                    </text>
+                  )}
                 </g>
               ) : null,
             )}
@@ -178,6 +198,7 @@ export function CutoffChart({ straight, lapLen, laps, selectedLap, onLap, driver
             )}
         </svg>
       )}
+      </div>
       {!loading && !ys.length && <p className="xp-note">No cut-off on this straight for the selected drivers.</p>}
     </div>
   );

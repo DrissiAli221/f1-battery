@@ -47,6 +47,7 @@ export function regimeIndex(bins: RegimeBin[] | null | undefined): Map<number, R
   return new Map(bins.map((b) => [Math.round(b.d_start_m), b.label]));
 }
 
+// TODO: switch to lib/straights helper
 /** Lap distance to metres along the straight. */
 export const rel = (s: TrackStraight, d: number | null | undefined, lap: number): number | null =>
   d === null || d === undefined ? null : along(s, d, lap);

@@ -182,9 +182,11 @@ export function TrackMap(props: Props) {
     const off = wide ? 26 : 18;
     const x = q.x - q.nx * off;
     const y = q.y - q.ny * off;
-    const anchor: "start" | "end" | "middle" = -q.nx > 0.35 ? "start" : -q.nx < -0.35 ? "end" : "middle";
     const dy = -q.ny > 0.35 ? 12 : -q.ny < -0.35 ? -4 : 4;
-    return { x, y: y + dy, anchor };
+    // Estimated text width (12 px Geist, 11 px mono id), so the label can be kept inside the box.
+    const w = 16 + (wide ? 4 + (s.label ?? "").length * 6.4 : 0);
+    const left = -q.nx > 0.35 ? x : -q.nx < -0.35 ? x - w : x - w / 2;
+    return { x: Math.max(4, Math.min(W - 4 - w, left)), y: Math.max(14, Math.min(H - 24, y + dy)), anchor: "start" as const };
   };
 
   const sf = T ? T.pose(0) : null;
@@ -279,7 +281,13 @@ export function TrackMap(props: Props) {
           {sf && (
             <g data-late pointerEvents="none">
               <line {...tick(T, 0, -9, 9)} className="xp-map__sf" />
-              <text x={sf.x - sf.nx * 22} y={sf.y - sf.ny * 22 + 4} textAnchor="middle" className="xp-map__sid">
+              {/* The label sits 12 px beyond the bar's end, outside the line, anchored away from it. */}
+              <text
+                x={sf.x - sf.nx * 21}
+                y={sf.y - sf.ny * 21 + (-sf.ny > 0.35 ? 10 : -sf.ny < -0.35 ? -2 : 4)}
+                textAnchor={-sf.nx > 0.35 ? "start" : -sf.nx < -0.35 ? "end" : "middle"}
+                className="xp-map__sid"
+              >
                 S/F
               </text>
             </g>

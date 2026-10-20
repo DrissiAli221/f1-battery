@@ -107,14 +107,32 @@ export function StraightPanel(p: Props) {
  * keyboard, same readout (without speed).
  */
 function RegimeAxis(p: Props & { d: number }) {
-  const [ref, { w: W }] = useSize<HTMLDivElement>();
+  const [ref, { w: W, h: Hbox }] = useSize<HTMLDivElement>();
   const L = p.length;
   const strips = p.strips ?? [];
-  const rowH = 64;
+  const n = Math.max(1, strips.length);
   const top = 28;
-  const axisY = top + Math.max(1, strips.length) * rowH + 20;
-  const H = axisY + 40;
+  const foot = 60; // gap above the axis (20) and the regime band with its numbers (40)
+  // Desktop: the plot fills the stage's column (flex), so the rows share its height. Phones:
+  // fixed rows, and the box holds that height before the first measure (no layout shift).
+  const fill = typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
+  const fixedH = top + n * 64 + foot;
+  const H = fill && Hbox > fixedH ? Hbox : fixedH;
+  const rowH = (H - top - foot) / n;
+  const axisY = top + n * rowH + 20;
   const x = (m: number) => (Math.max(0, Math.min(L, m)) / (L || 1)) * W;
+
+  // Where more than 25 laps fall within one 50 m bin, the ticks merge into a block: split
+  // them into two rows (alternate laps) so each stays a tick.
+  const dense = useMemo(
+    () =>
+      strips.some((s) => {
+        const c = new Map<number, number>();
+        for (const v of s.cuts) c.set(Math.floor(v / 50), (c.get(Math.floor(v / 50)) ?? 0) + 1);
+        return Math.max(0, ...c.values()) > 25;
+      }),
+    [strips],
+  );
 
   const spans = useMemo(() => {
     const out: { from: number; to: number; label: RegimeLabel | null }[] = [];
@@ -147,6 +165,7 @@ function RegimeAxis(p: Props & { d: number }) {
       <div
         ref={ref}
         className="xp-regaxis__plot"
+        style={fill ? { minHeight: fixedH } : { height: fixedH }}
         role="slider"
         tabIndex={0}
         aria-label={`Distance along ${p.labels.straight ?? "the straight"}`}
@@ -184,6 +203,7 @@ function RegimeAxis(p: Props & { d: number }) {
               const b0 = y0 + 12;
               const bh = rowH - 16;
               const mid = b0 + bh / 2;
+              const th = Math.min(bh / 2 - 6, 8 + (rowH - 64) / 4); // tick half-height, grows with the row
               const md = s.median;
               return (
                 <g key={s.code}>
@@ -193,9 +213,10 @@ function RegimeAxis(p: Props & { d: number }) {
                       <path d={`M${x(md.lo)},${b0 + 8}v-4H${x(md.hi)}v4`} fill="none" stroke={s.colour} />
                     </>
                   )}
-                  {s.cuts.map((c, j) => (
-                    <line key={j} x1={x(c)} x2={x(c)} y1={mid - 8} y2={mid + 8} stroke={s.colour} strokeOpacity={0.55} strokeWidth={1} />
-                  ))}
+                  {s.cuts.map((c, j) => {
+                    const [a, b] = !dense ? [mid - th, mid + th] : j % 2 ? [mid + 2, mid + th + 2] : [mid - th - 2, mid - 2];
+                    return <line key={j} x1={x(c)} x2={x(c)} y1={a} y2={b} stroke={s.colour} strokeOpacity={0.55} strokeWidth={1} />;
+                  })}
                   {md && <line x1={x(md.m)} x2={x(md.m)} y1={b0} y2={b0 + bh} stroke={s.colour} strokeWidth={2} />}
                   <text x={0} y={y0} className="xp-svgcode" style={{ fill: s.colour }}>
                     {s.code}
@@ -231,7 +252,9 @@ function RegimeAxis(p: Props & { d: number }) {
         )}
       </div>
       <figcaption className="xp-note">
-        One tick per lap at its cut-off, over each driver's median estimate. The speed profile for this straight is not published yet.
+        One tick per lap at its cut-off, over each driver's median estimate
+        {dense ? "; where more than 25 laps fall within 50\u00a0m, alternate laps sit on two rows" : ""}. The speed profile for this straight is
+        not published yet.
       </figcaption>
     </figure>
   );
