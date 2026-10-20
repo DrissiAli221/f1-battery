@@ -1,270 +1,235 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Avatar } from "../components/Driver";
-import { Async, Empty, Eyebrow, SectionHead } from "../components/ui";
+import { Readout } from "../components/Readout";
 import { url, useList, useRemote } from "../lib/api";
-import { date, int } from "../lib/format";
+import { date } from "../lib/format";
 import { href } from "../lib/router";
-import { driverCode, teamColour } from "../lib/teams";
-import { project } from "../lib/track";
-import { useSize } from "../lib/useSize";
-import type { Driver, Outline, RegimeLabel, SessionRow } from "../lib/types";
+import { nameStraights } from "../lib/straights";
+import { lapLength, trackStraights, wrap } from "../lib/track";
+import type { Driver, Lap, Outline, SessionRow, Straight } from "../lib/types";
+import { usePage } from "../motion";
+import { LiveAxis } from "../live/LiveAxis";
+import { LiveMap, type TrailPoint } from "../live/LiveMap";
+import { LiveTower, type TowerRow } from "../live/LiveTower";
+import { useLive, type LiveState } from "../live/useLive";
+import "../explorer/explorer.css";
+import "../live/live.css";
 
-type LiveRegime = RegimeLabel | "other";
+const TRAIL_M = 900;
+const NB = " ";
 
-interface LiveState {
-  driver_number: number;
-  ts: string;
-  regime: LiveRegime;
-  lap_distance_est: number;
-}
+const isRace = (s: SessionRow) => s.session_name === "Race" || s.session_name === "Sprint";
 
-type Status = "connecting" | "connected" | "no-data" | "disabled" | "no-topic" | "error";
+/** Seconds, one decimal, with a plus sign. */
+const secs = (s: number) => `+${s.toFixed(1)}${NB}s`;
 
-const COLORS: Record<LiveRegime, string> = {
-  deploy: "var(--regime-deploy)",
-  plateau: "var(--regime-plateau)",
-  lift: "var(--regime-lift)",
-  brake: "var(--regime-brake)",
-  other: "var(--regime-other)",
-};
-
-const STATUS: Record<Status, { text: string; badge: string }> = {
-  connecting: { text: "Connecting", badge: "badge-muted" },
-  connected: { text: "Live", badge: "badge-ok" },
-  "no-data": { text: "Connected, no data yet", badge: "badge-muted" },
-  disabled: { text: "Replay disabled", badge: "badge-warn" },
-  "no-topic": { text: "No replay running", badge: "badge-warn" },
-  error: { text: "Connection lost, retrying", badge: "badge-pink" },
-};
-
-/**
- * Subscribes to /api/live/<key>. EventSource cannot read the status code, so a probe request
- * distinguishes "replay disabled" (404 with a JSON body) from a transient connection failure.
+/*
+ * The order at the flag, read from lap times (no replay running): most laps first, then the
+ * earliest end of the last lap. It is the timing order, not the official classification
+ * (penalties are not in the data), and the tower says so.
  */
-function useLive(sessionKey: number): { status: Status; states: Record<number, LiveState> } {
-  const [status, setStatus] = useState<Status>("connecting");
-  const [states, setStates] = useState<Record<number, LiveState>>({});
-  const pending = useRef<Record<number, LiveState>>({});
-
-  useEffect(() => {
-    setStatus("connecting");
-    setStates({});
-    pending.current = {};
-    let es: EventSource | null = null;
-    let closed = false;
-    const target = url(`/live/${sessionKey}`);
-
-    // Batches bursts of events into one render per 100 ms.
-    const timer = window.setInterval(() => {
-      if (Object.keys(pending.current).length) {
-        const batch = pending.current;
-        pending.current = {};
-        setStates((s) => ({ ...s, ...batch }));
-        setStatus((st) => (st === "no-data" || st === "connecting" ? "connected" : st));
-      }
-    }, 100);
-
-    const open = () => {
-      es = new EventSource(target);
-      es.addEventListener("status", (e) => {
-        try {
-          const s = JSON.parse((e as MessageEvent).data) as { state: string };
-          if (s.state === "no-topic") {
-            setStatus("no-topic");
-            es?.close();
-          } else setStatus("no-data");
-        } catch {
-          /* ignore malformed status */
-        }
-      });
-      es.addEventListener("state", (e) => {
-        try {
-          const s = JSON.parse((e as MessageEvent).data) as LiveState;
-          pending.current[s.driver_number] = s;
-        } catch {
-          /* ignore malformed record */
-        }
-      });
-      es.onerror = () => {
-        es?.close();
-        if (closed) return;
-        fetch(target, { headers: { Accept: "application/json" } })
-          .then(async (res) => {
-            if (res.status === 404) setStatus("disabled");
-            else {
-              setStatus("error");
-              window.setTimeout(() => !closed && open(), 3000);
-            }
-            res.body?.cancel().catch(() => undefined);
-          })
-          .catch(() => {
-            setStatus("error");
-            window.setTimeout(() => !closed && open(), 3000);
-          });
-      };
-    };
-    open();
-    return () => {
-      closed = true;
-      es?.close();
-      window.clearInterval(timer);
-    };
-  }, [sessionKey]);
-
-  return { status, states };
+function flagOrder(laps: Lap[], drivers: Driver[]): TowerRow[] {
+  const by = new Map<number, { n: number; end: number }>();
+  for (const l of laps) {
+    const start = l.date_start ? Date.parse(l.date_start) : NaN;
+    if (!Number.isFinite(start)) continue;
+    const end = start + (l.lap_duration ?? 0) * 1000;
+    const cur = by.get(l.driver_number);
+    if (!cur || l.lap_number > cur.n || (l.lap_number === cur.n && end > cur.end)) by.set(l.driver_number, { n: l.lap_number, end });
+  }
+  const ranked = drivers
+    .map((d) => ({ d, r: by.get(d.driver_number) }))
+    .sort((a, b) => (b.r?.n ?? -1) - (a.r?.n ?? -1) || (a.r?.end ?? Infinity) - (b.r?.end ?? Infinity) || a.d.driver_number - b.d.driver_number);
+  const lead = ranked[0]?.r;
+  return ranked.map(({ d, r }, i) => {
+    let gap: string | null = null;
+    if (i > 0 && r && lead) {
+      const down = lead.n - r.n;
+      gap = down > 0 ? `+${down}${NB}${down === 1 ? "lap" : "laps"}` : secs((r.end - lead.end) / 1000);
+    }
+    if (!r) gap = "no laps";
+    return { driver: d, pos: i + 1, gap, regime: null };
+  });
 }
 
 export function LivePage({ sessionKey }: { sessionKey: number | null }) {
-  return sessionKey === null ? <LiveIndex /> : <LiveSession sessionKey={sessionKey} />;
-}
-
-function LiveIndex() {
   const sessions = useList<SessionRow>("/sessions");
-  const races = useMemo(
-    () =>
-      (sessions.data ?? [])
-        .filter((s) => s.session_name === "Race" || s.session_name === "Sprint")
-        .sort((a, b) => (b.date_start ?? "").localeCompare(a.date_start ?? "")),
-    [sessions.data],
-  );
-  return (
-    <>
-      <section className="wrap pb-16 pt-16 md:pb-24 md:pt-24">
-        <Eyebrow>Live replay</Eyebrow>
-        <h1 className="display mt-6 text-[48px] md:text-[88px]">Live</h1>
-        <p className="lede mt-8 max-w-[60ch]">
-          A recorded race replayed through Kafka at real speed: one dot per car on the track, coloured by a simplified live regime estimate.
-          It runs only when the replay producer and consumer are started on the server (docs/phase7-replay.md).
-        </p>
-      </section>
-      <section className="wrap pb-32">
-        <Async remote={sessions}>
-          {() => (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {races.map((s) => (
-                <li key={s.session_key}>
-                  <a href={href.live(s.session_key)} className="flex h-full flex-col rounded-xs bg-surface p-7 transition-colors hover:bg-[var(--color-surface-btn-other--pressed)]">
-                    <span className="num text-[13px] text-ink-3">{date(s.date_start, "short")}</span>
-                    <span className="mt-6 font-display text-[20px] font-bold uppercase text-ink-head">{s.circuit_short_name}</span>
-                    <span className="text-[15px] text-ink-2">{s.session_name}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Async>
-      </section>
-    </>
-  );
-}
+  const races = useMemo(() => (sessions.data ?? []).filter(isRace).sort((a, b) => (b.date_start ?? "").localeCompare(a.date_start ?? "")), [sessions.data]);
+  // #/live opens the latest race; #/live/<key> the one asked for.
+  const key = sessionKey ?? races[0]?.session_key ?? null;
+  const session = (sessions.data ?? []).find((s) => s.session_key === key) ?? null;
+  const circuit = session?.circuit_key ?? null;
 
-/**
- * The replay's distance is a running integral from when the consumer started, not from the
- * start/finish line, so dots are placed at (distance mod lap length): speed and motion are
- * right, the absolute position is approximate and drifts (docs/phase7-replay.md).
- */
-function LiveSession({ sessionKey }: { sessionKey: number }) {
-  const sessions = useList<SessionRow>("/sessions");
-  const session = sessions.data?.find((s) => s.session_key === sessionKey) ?? null;
-  const drivers = useList<Driver>(`/sessions/${sessionKey}/drivers`);
-  const outline = useRemote<Outline>(session?.circuit_key != null ? url(`/circuits/${session.circuit_key}/outline`) : null);
-  const { status, states } = useLive(sessionKey);
+  const drivers = useList<Driver>(key !== null ? `/sessions/${key}/drivers` : null);
+  const laps = useList<Lap>(key !== null ? `/sessions/${key}/laps` : null);
+  const outline = useRemote<Outline>(circuit !== null ? url(`/circuits/${circuit}/outline`) : null);
+  const straightsRaw = useList<Straight>(circuit !== null ? `/circuits/${circuit}/straights` : null);
+  const lap = outline.data && outline.data.points.length > 1 ? lapLength(outline.data) : null;
+  const straights = useMemo(
+    () => (lap && straightsRaw.data ? trackStraights(nameStraights(straightsRaw.data, circuit, outline.data), lap) : []),
+    [lap, straightsRaw.data, circuit, outline.data],
+  );
+
+  const live = useLive(key);
+  const [playing, setPlaying] = useState(true);
+  const [held, setHeld] = useState<Record<number, LiveState> | null>(null);
+  const states = playing || !held ? live.states : held;
+  const running = live.status === "connected" && Object.keys(live.states).length > 0;
+
   const names = useMemo(() => new Map((drivers.data ?? []).map((d) => [d.driver_number, d])), [drivers.data]);
-  const rows = Object.values(states).sort((a, b) => a.driver_number - b.driver_number);
-  const [ref, { w: W, h: H }] = useSize<HTMLDivElement>();
-  const T = useMemo(() => (outline.data && outline.data.points.length > 1 && W > 0 ? project(outline.data, W, H, { l: 48, r: 48, t: 48, b: 48 }) : null), [outline.data, W, H]);
+  const totalLaps = useMemo(() => (laps.data?.length ? Math.max(...laps.data.map((l) => l.lap_number)) : null), [laps.data]);
+
+  // Tower: live order by estimated distance, or the order at the flag without a feed.
+  const rows: TowerRow[] = useMemo(() => {
+    if (running) {
+      const list = Object.values(states).sort((a, b) => b.lap_distance_est - a.lap_distance_est);
+      const lead = list[0]?.lap_distance_est ?? 0;
+      return list.flatMap((s, i) => {
+        const d = names.get(s.driver_number);
+        if (!d) return [];
+        return [{ driver: d, pos: i + 1, gap: i === 0 ? null : `+${Math.round(lead - s.lap_distance_est).toLocaleString("en-GB")}${NB}m`, regime: s.regime }];
+      });
+    }
+    return flagOrder(laps.data ?? [], drivers.data ?? []);
+  }, [running, states, names, laps.data, drivers.data]);
+
+  const [picked, setPicked] = useState<number | null>(null);
+  const selected = picked ?? rows[0]?.driver.driver_number ?? null;
+
+  // The selected car's trail: its recent (distance, regime) pairs, the last 900 m.
+  const [trail, setTrail] = useState<TrailPoint[]>([]);
+  const lastKey = useRef<string>("");
+  useEffect(() => {
+    setTrail([]);
+  }, [selected, key]);
+  useEffect(() => {
+    if (!running || selected === null || !lap || !playing) return;
+    const s = live.states[selected];
+    if (!s) return;
+    const k = `${selected}-${s.ts}`;
+    if (k === lastKey.current) return;
+    lastKey.current = k;
+    setTrail((t) => {
+      const next = [...t, { d: wrap(s.lap_distance_est, lap), regime: s.regime }];
+      const head = s.lap_distance_est;
+      // Keep the points within TRAIL_M behind the head (distances on the lap wrap).
+      return next.filter((p) => wrap(wrap(head, lap) - p.d, lap) <= TRAIL_M);
+    });
+  }, [live.states, selected, running, lap, playing]);
+
+  const leadLap = running && lap && rows[0] ? Math.floor((states[rows[0].driver.driver_number]?.lap_distance_est ?? 0) / lap) + 1 : null;
+
+  const sentence = (() => {
+    if (running) return playing ? `replay · lap ${leadLap ?? "–"} (est.) · ${live.speed !== null ? `${Math.round(live.speed)}× speed` : "measuring speed"}` : `replay paused · lap ${leadLap ?? "–"} (est.)`;
+    switch (live.status) {
+      case "connecting":
+        return "connecting to the replay";
+      case "no-data":
+      case "connected":
+        return "replay connected · no cars yet";
+      case "error":
+        return "replay connection lost · retrying";
+      default:
+        return "no replay running";
+    }
+  })();
+
+  const togglePlay = () => {
+    if (playing) setHeld(live.states);
+    else setHeld(null);
+    setPlaying((p) => !p);
+  };
+
+  const page = usePage<HTMLDivElement>(undefined, [session !== null, drivers.data !== null, outline.data !== null]);
+  const keyOrPending = key ?? 0;
 
   return (
-    <>
-      <section className="wrap pb-12 pt-14 md:pb-16 md:pt-20">
-        <nav className="mb-8 flex items-center gap-2 text-[14px] text-ink-3" aria-label="Breadcrumb">
-          <a className="prose-link" href={href.live()}>
-            Live
-          </a>
-          <span aria-hidden="true">/</span>
-          <a className="prose-link" href={href.session(sessionKey)}>
-            {session?.circuit_short_name ?? `Session ${sessionKey}`}
-          </a>
-        </nav>
-        <Eyebrow>
-          Live replay · session <span className="num">{sessionKey}</span>
-        </Eyebrow>
-        <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
-          <h1 className="font-display text-[40px] font-bold uppercase leading-none text-ink-head md:text-[64px]">
-            {session?.circuit_short_name ?? "…"} <span className="text-ink-3">{session?.session_name}</span>
-          </h1>
-          <span className={`badge ${STATUS[status].badge}`} role="status">
-            {STATUS[status].text}
-          </span>
+    <div ref={page}>
+      <section className="lv" aria-labelledby="lv-h">
+        <div className="lv__in">
+          <header className="lv__head">
+            <h1 id="lv-h" className="lv__title" data-intro>
+              {session?.circuit_short_name ?? (sessions.error ? "Live" : "Loading")}
+              <span className="sr-only">, live replay</span>
+            </h1>
+            <p className="lv__meta" data-intro>
+              <span>{session?.session_name ?? "Race"}</span>
+              {session?.date_start && <span className="num">{date(session.date_start, "short")}</span>}
+              <span className="num">session {keyOrPending || "–"}</span>
+            </p>
+            {!running && (
+              <div className="lv__off" data-intro>
+                <p className="lv__off-p">
+                  {live.status === "connecting"
+                    ? "Checking for a running replay."
+                    : live.status === "error"
+                      ? "The replay feed dropped; retrying every 3 s."
+                      : live.status === "disabled" || live.status === "no-topic"
+                        ? "No replay is running."
+                        : "Replay connected; no cars yet."}{" "}
+                  A replay re-emits this recorded race through Kafka at a chosen speed and moves one tag per car here. It needs the
+                  replay profile on the server (docs/phase7-replay.md):
+                </p>
+                <pre className="lv__cmd">
+                  <code>
+                    {`docker compose --profile replay up -d
+java -jar replay/target/replay-0.1.0-SNAPSHOT.jar \\
+  --mode=producer --session=${keyOrPending} --speed=20
+java -jar replay/target/replay-0.1.0-SNAPSHOT.jar \\
+  --mode=consumer --session=${keyOrPending}
+API_REPLAY_ENABLED=true java -jar api/target/api-0.1.0-SNAPSHOT.jar`}
+                  </code>
+                </pre>
+              </div>
+            )}
+          </header>
+
+          <div className="lv__map">
+            {outline.data && outline.data.points.length > 1 ? (
+              <LiveMap outline={outline.data} straights={straights} drivers={names} states={running ? Object.values(states) : []} selected={selected} trail={trail} paused={!playing} />
+            ) : (
+              <div className="lv-map lv-map--empty" aria-hidden="true" />
+            )}
+            {running && <p className="lv__note">Tags sit at each car's estimated lap distance; the place along the lap is approximate and drifts.</p>}
+          </div>
+
+          <div className="lv__axis">
+            <LiveAxis total={totalLaps} lap={leadLap} live={running} playing={playing} onPlay={togglePlay} speed={live.speed} />
+          </div>
+
+          <aside className="lv__tower" aria-label="Timing tower">
+            <LiveTower
+              rows={rows}
+              selected={selected}
+              onPick={setPicked}
+              live={running}
+              caption={running ? "Order by estimated distance; gap in metres to the first car." : "Order at the flag, from lap times (not the official classification)."}
+            />
+          </aside>
         </div>
       </section>
-      {status === "disabled" ? (
-        <section className="wrap pb-32">
-          <Empty title="Replay is not enabled on this server">
-            Start the API with API_REPLAY_ENABLED=true and a running Kafka broker (docker compose --profile replay up -d); see docs/phase7-replay.md.
-          </Empty>
+
+      {races.length > 1 && (
+        <section className="lv-more wrap" aria-labelledby="lv-more-h">
+          <h2 id="lv-more-h" className="lv-more__h" data-reveal>
+            Replay another race
+          </h2>
+          <ol className="lv-more__list">
+            {races.map((s) => (
+              <li key={s.session_key} data-reveal>
+                <a href={href.live(s.session_key)} className="lv-more__row" aria-current={s.session_key === key ? "page" : undefined}>
+                  <span className="lv-more__name">{s.circuit_short_name}</span>
+                  <span className="lv-more__type">{s.session_name}</span>
+                  <span className="lv-more__date num">{date(s.date_start, "short")}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
         </section>
-      ) : (
-        <>
-          <section className="wrap">
-            <div className="grid-bg relative h-[64vh] min-h-[420px] overflow-hidden rounded-s border border-line-2 bg-frame" ref={ref}>
-              {T && (
-                <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label="Track with one dot per driver, coloured by regime">
-                  <path d={T.pathD} fill="none" stroke="var(--track-edge)" strokeWidth={18} strokeLinejoin="round" />
-                  <path d={T.pathD} fill="none" stroke="var(--track-body)" strokeWidth={16} strokeLinejoin="round" />
-                  {rows.map((s) => {
-                    const p = T.at(s.lap_distance_est);
-                    const d = names.get(s.driver_number);
-                    return (
-                      <g key={s.driver_number} style={{ transition: "transform 100ms linear" }} transform={`translate(${p.x},${p.y})`}>
-                        <circle r={9} fill={COLORS[s.regime] ?? COLORS.other} stroke={d ? teamColour(d) : "var(--ink-head)"} strokeWidth={3} />
-                        <text y={-16} textAnchor="middle" fontFamily={d ? "var(--font-display)" : "var(--font-mono)"} fontWeight={700} fontSize={11} fill="var(--ink-head)">
-                          {d ? driverCode(d) : s.driver_number}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              )}
-              <ul className="pointer-events-none absolute left-5 top-5 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-ink-2">
-                {(Object.keys(COLORS) as LiveRegime[]).map((k) => (
-                  <li key={k} className="flex items-center gap-2">
-                    <i className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: COLORS[k] }} />
-                    {k}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <p className="mt-4 text-[13px] text-ink-3">Dots follow an estimated lap distance along the outline; their position is approximate and drifts.</p>
-          </section>
-          <section className="wrap section">
-            <SectionHead eyebrow="Timing" title="Latest state per driver">
-              The regime here is a simplified live estimate, not the batch model behind the explorer.
-            </SectionHead>
-            {rows.length === 0 ? (
-              <Empty title="No data yet">Start the producer and consumer for session {sessionKey} to see cars here.</Empty>
-            ) : (
-              <ul className="grid gap-x-10 md:grid-cols-2 xl:grid-cols-3">
-                {rows.map((s) => {
-                  const d = names.get(s.driver_number);
-                  return (
-                    <li key={s.driver_number} className="flex h-16 items-center gap-4 border-b border-line-2">
-                      <span className="h-8 w-1 rounded-full" style={{ background: d ? teamColour(d) : "var(--line)" }} />
-                      {d && <Avatar d={d} size={36} />}
-                      <span className="w-14 font-display text-[15px] font-bold uppercase text-ink-head">{d ? driverCode(d) : <span className="num">{s.driver_number}</span>}</span>
-                      <span className="flex flex-1 items-center gap-2 text-[14px] text-ink-2">
-                        <i className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: COLORS[s.regime] ?? COLORS.other }} />
-                        {s.regime}
-                      </span>
-                      <span className="num text-[14px] text-ink-head">{int(s.lap_distance_est)} m</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        </>
       )}
-    </>
+
+      <Readout label="Replay">
+        <p>{sentence}</p>
+      </Readout>
+    </div>
   );
 }
