@@ -22,7 +22,19 @@ interface Entry {
  * and sets the one-line summary under the axis. Phones: a vertical axis with every summary
  * shown (no hover to reveal them). Every tick links to the method log.
  */
-export function RecordStrip() {
+export function RecordStrip({
+  title = "The record",
+  level = "h2",
+  onPick,
+  more = true,
+}: {
+  title?: string;
+  level?: "h1" | "h2";
+  /** On the method log itself: a tick scrolls to its entry instead of following the link. */
+  onPick?: (id: string) => void;
+  more?: boolean;
+} = {}) {
+  const H = level;
   const entries = useMemo<Entry[]>(
     () =>
       log.entries.map((e) => {
@@ -39,9 +51,9 @@ export function RecordStrip() {
     <section className="record" aria-labelledby="record-h">
       <div className="wrap">
         <div className="section-intro">
-          <h2 id="record-h" className="section-intro__title" data-reveal>
-            The record
-          </h2>
+          <H id="record-h" className="section-intro__title" data-reveal>
+            {title}
+          </H>
           <p className="section-intro__text" data-reveal>
             Every check was set before its result was seen. <span className="num">{fails}</span> of{" "}
             <span className="num">{entries.length}</span> did not pass, and they stay in the log as recorded.
@@ -59,6 +71,14 @@ export function RecordStrip() {
                 aria-describedby={`rec-${e.id}`}
                 onPointerEnter={() => setOn(i)}
                 onFocus={() => setOn(i)}
+                onClick={
+                  onPick
+                    ? (ev) => {
+                        ev.preventDefault();
+                        onPick(e.id);
+                      }
+                    : undefined
+                }
               >
                 <span className="record__status">{e.status}</span>
                 <span className="record__mark" aria-hidden="true" />
@@ -91,11 +111,13 @@ export function RecordStrip() {
         </p>
         <p className="record__readout-v">{nums(cur.line)}</p>
       </div>
-      <p className="wrap record__more">
-        <a href={href.method} className="link">
-          Open the method log
-        </a>
-      </p>
+      {more && (
+        <p className="wrap record__more">
+          <a href={href.method} className="link">
+            Open the method log
+          </a>
+        </p>
+      )}
     </section>
   );
 }
