@@ -12,8 +12,10 @@ import "../findings/findings.css";
 
 function Axis() {
   const [ref, { w: W }] = useSize<HTMLDivElement>();
-  const H = 72;
-  const y = 28;
+  const H = W < 600 ? 170 : 250;
+  const y = H - 44; // the distance axis
+  const top = 24; // the top of the speed range (300 kph)
+  const grid = [100, 200, 300].map((v) => ({ v, y: y - 10 - (v / 300) * (y - 10 - top) }));
   const end = Math.round(W * 0.56);
   const step = W < 600 ? 2 : 1; // label every tick on wide screens, every other on phones
   const ticks = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ m: i * 200, x: Math.round((i / 6) * end) }));
@@ -21,6 +23,15 @@ function Axis() {
     <div ref={ref} aria-hidden="true">
       {W > 0 && (
         <svg className="nf__axis" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+          {/* The instrument's empty speed grid, stopping where the data stops. */}
+          {grid.map((g) => (
+            <g key={g.v}>
+              <line className="nf__grid" x1={0} x2={end} y1={g.y} y2={g.y} />
+              <text className="nf__num" x={0} y={g.y - 6}>
+                {g.v === 300 ? "300 kph" : g.v}
+              </text>
+            </g>
+          ))}
           <line className="nf__axisline" x1={0} x2={end} y1={y} y2={y} />
           <line className="nf__beyond" x1={end + 8} x2={W} y1={y} y2={y} />
           {ticks.map((t, i) => (
@@ -33,8 +44,8 @@ function Axis() {
               )}
             </g>
           ))}
-          <line className="nf__end" x1={end} x2={end} y1={y - 22} y2={y + 10} />
-          <text className="nf__num" x={end + 10} y={y - 10} style={{ fill: "var(--ink)" }}>
+          <line className="nf__end" x1={end} x2={end} y1={top - 8} y2={y + 10} />
+          <text className="nf__num" x={end + 10} y={top} style={{ fill: "var(--ink)" }}>
             end of data
           </text>
         </svg>
