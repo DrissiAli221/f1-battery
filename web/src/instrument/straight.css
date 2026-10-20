@@ -72,6 +72,10 @@
   stroke-linejoin: round;
   stroke-linecap: round;
 }
+.st__trace--compare {
+  stroke-width: 1.25;
+  opacity: 0.9;
+}
 .st__trace.is-quiet {
   stroke: var(--line-strong);
   stroke-width: 1.5;

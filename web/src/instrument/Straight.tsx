@@ -79,6 +79,11 @@ export interface StraightProps {
   readout?: "auto" | "float" | "none";
   /** Seconds for one idle pass down the straight. */
   creepSeconds?: number;
+  /**
+   * A second driver's profile on the same straight, drawn as a thinner trace in `colour` (the
+   * explorer's compare driver). It shares the axes; the cursor still reads `profile`.
+   */
+  compare?: { profile: Profile; colour: string } | null;
   className?: string;
 }
 
@@ -102,13 +107,22 @@ const LAYOUT = {
   row: { top: 3, axis: 3, band: 0 },
 } as const;
 
-function geometry(p: Profile | null, size: "hero" | "panel" | "row", W: number, H: number): Geometry {
+/** The speed axis covers both traces when a compare profile is drawn. */
+function domainOf(p: Profile | null, extra?: Profile | null): [number, number] {
+  if (!p) return [0, 350];
+  const [lo, hi] = speedDomain(p);
+  if (!extra?.bins.length) return [lo, hi];
+  const [lo2, hi2] = speedDomain(extra);
+  return [Math.min(lo, lo2), Math.max(hi, hi2)];
+}
+
+function geometry(p: Profile | null, size: "hero" | "panel" | "row", W: number, H: number, extra?: Profile | null): Geometry {
   const L = LAYOUT[size];
   const padX = size === "hero" ? 24 : 0; // the gutter (tokens.css --gutter)
   const axisY = H - L.axis;
   const top = L.top;
   const length = p?.length_m || 1;
-  const [lo, hi] = p ? speedDomain(p) : [0, 350];
+  const [lo, hi] = domainOf(p, extra);
   const bottom = size === "row" ? H - 3 : axisY - 10;
   const sx = (m: number) => padX + (m / length) * (W - 2 * padX);
   const sy = (v: number) => bottom - ((v - lo) / (hi - lo || 1)) * (bottom - top);
@@ -133,6 +147,7 @@ export function Straight({
   creepSeconds = 24,
   readout = "auto",
   className = "",
+  compare = null,
 }: StraightProps) {
   const uid = useId().replace(/:/g, "");
   const [plotRef, { w, h }] = useSize<HTMLDivElement>();
@@ -143,9 +158,11 @@ export function Straight({
   const floatRef = useRef<HTMLDivElement>(null);
   const textRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  const geo = useMemo(() => geometry(profile, size, w, h), [profile, size, w, h]);
+  const cmp = compare?.profile.bins.length ? compare.profile : null;
+  const geo = useMemo(() => geometry(profile, size, w, h, cmp), [profile, size, w, h, cmp]);
   const spans = useMemo(() => (profile ? regimeSpans(profile) : []), [profile]);
   const path = useMemo(() => (profile && w > 0 ? tracePath(profile, geo.sx, geo.sy) : ""), [profile, geo, w]);
+  const cmpPath = useMemo(() => (cmp && profile && w > 0 ? tracePath(cmp, geo.sx, geo.sy) : ""), [cmp, profile, geo, w]);
 
   // Live values the ticker reads without re-rendering.
   const live = useRef({
@@ -371,7 +388,7 @@ export function Straight({
   const { sx, sy, axisY, top, padX, W } = geo;
   const ticks: number[] = [];
   if (profile) for (let m = 0; m <= L + 1e-6; m += 200) ticks.push(m);
-  const [lo, hi] = profile ? speedDomain(profile) : [0, 350];
+  const [lo, hi] = domainOf(profile, cmp);
   const grid: number[] = [];
   for (let v = Math.ceil(lo / 100) * 100; v <= hi; v += 100) if (v > lo) grid.push(v);
 
@@ -405,6 +422,9 @@ export function Straight({
         <pattern id={`${uid}-hatch`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <line x1="0" y1="0" x2="0" y2="6" className="st__hatch" />
         </pattern>
+        <clipPath id={`${uid}-extent`}>
+          <rect x={sx(0)} y={0} width={Math.max(0, sx(L) - sx(0))} height={h} />
+        </clipPath>
         <clipPath id={`${uid}-behind`}>
           {/* Moves with the cursor: everything left of it is coloured by regime. */}
           <rect ref={clipRef} x={-W} y={0} width={W} height={h} />
@@ -460,6 +480,11 @@ export function Straight({
             y2={sy(profile.bins[profile.bins.length - 1].v_kph)}
           />
         </g>
+      )}
+
+      {/* The compare driver: thinner, in that driver's team colour, under the main trace. */}
+      {cmpPath && (
+        <path className="st__trace st__trace--compare" d={cmpPath} clipPath={`url(#${uid}-extent)`} style={{ stroke: compare!.colour }} />
       )}
 
       {/* The measured trace: solid ink, then coloured by regime behind the cursor. */}
