@@ -985,3 +985,20 @@
   font-size: 10.5px;
   color: var(--muted);
 }
+
+/* ---- v3.1: the map stands on the page, full width; the tower sits under it ---- */
+.last {
+  background: transparent !important;
+  border: 0 !important;
+}
+.last__grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+.last__map {
+  min-height: 420px;
+}
+@media (min-width: 768px) {
+  .last__map {
+    min-height: 600px !important;
+  }
+}

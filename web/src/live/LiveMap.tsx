@@ -25,53 +25,12 @@ interface Props {
   paused: boolean;
 }
 
-/** Chip box used to keep resting tags apart, px (a three-letter code with padding, plus air). */
-const CHIP = { w: 46, h: 24 };
-/** The chip sits this far out from its dot (track.css, level 0). */
-const OUT = 22;
-
-type Box = { x: number; y: number; w: number; h: number };
-const hit = (a: Box, b: Box) => Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2;
-
 /*
- * Rest positions without a feed: the cars queue behind the line in tower order. Each one
- * steps back along the road until its chip clears every chip already placed, the corner
- * numbers and the start/finish label, and its dot is far enough from the others that the
- * map does not stack it (track.css stacks dots closer than 26 px). On a small map the lap
- * may be too short for that; the rules then relax step by step, last to even spacing.
+ * Rest positions without a feed: the cars spread evenly round the lap in tower order, the
+ * leader just before the line, so the map reads like a grid walk rather than a pile at the
+ * start. The map lays the chips out so none covers another.
  */
 function restPositions(T: Projection, n: number): number[] {
-  const s0 = T.pose(0);
-  const passes: { chip: { w: number; h: number } | null; marks: boolean }[] = [
-    { chip: CHIP, marks: true },
-    { chip: { w: 40, h: 18 }, marks: false },
-    { chip: null, marks: false },
-  ];
-  for (const pass of passes) {
-    const boxes: Box[] = pass.marks ? T.corners.map((c) => ({ x: c.lx, y: c.ly, w: 22, h: 22 })) : [];
-    if (pass.marks) boxes.push({ x: s0.x - s0.nx * 40, y: s0.y - s0.ny * 40, w: 110, h: 34 });
-    const dots: { x: number; y: number }[] = [];
-    const out: number[] = [];
-    const step = 2 * T.mpp;
-    let d = 0;
-    for (let i = 0; i < n && -d < T.lap; i++) {
-      for (;;) {
-        d -= step;
-        if (-d >= T.lap) break;
-        const q = T.pose(d);
-        if (dots.some((p) => Math.hypot(p.x - q.x, p.y - q.y) < 28)) continue;
-        if (pass.chip) {
-          const chip = { x: q.x - q.nx * OUT, y: q.y - q.ny * OUT, ...pass.chip };
-          if (boxes.some((b) => hit(chip, b))) continue;
-          boxes.push(chip);
-        }
-        dots.push(q);
-        out.push(wrap(d, T.lap));
-        break;
-      }
-    }
-    if (out.length === n) return out;
-  }
   return Array.from({ length: n }, (_, i) => wrap(-((i + 1) * T.lap) / (n + 1), T.lap));
 }
 
@@ -139,7 +98,7 @@ export function LiveMap({ outline, circuit, order, states, selected, trail, paus
       colour: teamColour(d),
       d: has ? shown.current.get(n) ?? targets.current.get(n) ?? 0 : restAt(i),
       on: n === selected,
-      dim: !has,
+      dim: live.size > 0 && !has,
     };
   });
 

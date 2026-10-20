@@ -464,3 +464,13 @@
 .lv-map .tmap__tag.is-dim {
   opacity: 0.72;
 }
+
+/* ---- v3.1: the map stands on the page ---- */
+.lv-stage {
+  padding: 0 !important;
+  gap: 24px !important;
+}
+.lv-stage__map {
+  border: 0 !important;
+  background: transparent !important;
+}

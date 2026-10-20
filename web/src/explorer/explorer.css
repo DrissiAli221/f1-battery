@@ -1198,3 +1198,26 @@
     -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent);
   }
 }
+
+/* ---- v3.1: the map stands on the page, full width; the straight panel sits under it ---- */
+.ss-stage {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 24px;
+}
+.ss-map {
+  padding: 0 !important;
+  border: 0 !important;
+}
+.ss-map__box {
+  height: 420px;
+}
+@media (min-width: 768px) {
+  .ss-map__box {
+    height: 560px !important;
+  }
+}
+@media (min-width: 1280px) {
+  .ss-map__box {
+    height: 640px !important;
+  }
+}

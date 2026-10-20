@@ -25,18 +25,18 @@ export function DevMapPage() {
     { id: 5, code: "HAM", colour: "#ED1131", d: lap * 0.53 },
   ];
   const runs = [
-    { d0: lap * 0.0, d1: lap * 0.1, colour: "var(--regime-deploy)" },
-    { d0: lap * 0.1, d1: lap * 0.14, colour: "var(--regime-plateau)" },
-    { d0: lap * 0.14, d1: lap * 0.16, colour: "var(--regime-brake)" },
-    { d0: lap * 0.16, d1: lap * 0.3, colour: "var(--regime-deploy)" },
-    { d0: lap * 0.3, d1: lap * 0.33, colour: "var(--regime-lift)" },
+    { d0: lap * 0.0, d1: lap * 0.1, colour: "#ffd400", offset: -2.5 },
+    { d0: lap * 0.1, d1: lap * 0.14, colour: "#ffd400", offset: -2.5 },
+    { d0: lap * 0.14, d1: lap * 0.3, colour: "#ffd400", offset: -2.5 },
+    { d0: lap * 0.0, d1: lap * 0.3, colour: "#e8102e", offset: 2.5 },
+    { d0: lap * 0.3, d1: lap * 0.4, colour: "#2bb3ff", offset: 0 },
   ];
   return (
-    <div className="mx-auto max-w-container px-gutter pt-24">
+    <div className="mx-auto max-w-container px-gutter pt-24" style={{ maxWidth: "100%" }}>
       <p className="mb-4 font-mono text-[12px] text-muted">
         circuit {circuitKey} · {circuit?.name ?? "no ref"} · rotation {circuit?.rotation ?? "n/a"} · {circuit?.corners.length ?? 0} corners · {circuit?.outline?.length ?? 0} ref points
       </p>
-      <div className="h-[640px] rounded-l border border-line bg-surface-1">
+      <div className="h-[640px]">
         <TrackMap
           outline={outline.data}
           circuit={circuit}

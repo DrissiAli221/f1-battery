@@ -192,7 +192,7 @@ export function LivePage({ sessionKey }: { sessionKey: number | null }) {
       </section>
 
       <section className="wrap lv-body" aria-label="Replay">
-        <Card className="lv-stage" as="div">
+        <div className="lv-stage">
           <div className="lv-stage__map">
             <div className="lv-stage__bar">
               <Label>{circuitMeta(circuit)?.name ?? session?.circuit_short_name ?? "Track"}</Label>
@@ -236,7 +236,7 @@ export function LivePage({ sessionKey }: { sessionKey: number | null }) {
               {running ? "Order by estimated distance; gap in metres to the first car." : "Order at the flag from lap times, not the official classification."}
             </p>
           </Card>
-        </Card>
+        </div>
 
         <Card className="lv-axis-card">
           <LiveAxis total={totalLaps} lap={leadLap} live={running} playing={playing} onPlay={togglePlay} speed={live.speed} />

@@ -290,7 +290,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
             </div>
           </Card>
         ) : (
-        <Card className="ss-stage" style={{ ["--team" as string]: pTeam }}>
+        <div className="ss-stage" style={{ ["--team" as string]: pTeam }}>
           <div className="ss-map" id="ss-map" data-reveal>
             <div className="ss-map__top">
               <Label>{regLapShown !== null && has ? `${pCode} · lap ${regLapShown} regimes` : "Track map"}</Label>
@@ -459,7 +459,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
               </div>
             )}
           </div>
-        </Card>
+        </div>
         )}
 
         {/* ---------- The race: laps as the scrubber ---------- */}
