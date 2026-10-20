@@ -23,6 +23,7 @@ export type Route =
   | { name: "method" }
   | { name: "live"; key: number | null }
   | { name: "dev-straight" }
+  | { name: "dev-map" }
   | { name: "missing"; path: string };
 
 export interface Location {
@@ -45,6 +46,7 @@ function parse(hash: string): Location {
   else if (path === "/live") route = { name: "live", key: null };
   else if ((m = /^\/live\/(\d+)\/?$/.exec(path))) route = { name: "live", key: Number(m[1]) };
   else if (path === "/dev/straight" && import.meta.env.DEV) route = { name: "dev-straight" };
+  else if (path === "/dev/map" && import.meta.env.DEV) route = { name: "dev-map" };
   else route = { name: "missing", path };
   return { route, path, query };
 }

@@ -16,6 +16,7 @@ const MethodLogPage = lazy(() => import("./pages/MethodLogPage").then((m) => ({ 
 const DevStraightPage = import.meta.env.DEV
   ? lazy(() => import("./pages/DevStraightPage").then((m) => ({ default: m.DevStraightPage })))
   : () => null;
+const DevMapPage = import.meta.env.DEV ? lazy(() => import("./pages/DevMapPage").then((m) => ({ default: m.DevMapPage }))) : () => null;
 const LivePage = lazy(() => import("./pages/LivePage").then((m) => ({ default: m.LivePage })));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
@@ -33,6 +34,8 @@ function Page({ route }: { route: Route }) {
       return <MethodLogPage />;
     case "live":
       return <LivePage key={route.key ?? "index"} sessionKey={route.key} />;
+    case "dev-map":
+      return <DevMapPage />;
     case "dev-straight":
       return <DevStraightPage />;
     case "missing":

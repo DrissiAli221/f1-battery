@@ -14,5 +14,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
     plugins: [react(), siteUrl(env.VITE_SITE_URL ?? "")],
+    // Same-origin dev: with VITE_API_BASE="" the client calls /api, which Vite forwards here.
+    server: { proxy: { "/api": env.VITE_API_PROXY ?? "http://localhost:8080" } },
   };
 });
