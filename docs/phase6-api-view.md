@@ -110,3 +110,5 @@ until Phase 4 writes `model_result`).
 
 
 Units: `location` x/y/z are tenths of a metre (verified against the Monza lap length, see docs/data-quality-notes.md), so the outline's 500-unit spacing is 50 m.
+
+Straight speed profile: `python -m f1battery_model.profile --session <key> --run-id <uuid>` (or `--all-sessions`, from `model/` with the venv active) adds `speed_bin_<n>` (median kph) and `accel_bin_<n>` (median m/s²) rows with `lap_number` 0 per driver per straight to an existing run; bin n is [50n, 50n+50) m from the straight's start. It is a cross-lap aggregate over clean laps at the same 50 m resolution as the regime bins, never a single lap; re-running deletes and rewrites those variables.
