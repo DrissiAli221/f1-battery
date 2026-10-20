@@ -1,0 +1,670 @@
+/*
+ * The landing's sections (DESIGN.md "Composition plan"). Tokens only; no CSS transform on any
+ * element GSAP moves (the data-reveal and data-intro wrappers): hover motion lives on children.
+ * Every :hover sits inside (hover: hover) and has a :focus-visible twin.
+ */
+
+/* ================= 2. Verdict: statement plus one fact (rhythm: normal) ================= */
+.verdict {
+  padding-block: var(--section-y);
+}
+.verdict__grid {
+  display: grid;
+  gap: var(--stack) var(--gutter);
+  padding-top: var(--head-top);
+}
+@media (min-width: 1024px) {
+  .verdict__grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .verdict__main {
+    grid-column: 1 / 9;
+  }
+  .verdict__side {
+    grid-column: 9 / 13;
+    padding-top: calc(var(--t-section) * 0.2);
+  }
+}
+.verdict__h {
+  font-size: var(--t-section);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: var(--tr-section);
+  color: var(--ink-head);
+  outline: none;
+}
+.verdict__p {
+  max-width: 34ch;
+  margin-top: var(--head-gap);
+  font-size: clamp(20px, 1rem + 0.7vw, 28px);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/* The odds ratio: a big mono numeral over its interval, drawn as a bracket on a short axis. */
+.or {
+  margin: var(--stack) 0 0;
+}
+.or__num {
+  font-size: clamp(4.5rem, 2rem + 8vw, 9rem);
+  font-weight: 500;
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+  color: var(--ink-head);
+}
+/* The decimal point in Geist Mono (recordData.tsx <N>). */
+.num-pt {
+  margin-inline: -0.14em;
+}
+.or__num .num-pt {
+  margin-inline: -0.2em;
+}
+.or__axis {
+  position: relative;
+  height: 52px;
+  max-width: 560px;
+  margin-top: 28px;
+}
+.or__line {
+  position: absolute;
+  inset: 22px 0 auto 0;
+  border-top: 1px solid var(--line-strong);
+}
+.or__tick {
+  position: absolute;
+  top: 22px;
+  width: 1px;
+  height: 7px;
+  background: var(--line-strong);
+}
+.or__tl {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  translate: -50% 0;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.or__tick--one {
+  top: 0;
+  height: 30px;
+  background: var(--ink);
+}
+.or__tick--one .or__tl {
+  top: 34px;
+  color: var(--ink);
+}
+.or__tick--bar {
+  top: 4px;
+  height: 25px;
+  background: repeating-linear-gradient(180deg, var(--muted) 0 3px, transparent 3px 6px);
+}
+.or__tick--bar .or__tl {
+  top: 30px;
+}
+.or__bracket {
+  position: absolute;
+  top: 9px;
+  height: 13px;
+  border: 1.5px solid var(--ink);
+  border-bottom: 0;
+}
+.or__dot {
+  position: absolute;
+  top: 22px;
+  width: 11px;
+  height: 11px;
+  translate: -50% -50%;
+  border-radius: var(--radius-avatar);
+  background: var(--ink-head);
+  box-shadow: 0 0 0 3px var(--page-bg);
+}
+.or__cap {
+  max-width: 58ch;
+  margin-top: 16px;
+  font-size: var(--t-ui);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.verdict__frozen {
+  font-size: var(--t-ui);
+  color: var(--ink);
+}
+.verdict__caveat {
+  max-width: 40ch;
+  margin-top: 16px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.verdict__link {
+  display: inline-block;
+  margin-top: 28px;
+  padding-block: 2px;
+  color: var(--ink-head);
+}
+
+/* ================= 3. How it is read: sticky narrative (rhythm: airy) ================= */
+.how {
+  padding-block: var(--rhythm-airy);
+}
+.how__grid {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--grid-top);
+}
+.how__stage {
+  order: -1;
+  position: sticky;
+  top: 88px; /* under the floating nav pill */
+  z-index: 2;
+  padding-bottom: 20px;
+  background: var(--page-bg);
+}
+.how__stage .st--panel .st__plot {
+  height: clamp(150px, 22svh, 260px);
+}
+/* Phones: the stage holds the top of the screen; each chapter enters just under it. */
+.how__chapter {
+  display: flex;
+  align-items: flex-start;
+  min-height: 46svh;
+  padding-top: 24px;
+}
+.how__chapter:last-child {
+  min-height: 56svh;
+}
+@media (min-width: 1024px) {
+  .how__grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0 var(--gutter);
+  }
+  .how__chapters {
+    grid-column: 1 / 5;
+    grid-row: 1;
+  }
+  .how__stage {
+    grid-column: 5 / 13;
+    grid-row: 1;
+    align-self: start;
+    top: max(calc(var(--header-h) + 40px), calc(50svh - 230px));
+    padding-bottom: 0;
+    background: none;
+  }
+  .how__stage .st--panel .st__plot {
+    height: clamp(240px, 36svh, 380px);
+  }
+  .how__chapter {
+    align-items: center;
+    min-height: 78svh;
+    padding-top: 0;
+  }
+}
+.how__title {
+  max-width: 16ch;
+  font-size: clamp(24px, 1rem + 1.3vw, 36px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--muted);
+  transition: color 0.5s;
+}
+.how__text {
+  max-width: 36ch;
+  margin-top: 14px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.how__chapter.is-on .how__title {
+  color: var(--ink-head);
+}
+.how__chapter.is-on .how__text {
+  color: var(--ink);
+}
+
+/* Chapter 3 lights the construction: the bracket, the hatched interval and the cut-off. */
+[data-step="2"] .st__bracket {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+[data-step="2"] .st__ci {
+  opacity: 1;
+}
+[data-step="2"] .st__cutline {
+  stroke: var(--accent);
+}
+.st__bracket,
+.st__cutline,
+.st__ci {
+  transition: stroke 0.5s, opacity 0.5s;
+}
+
+/* Reduced motion: no sticky stage; each chapter carries its own small trace. */
+.how__still {
+  display: grid;
+  gap: var(--stack);
+  margin-top: var(--grid-top);
+}
+@media (min-width: 1024px) {
+  .how__still-item {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0 var(--gutter);
+    align-items: center;
+  }
+  .how__still-item > .how__title,
+  .how__still-item > .how__text {
+    grid-column: 1 / 5;
+  }
+  .how__still-item > .how__mini {
+    grid-column: 5 / 13;
+    grid-row: 1 / span 2;
+  }
+}
+.how__still .how__title {
+  color: var(--ink-head);
+}
+.how__still .how__text {
+  color: var(--ink);
+}
+.how__mini {
+  margin-top: 20px;
+}
+.how__mini .st--panel .st__plot {
+  height: 170px;
+}
+
+/* ================= 4. The season: index list (rhythm: tight) ================= */
+.season {
+  padding-block: var(--rhythm-tight) var(--section-y);
+}
+.season__head,
+.season__row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  grid-template-areas:
+    "name name name cut"
+    "date type . ."
+    "trace trace trace trace";
+  gap: 6px 16px;
+  align-items: baseline;
+}
+.season__head {
+  display: none;
+  margin-top: var(--grid-top);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-ui-s);
+  color: var(--muted);
+}
+.season__list {
+  margin-top: var(--grid-top);
+  border-top: 1px solid var(--line);
+}
+.season__row {
+  padding-block: 18px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  outline-offset: -2px;
+}
+.season__name {
+  grid-area: name;
+  justify-self: start;
+  font-size: clamp(20px, 0.9rem + 1vw, 30px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--ink-head);
+  background: linear-gradient(var(--accent) 0 0) left bottom / 0% 2px no-repeat;
+  transition: background-size 0.45s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.season__date {
+  grid-area: date;
+  font-size: var(--t-ui);
+  color: var(--muted);
+}
+.season__type {
+  grid-area: type;
+  font-size: var(--t-ui);
+  color: var(--muted);
+}
+.season__cut {
+  grid-area: cut;
+  justify-self: end;
+  font-size: 15px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.season__est {
+  font-size: var(--t-ui-s);
+  color: var(--muted);
+}
+.season__trace {
+  grid-area: trace;
+  display: block;
+  height: 32px;
+  margin-top: 10px;
+}
+/* No published profile yet: the axis alone, dashed, mid-height. */
+.season__axis {
+  display: block;
+  height: 17px;
+  border-bottom: 1px dashed var(--line-strong);
+}
+.season__row.is-hot .season__name,
+.season__row:focus-visible .season__name {
+  background-size: 100% 2px;
+}
+@media (hover: hover) {
+  .season__row:hover .season__name {
+    background-size: 100% 2px;
+  }
+}
+@media (min-width: 900px) {
+  .season__head,
+  .season__row {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 4fr);
+    grid-template-areas: "name date type cut trace";
+    gap: 0 var(--gutter);
+    align-items: center;
+  }
+  .season__head {
+    display: grid;
+  }
+  .season__head span:nth-child(1) {
+    grid-area: name;
+  }
+  .season__head span:nth-child(2) {
+    grid-area: date;
+  }
+  .season__head span:nth-child(3) {
+    grid-area: type;
+  }
+  .season__head-cut {
+    grid-area: cut;
+    justify-self: end;
+  }
+  .season__head-trace {
+    grid-area: trace;
+  }
+  .season__list {
+    margin-top: 0;
+    border-top: 0;
+  }
+  .season__row {
+    min-height: 76px;
+    padding-block: 14px;
+  }
+  .season__trace {
+    margin-top: 0;
+  }
+}
+.season__empty {
+  padding-block: 24px;
+  color: var(--muted);
+}
+.season__all {
+  margin-top: var(--stack);
+  font-size: 16px;
+}
+.season__all .link {
+  display: inline-block;
+  padding-block: 2px;
+  color: var(--ink-head);
+}
+.season__count {
+  color: var(--muted);
+}
+
+/* ================= 5. The record: data strip (rhythm: full viewport) ================= */
+.record {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100svh;
+  padding-block: var(--section-y);
+}
+@media (min-width: 900px) {
+  /* Full viewport: the heading, the strip and the readout fit one screen. */
+  .record {
+    padding-block: 80px 48px;
+  }
+  .record .section-intro {
+    padding-top: 0;
+  }
+  .record__strip {
+    margin-top: 48px;
+  }
+}
+.record__strip {
+  position: relative;
+  margin-top: var(--grid-top);
+}
+.record__axis {
+  position: relative;
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.record__tick {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+}
+.record__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--t-mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.record__status::before,
+.record__key::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--status);
+}
+.record__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.record__date {
+  display: block;
+  font-size: var(--t-mono);
+  color: var(--muted);
+}
+.record__title {
+  display: block;
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.record__title s {
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: var(--accent);
+}
+.record__mark {
+  position: absolute;
+  display: block;
+  background: var(--status);
+  transition: scale 0.5s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s;
+}
+.is-not-demonstrated .record__mark {
+  background: repeating-linear-gradient(var(--angle, 180deg), var(--status) 0 4px, transparent 4px 8px);
+}
+
+/* Phones: one vertical axis, every summary shown. */
+.record__axis {
+  display: grid;
+  gap: 28px;
+}
+.record__axis::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--gutter);
+  border-left: 1px solid var(--line-strong);
+}
+.record__tick {
+  display: grid;
+  gap: 4px;
+  padding-left: 28px;
+}
+.record__mark {
+  --angle: 90deg;
+  left: 0;
+  top: 7px;
+  width: 18px;
+  height: 2px;
+  transform-origin: left center;
+}
+.is-crossed .record__mark::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: -6px;
+  width: 2px;
+  height: 14px;
+  background: var(--ink);
+  rotate: 35deg;
+}
+.record__line {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.record__readout {
+  display: none;
+}
+.record__more {
+  margin-top: var(--stack);
+  font-size: 16px;
+}
+.record__more .link {
+  display: inline-block;
+  padding-block: 2px;
+  color: var(--ink-head);
+}
+
+@media (min-width: 900px) {
+  .record__strip::before {
+    /* The long axis runs edge to edge; the ticks hang on the 1200 px column. */
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(28px + var(--tick-h));
+    border-top: 1px solid var(--line-strong);
+  }
+  .record {
+    --tick-h: clamp(96px, 19svh, 220px);
+  }
+  .record__axis {
+    grid-template-columns: repeat(var(--n, 8), minmax(0, 1fr));
+    gap: 0 var(--gutter);
+  }
+  .record__axis::before {
+    display: none;
+  }
+  .record__tick {
+    display: block;
+    height: 100%;
+    padding: 0 0 8px;
+  }
+  .record__status {
+    height: 20px;
+  }
+  .record__mark {
+    --angle: 180deg;
+    position: relative;
+    left: 0;
+    top: 0;
+    width: 2px;
+    height: var(--tick-h);
+    margin-top: 8px;
+    transform-origin: center bottom;
+  }
+  .is-explained .record__mark {
+    height: calc(var(--tick-h) * 0.55);
+    margin-top: calc(8px + var(--tick-h) * 0.45);
+  }
+  .is-crossed .record__mark::after {
+    left: -8px;
+    top: 38%;
+    width: 18px;
+    height: 2px;
+    rotate: -35deg;
+  }
+  .record__date {
+    margin-top: 14px;
+  }
+  .record__title {
+    max-width: 18ch;
+    margin-top: 6px;
+    color: var(--muted);
+    transition: color 0.3s;
+  }
+  .record__line {
+    display: none;
+  }
+  .record__tick.is-on .record__mark {
+    scale: 2.5 1;
+  }
+  .record__tick.is-on .record__title,
+  .record__tick.is-on .record__status {
+    color: var(--ink-head);
+  }
+  .record__readout {
+    display: block;
+    margin-top: var(--stack);
+  }
+  .record__readout-k {
+    font-family: var(--font-mono);
+    font-size: var(--t-mono);
+    color: var(--muted);
+  }
+  .record__readout-v {
+    max-width: 44ch;
+    min-height: 2.5em;
+    margin-top: 12px;
+    font-size: clamp(20px, 0.8rem + 1.1vw, 30px);
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--ink-head);
+    text-wrap: pretty;
+  }
+}
+@media (hover: hover) and (min-width: 900px) {
+  .record__tick:hover .record__title {
+    color: var(--ink-head);
+  }
+}
+.record__tick:focus-visible {
+  outline-offset: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season__name,
+  .record__mark,
+  .record__title,
+  .how__title,
+  .st__bracket,
+  .st__cutline,
+  .st__ci {
+    transition: none !important;
+  }
+}
