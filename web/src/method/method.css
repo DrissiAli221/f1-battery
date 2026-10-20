@@ -1,0 +1,193 @@
+/*
+ * The method log's document (DESIGN.md "Method log"): entries hang from column 5 of the 12
+ * column, 1200 px grid; the date, phase and status sit in mono in columns 1 to 4. No cards:
+ * entries are separated by one hairline and space.
+ */
+.mlog {
+  padding-block: var(--section-y) 0;
+}
+.mlog__lede,
+.mentry > article {
+  display: grid;
+  gap: 12px var(--gutter);
+}
+@media (min-width: 1024px) {
+  .mlog__lede,
+  .mentry > article {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .mlog__h {
+    grid-column: 1 / span 4;
+  }
+  .mlog__intro {
+    grid-column: 5 / span 8;
+  }
+  .mentry__meta {
+    grid-column: 1 / span 4;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--header-h) + 32px);
+  }
+  .mentry__body {
+    grid-column: 5 / span 8;
+  }
+}
+.mlog__h {
+  font-size: var(--t-section);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: var(--tr-section);
+  color: var(--ink-head);
+}
+.mlog__intro {
+  max-width: var(--measure);
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.mlog__list {
+  margin-top: var(--grid-top);
+}
+.mentry {
+  padding-block: 48px 64px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: calc(var(--header-h) + 24px);
+}
+@media (min-width: 1024px) {
+  .mentry {
+    padding-block: 64px 96px;
+  }
+}
+.mentry__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-family: var(--font-mono);
+  font-size: var(--t-mono);
+  line-height: 1.6;
+  color: var(--muted);
+}
+@media (min-width: 1024px) {
+  .mentry__meta {
+    display: grid;
+    gap: 6px;
+  }
+}
+.mentry__n {
+  color: var(--ink);
+}
+.mentry__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+}
+.mentry__status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--status);
+}
+.mentry__title {
+  max-width: 26ch;
+  font-size: clamp(26px, 1rem + 1.6vw, 40px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--ink-head);
+  text-wrap: balance;
+  outline: none;
+}
+.mentry__title s {
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--accent);
+}
+.mentry__replaced {
+  margin-top: 16px;
+  max-width: var(--measure);
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.mentry__tried {
+  margin-top: 24px;
+  max-width: var(--measure);
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+.mentry__fields {
+  display: grid;
+  gap: 28px;
+  margin-top: 36px;
+}
+.mentry__fields > div {
+  display: grid;
+  gap: 8px;
+}
+@media (min-width: 768px) {
+  .mentry__fields > div {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: var(--gutter);
+  }
+}
+.mentry__fields dt {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.mentry__fields dd {
+  max-width: var(--measure);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.mentry__src {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.mentry__src .link {
+  display: inline-block;
+  padding-block: 3px;
+  color: var(--ink);
+}
+.mentry__fig {
+  margin-top: 40px;
+}
+.mentry__img {
+  background: #fff;
+  padding: 12px;
+}
+.mentry__img img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.mentry__fig figcaption {
+  margin-top: 12px;
+  max-width: var(--measure);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Fig. 1 */
+.mfig {
+  padding-block: var(--section-y);
+  border-top: 1px solid var(--line);
+}
+.mfig__plate {
+  margin-top: var(--grid-top);
+}
+.mentry__src .link {
+  min-width: 24px;
+  text-align: center;
+}

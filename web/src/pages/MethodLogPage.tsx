@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
 import log from "../content/method-log.json";
-import { Eyebrow, Reveal } from "../components/ui";
-import { date } from "../lib/format";
+import { Readout } from "../components/Readout";
+import { SectionIntro } from "../components/Section";
+import { RecordStrip } from "../landing/RecordStrip";
+import { RECORD, STATUS_VAR, nums, type Status } from "../landing/recordData";
+import { scrollToTarget, usePage } from "../motion";
+import { useFigData } from "../figures/cutoff/data";
+import { Fig1 } from "../figures/cutoff/Figure";
+import "../landing/landing.css";
+import "../method/method.css";
 
 const REPO = "https://github.com/DrissiAli221/f1-battery/blob/main/";
 
@@ -9,111 +15,140 @@ type Entry = (typeof log.entries)[number] & {
   figure?: { src: string; alt: string; caption: string };
 };
 
-function Field({ name, children }: { name: string; children: string }) {
-  return (
-    <div>
-      <h3 className="label">{name}</h3>
-      <p className="mt-3 text-[16px] leading-relaxed text-ink-2">{children}</p>
-    </div>
-  );
-}
+const when = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
-/** Tracks which entry is in view, for the sticky index. */
-function useActive(ids: string[]): string | null {
-  const [active, setActive] = useState<string | null>(ids[0] ?? null);
-  useEffect(() => {
-    const io = new IntersectionObserver(
-      (es) => {
-        const vis = es.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (vis[0]) setActive(vis[0].target.id);
-      },
-      { rootMargin: "-30% 0px -60% 0px" },
-    );
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el) io.observe(el);
-    }
-    return () => io.disconnect();
-  }, [ids]);
-  return active;
-}
+const entries = log.entries as Entry[];
+const fails = entries.filter((e) => RECORD[e.id]?.status === "fail").length;
 
-const ids = log.entries.map((e) => e.id);
-
+/*
+ * The method log (DESIGN.md "Method log"): the record strip at full size as the opener, then
+ * the entries as one long document, then Fig. 1. Each entry hangs from column 5; its date,
+ * phase and status sit in mono in columns 1 to 4. The first cut-off estimator (the hinge
+ * detector) is crossed out in the strip and marked "replaced" here (D18, D19).
+ */
 export function MethodLogPage() {
-  const active = useActive(ids);
+  const fig = useFigData();
+  const page = usePage<HTMLDivElement>(undefined, [fig.settled, fig.data !== null]);
+
+  const toEntry = (id: string) => {
+    scrollToTarget(`#${id}`, -88);
+    document.getElementById(`${id}-h`)?.focus({ preventScroll: true });
+  };
+
   return (
-    <>
-      <section className="wrap pb-16 pt-16 md:pb-24 md:pt-24">
-        <Eyebrow>Method log</Eyebrow>
-        <h1 className="display mt-6 text-[48px] md:text-[88px]">{log.title}</h1>
-        <p className="lede mt-8 max-w-[70ch]">{log.intro}</p>
-      </section>
-      <section className="wrap pb-32">
-        <div className="grid gap-16 lg:grid-cols-12">
-          <nav className="hidden lg:col-span-3 lg:block" aria-label="Entries">
-            <ol className="sticky top-[calc(var(--header-h)+40px)] space-y-1 border-l border-line-2">
-              {(log.entries as Entry[]).map((e, i) => (
-                <li key={e.id}>
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById(e.id)?.scrollIntoView({ behavior: "smooth" })}
-                    className={`-ml-px flex w-full gap-3 border-l-2 py-2 pl-4 text-left text-[14px] leading-snug transition-colors ${
-                      active === e.id ? "border-brand text-ink-head" : "border-transparent text-ink-3 hover:text-ink"
-                    }`}
-                  >
-                    <span className="num shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                    {e.title}
-                  </button>
-                </li>
-              ))}
-            </ol>
-          </nav>
-          <ol className="space-y-24 lg:col-span-9 lg:space-y-32">
-            {(log.entries as Entry[]).map((e, i) => (
-              <li key={e.id} id={e.id} className="scroll-mt-28">
-                <Reveal>
-                  <article>
-                    <header className="border-t-2 border-line pt-8">
-                      <div className="flex flex-wrap items-center gap-4">
-                        <span className="num text-[15px] font-semibold text-brand">{String(i + 1).padStart(2, "0")}</span>
-                        <span className="badge badge-muted">{e.phase}</span>
-                        <time dateTime={e.date} className="num text-[14px] text-ink-3">
-                          {date(`${e.date}T00:00:00Z`, "short")}
-                        </time>
-                      </div>
-                      <h2 className="mt-6 max-w-[30ch] text-[28px] font-semibold leading-tight tracking-[-0.03em] text-ink-head md:text-[40px]">{e.title}</h2>
-                    </header>
-                    <div className="mt-12 grid gap-x-16 gap-y-10 md:grid-cols-2">
-                      <Field name="Tried">{e.tried}</Field>
-                      <Field name="Check">{e.check}</Field>
-                      <Field name="Found">{e.found}</Field>
-                      <Field name="Consequence">{e.consequence}</Field>
+    <div ref={page}>
+      <RecordStrip title={log.title} level="h1" onPick={toEntry} more={false} />
+
+      <section className="mlog" aria-labelledby="mlog-h">
+        <div className="wrap">
+          <div className="mlog__lede">
+            <h2 id="mlog-h" className="mlog__h" data-reveal>
+              The entries
+            </h2>
+            <p className="mlog__intro" data-reveal>
+              {nums(log.intro)}
+            </p>
+          </div>
+          <ol className="mlog__list">
+            {entries.map((e, i) => {
+              const r = RECORD[e.id] ?? { status: "explained" as Status, line: e.title };
+              return (
+                <li key={e.id} id={e.id} className={`mentry ${r.crossed ? "is-crossed" : ""}`}>
+                  <article aria-labelledby={`${e.id}-h`}>
+                    <div className="mentry__meta" data-reveal>
+                      <span className="mentry__n num">{String(i + 1).padStart(2, "0")}</span>
+                      <time dateTime={e.date} className="num">
+                        {when(e.date)}
+                      </time>
+                      <span>{nums(e.phase)}</span>
+                      <span className="mentry__status" style={{ ["--status" as string]: STATUS_VAR[r.status] }}>
+                        {r.status}
+                        {r.crossed ? " · replaced" : ""}
+                      </span>
                     </div>
-                    {e.figure && (
-                      <figure className="mt-12 overflow-hidden rounded-xs bg-white p-4">
-                        <img src={`${import.meta.env.BASE_URL}${e.figure.src}`} alt={e.figure.alt} loading="lazy" className="h-auto w-full" />
-                        <figcaption className="mt-3 text-[13px] text-neutral-600">{e.figure.caption}</figcaption>
-                      </figure>
-                    )}
-                    <p className="mt-10 text-[14px] text-ink-3">
-                      Sources:{" "}
-                      {e.sources.map((s, j) => (
-                        <span key={s.path}>
-                          {j > 0 && ", "}
-                          <a className="prose-link" href={REPO + s.path} target="_blank" rel="noreferrer">
-                            {s.label}
-                          </a>
-                        </span>
-                      ))}
-                    </p>
+                    <div className="mentry__body">
+                      <h3 id={`${e.id}-h`} className="mentry__title" tabIndex={-1} data-reveal>
+                        {r.crossed ? (
+                          <>
+                            <s>{e.title}</s>
+                            <span className="sr-only"> (replaced)</span>
+                          </>
+                        ) : (
+                          nums(e.title)
+                        )}
+                      </h3>
+                      {r.crossed && (
+                        <p className="mentry__replaced" data-reveal>
+                          Replaced. The threshold crossing became the primary cut-off for Phases <span className="num">4</span> and{" "}
+                          <span className="num">5</span> (D18); the hinge ramp start is kept as experimental only (D19).
+                        </p>
+                      )}
+                      <p className="mentry__tried" data-reveal>
+                        {nums(e.tried)}
+                      </p>
+                      <dl className="mentry__fields">
+                        <div data-reveal>
+                          <dt>Check</dt>
+                          <dd>{nums(e.check)}</dd>
+                        </div>
+                        <div data-reveal>
+                          <dt>Found</dt>
+                          <dd>{nums(e.found)}</dd>
+                        </div>
+                        <div data-reveal>
+                          <dt>Decision</dt>
+                          <dd>
+                            {nums(e.consequence)}
+                            <span className="mentry__src">
+                              {e.sources.map((s, j) => (
+                                <span key={s.path}>
+                                  {j > 0 && ", "}
+                                  <a className="link" href={REPO + s.path} target="_blank" rel="noreferrer">
+                                    {s.label}
+                                  </a>
+                                </span>
+                              ))}
+                            </span>
+                          </dd>
+                        </div>
+                      </dl>
+                      {e.figure && (
+                        <figure className="mentry__fig" data-reveal>
+                          <div className="mentry__img">
+                            <img src={`${import.meta.env.BASE_URL}${e.figure.src}`} alt={e.figure.alt} loading="lazy" width={1400} height={900} />
+                          </div>
+                          <figcaption>{nums(e.figure.caption)}</figcaption>
+                        </figure>
+                      )}
+                    </div>
                   </article>
-                </Reveal>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ol>
         </div>
       </section>
-    </>
+
+      {fig.data && (
+        <section className="mfig fig1 iso" aria-labelledby="mfig-h">
+          <div className="wrap">
+            <SectionIntro id="mfig-h" title="The estimator, as a bench">
+              The primary cut-off since D18, built as an instrument: every number in the figure comes from the profile its cam is cut
+              to.
+            </SectionIntro>
+            <div className="mfig__plate" data-reveal>
+              <Fig1 data={fig.data} />
+            </div>
+          </div>
+        </section>
+      )}
+
+      <Readout label="The record">
+        <p>
+          <span className="num">{fails}</span> of <span className="num">{entries.length}</span> checks did not pass
+        </p>
+      </Readout>
+    </div>
   );
 }
