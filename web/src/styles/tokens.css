@@ -33,11 +33,12 @@
   --color-green-500: #27983e;
   --color-yellow-500: #ffd100;
   /* Broadcast dark from the brief: the ground. Not a PRNDL value. */
-  --color-ground-950: #0c0c11;
+  --color-ground-950: #030303; /* deep neutral black (Ali, 2026-10-20) */
+  --color-ground-900: #0e0e0e; /* neutral surface, no blue cast */
 
   /* ---- Roles (DESIGN.md "Palette") ---- */
   --page-bg: var(--color-ground-950); /* ground */
-  --ground-2: var(--color-grey-900); /* surface, curtain */
+  --ground-2: var(--color-ground-900); /* surface, curtain */
   --ink: var(--color-grey-200);
   /* Lifted from navy-300 (#97959e, 6.6:1) so captions at 11-12 px, over hatching and on
      ground-2, still clear 4.5:1 everywhere: 7.6:1 on the ground, 7.0:1 on ground-2. The
@@ -55,7 +56,7 @@
   /* ---- Older aliases, kept so the pages compile until they are rebuilt ---- */
   --surface: var(--ground-2);
   --surface-deep: var(--color-grey-950);
-  --frame: var(--color-navy-700);
+  --frame: #000000;
   --line-2: rgba(247, 244, 241, 0.07);
   --ink-head: var(--color-grey-100);
   --ink-2: var(--color-grey-300);

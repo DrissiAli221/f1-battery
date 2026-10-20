@@ -424,6 +424,42 @@
     position: absolute;
     inset: calc(var(--header-h) + 40px) 0 auto 0;
   }
+  /* Photo hero: the image fills the stage, a scrim fades it into the ground at the bottom
+     (copy) and slightly at the top (navbar), so the page has tone, not one flat colour. */
+  .hero__back > picture,
+  .hero__back > .hero__scrim {
+    inset: 0;
+    height: 100%;
+  }
+  .hero__photo {
+    position: absolute;
+    inset: -10% 0 0 0;
+    width: 100%;
+    height: 110%;
+    object-fit: cover;
+    /* Framed so the mark sits top-right, clear of the copy bottom-left. */
+    object-position: center 20%;
+    translate: 10% -6%;
+    scale: 1.25;
+    display: block;
+  }
+  @media (max-width: 767px) {
+    .hero__photo {
+      translate: 8% -14%;
+      scale: 1.35;
+    }
+  }
+  .hero__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top, var(--page-bg) 0%, rgba(3, 3, 3, 0.55) 18%, rgba(3, 3, 3, 0.15) 45%, rgba(3, 3, 3, 0) 65%, rgba(3, 3, 3, 0.35) 100%),
+      linear-gradient(to right, rgba(3, 3, 3, 0.5) 0%, rgba(3, 3, 3, 0.1) 45%, rgba(3, 3, 3, 0) 70%);
+  }
+  .hero--photo .hero__cols,
+  .hero--photo .hero__hline {
+    display: none;
+  }
   /* The trace's axis lands above the 55.55 % hairline; the copy owns the space below. */
   .hero .st--hero .st__plot {
     height: clamp(180px, calc(41svh - 104px), 520px);

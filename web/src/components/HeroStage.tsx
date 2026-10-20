@@ -15,12 +15,15 @@ import { prefersReducedMotion } from "../motion";
  */
 export function HeroStage({
   trace,
+  photo,
   children,
   progress,
   label,
 }: {
-  /** The background layer: the straight at hero size. */
-  trace: ReactNode;
+  /** The background layer: the straight at hero size (optional when a photo is given). */
+  trace?: ReactNode;
+  /** A full-bleed photograph behind the copy, faded into the ground by a scrim. */
+  photo?: { src: string; alt: string; webp?: string; webpSmall?: string };
   /** The copy: h1, paragraph, CTA row. Sits bottom-left. */
   children: ReactNode;
   /** Receives the scroll progress over the hero, 0 to 1 (pass to Straight's progress input). */
@@ -67,8 +70,23 @@ export function HeroStage({
   }, [progress]);
 
   return (
-    <section ref={section} className="hero" aria-label={label} data-stage>
+    <section ref={section} className={photo ? "hero hero--photo" : "hero"} aria-label={label} data-stage>
       <div ref={back} className="hero__back">
+        {photo ? (
+          <>
+            <picture>
+              {photo.webp ? (
+                <source
+                  type="image/webp"
+                  srcSet={photo.webpSmall ? `${photo.webpSmall} 1280w, ${photo.webp} 2560w` : photo.webp}
+                  sizes="100vw"
+                />
+              ) : null}
+              <img className="hero__photo" src={photo.src} alt={photo.alt} fetchPriority="high" decoding="async" />
+            </picture>
+            <div className="hero__scrim" aria-hidden="true" />
+          </>
+        ) : null}
         {trace}
       </div>
       <div ref={front} className="hero__front">

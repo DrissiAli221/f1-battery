@@ -3,7 +3,6 @@ import notes from "../content/findings-notes.json";
 import { Cta, CtaGhost } from "../components/Cta";
 import { HeroStage } from "../components/HeroStage";
 import { Readout } from "../components/Readout";
-import { Straight } from "../instrument/Straight";
 import { useList } from "../lib/api";
 import { href } from "../lib/router";
 import type { SessionRow } from "../lib/types";
@@ -41,16 +40,7 @@ export function LandingPage() {
       <HeroStage
         progress={progress}
         label="The question"
-        trace={
-          <Straight
-            profile={hero.profile}
-            pending={hero.status === "pending"}
-            size="hero"
-            readout="float"
-            d={{ mode: "progress", progress }}
-            labels={hero.labels}
-          />
-        }
+        photo={{ src: "/hero.jpg", webp: "/hero.webp", webpSmall: "/hero-1280.webp", alt: "Formula 1 mark on a dark grain with a red glow" }}
       >
         <h1 className="hero-q" data-intro>
           {notes.question}
