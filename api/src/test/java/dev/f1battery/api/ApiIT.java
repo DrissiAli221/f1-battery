@@ -50,22 +50,29 @@ class ApiIT {
                 "Italy", "Otherplace", ts("2026-09-05T13:00:00Z"), ts("2026-09-05T14:00:00Z"), 2026);
         j.update("insert into driver values (?,?,?,?,?)", SESSION, 1, "AAA", "Alice A", "Team One");
         j.update("insert into driver values (?,?,?,?,?)", SESSION, 44, "BBB", "Bob B", "Team Two");
-        // driver 1: lap 1 slow, lap 2 fastest overall; driver 44: lap 1 in between.
+        // driver 1: lap 1 slow, lap 2 fastest overall but not green, lap 3 green and fast but its
+        // location starts a quarter-lap past the line (a lap-clock fault); driver 44: lap 1 green
+        // with a full loop of location, lap 2 the fastest green lap with no location at all.
         lap(j, 1, 1, "2026-09-06T13:05:00Z", 95.0);
         lap(j, 1, 2, "2026-09-06T13:06:40Z", 90.0);
+        lap(j, 1, 3, "2026-09-06T13:10:00Z", 89.0);
         lap(j, 44, 1, "2026-09-06T13:05:00Z", 92.0);
-        j.update("insert into lap_quality (session_key, driver_number, lap_number, green, reason) values (?,?,?,?,?)", SESSION, 1, 1, true, null);
-        j.update("insert into lap_quality (session_key, driver_number, lap_number, green, reason) values (?,?,?,?,?)", SESSION, 1, 2, false, "yellow flag");
-        j.update("insert into lap_quality (session_key, driver_number, lap_number, green, reason) values (?,?,?,?,?)", SESSION, 44, 1, true, null);
+        lap(j, 44, 2, "2026-09-06T13:06:32Z", 88.0);
+        quality(j, 1, 1, true, null);
+        quality(j, 1, 2, false, "yellow flag");
+        quality(j, 1, 3, true, null);
+        quality(j, 44, 1, true, null);
+        quality(j, 44, 2, true, null);
         j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", CIRCUIT, 1, "Main straight", 0.0f, 0.12f);
         j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", CIRCUIT, 2, "Back straight", 0.4f, 0.55f);
         j.update("insert into regulation_event values (?,?,?,?,?,?)", SESSION, 3, 8.5, 9.0, 50, true);
-        // Reference lap is driver 44's green lap 1 (fastest green); a path of 600 units along x then a diagonal.
+        // The circuit is a 1000-unit (100 m) square, one sample every 100 units, 40 per lap.
+        // Driver 44 lap 1 and driver 1 lap 1 start at the line (0,0); driver 1 lap 3 starts at
+        // the far corner, so it is a closed lap of the right length that fails the start check.
         long t0 = java.time.Instant.parse("2026-09-06T13:05:00Z").toEpochMilli();
-        for (int i = 0; i <= 12; i++) {
-            j.update("insert into location values (?,?,?,?,?,?)", new java.sql.Timestamp(t0 + i * 1000L), SESSION,
-                    44, i * 100, i <= 6 ? 0 : (i - 6) * 100, 10);
-        }
+        loop(j, 44, t0, 0);
+        loop(j, 1, t0, 0);
+        loop(j, 1, java.time.Instant.parse("2026-09-06T13:10:00Z").toEpochMilli(), 20);
         // A location row outside the lap window must not leak into the outline.
         j.update("insert into location values (?,?,?,?,?,?)", new java.sql.Timestamp(t0 + 600_000L), SESSION, 44, 99999,
                 99999, 0);
@@ -87,6 +94,24 @@ class ApiIT {
 
     static java.sql.Timestamp ts(String s) {
         return java.sql.Timestamp.from(java.time.Instant.parse(s));
+    }
+
+    static void quality(JdbcTemplate j, int driver, int lap, boolean green, String reason) {
+        j.update("insert into lap_quality (session_key, driver_number, lap_number, green, reason, lap_length_m) "
+                + "values (?,?,?,?,?,?)", SESSION, driver, lap, green, reason, green ? 400.0f : null);
+    }
+
+    /** One lap of location samples round the square, one per second, starting at sample index {@code from}. */
+    static void loop(JdbcTemplate j, int driver, long t0, int from) {
+        for (int i = 0; i < 40; i++) {
+            int k = (from + i) % 40;
+            int side = k / 10;
+            int along = (k % 10) * 100;
+            int x = side == 0 ? along : side == 1 ? 1000 : side == 2 ? 1000 - along : 0;
+            int y = side == 0 ? 0 : side == 1 ? along : side == 2 ? 1000 : 1000 - along;
+            j.update("insert into location values (?,?,?,?,?,?)", new java.sql.Timestamp(t0 + i * 1000L), SESSION,
+                    driver, x, y, 10);
+        }
     }
 
     static void lap(JdbcTemplate j, int driver, int lap, String start, double dur) {
@@ -131,11 +156,11 @@ class ApiIT {
                 .andExpect(jsonPath("$.items", hasSize(2)))
                 .andExpect(jsonPath("$.items[1].team_name", is("Team Two")));
         mvc.perform(get("/api/sessions/" + SESSION + "/laps?driver=1"))
-                .andExpect(jsonPath("$.total", is(2)))
+                .andExpect(jsonPath("$.total", is(3)))
                 .andExpect(jsonPath("$.items[0].green", is(true)))
                 .andExpect(jsonPath("$.items[1].green", is(false)))
                 .andExpect(jsonPath("$.items[1].reason", is("yellow flag")));
-        mvc.perform(get("/api/sessions/" + SESSION + "/laps")).andExpect(jsonPath("$.total", is(3)));
+        mvc.perform(get("/api/sessions/" + SESSION + "/laps")).andExpect(jsonPath("$.total", is(5)));
     }
 
     @Test
@@ -151,17 +176,24 @@ class ApiIT {
         mvc.perform(get("/api/sessions/" + EMPTY_SESSION + "/regulation")).andExpect(status().isNotFound());
     }
 
+    /**
+     * The fastest green lap (driver 44 lap 2) has no location rows and the next (driver 1 lap 3)
+     * does not start at the line, so the outline comes from driver 44 lap 1.
+     */
     @Test
-    void outlineUsesFastestGreenLapAndIsDownsampled() throws Exception {
+    void outlineUsesFastestGreenLapThatDrawsTheCircuitAndIsDownsampled() throws Exception {
         mvc.perform(get("/api/circuits/" + CIRCUIT + "/outline"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.session_key", is(SESSION)))
                 .andExpect(jsonPath("$.driver_number", is(44)))
                 .andExpect(jsonPath("$.lap_number", is(1)))
                 .andExpect(jsonPath("$.points[0].d", is(0.0)))
-                .andExpect(jsonPath("$.points[-1].d", is(1448.5)))
+                .andExpect(jsonPath("$.points[0].x", is(0.0)))
+                .andExpect(jsonPath("$.points[-1].d", is(3900.0)))
                 .andExpect(jsonPath("$.points.length()", lessThan(13)));
         mvc.perform(get("/api/circuits/12345/outline")).andExpect(status().isNotFound());
+        // A circuit whose only laps have no location rows has no outline rather than an empty one.
+        mvc.perform(get("/api/circuits/8/outline")).andExpect(status().isNotFound());
     }
 
     @Test
