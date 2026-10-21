@@ -217,6 +217,17 @@ def analyse_driver(prep: Prepared, ctx: SessionContext, driver: int, cda_hinge: 
     cda["cda_profile_m2"] = cda_profile_car
     cda["cda_used_m2"] = cda_hinge
     df = pd.DataFrame(rows)
+    # Rows whose window starts in a non-green lap (D33) keep the threshold cut-off and the
+    # entry speed only: the hinge model fits those runs badly (its residual rises with CdA),
+    # so their hinge fit is discarded before anything is derived from it. That keeps the
+    # per-straight plateau reference, and with it every pre-D33 row, unchanged.
+    relaxed = ~df["prev_green"].astype(bool) if len(df) else pd.Series(dtype=bool)
+    if relaxed.any():
+        df.loc[relaxed, ["detected", "fit_ok"]] = False
+        for col in ("hinge_d", "hinge_v_kph", "p_deploy", "p_plateau", "delta_wkg", "tau_s", "sse", "n_fit",
+                    "sse_ratio", "delta_kw", "ramp_rate_kw_s", "plateau_accel", "hinge_valid"):
+            if col in df:
+                df.loc[relaxed, col] = np.nan
 
     # Relative deploy energy: integral of (p - p_plateau) dt over the deploy phase, J/kg (m^2/s^2).
     # p_plateau is the car's median fitted plateau level on that straight (any lap with a fit).
@@ -238,16 +249,9 @@ def analyse_driver(prep: Prepared, ctx: SessionContext, driver: int, cda_hinge: 
         refs = {int(sid): float(g["p_plateau"].median()) for sid, g in fit.groupby("straight_id")}
         df["p_ref"] = df["straight_id"].map(refs).fillna(glob)
         df["energy_rel"] = df["energy_p"] - df["p_ref"] * df["energy_dur"]
-        # Rows whose window starts in a non-green lap (D33) keep the threshold cut-off and the
-        # entry speed only: the hinge model fits those runs badly (its residual rises with CdA),
-        # so the hinge outputs and the energy, which is measured against the hinge plateau,
-        # are not written for them.
-        relaxed = ~df["prev_green"].astype(bool)
+        # The energy is measured against the hinge plateau, so it is not written for relaxed rows.
         if relaxed.any():
-            df.loc[relaxed, ["detected", "fit_ok"]] = False
-            for col in ("hinge_d", "hinge_v_kph", "energy_rel"):
-                if col in df:
-                    df.loc[relaxed, col] = np.nan
+            df.loc[relaxed, "energy_rel"] = np.nan
 
     lap_bins: dict[int, np.ndarray] = {}
     agr = {"mean": np.nan, "min": np.nan, "pairs": 0}
