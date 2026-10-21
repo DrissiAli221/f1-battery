@@ -16,9 +16,14 @@ immutable per `model_version`.
 - `GET /api/circuits/{circuit_key}/straights` → from `straight`:
   `straight_id, label, start_pct, end_pct`.
 - `GET /api/circuits/{circuit_key}/outline` → a coarse track outline for the
-  map: the fastest green lap of one reference session, `location` x/y
-  downsampled to ~50 m spacing with cumulative distance; derived, not raw.
-  `{session_key, driver_number, lap_number, points: [{d, x, y, z}]}`.
+  map: one reference lap's `location` x/y downsampled to ~50 m spacing with
+  cumulative distance; derived, not raw.
+  `{session_key, driver_number, lap_number, points: [{d, x, y, z}]}`. The
+  reference lap is the first of the circuit's fastest green laps (eight per
+  session, races first) that draws the circuit: at least 20 samples, raw path
+  length within 3 % of the circuit's median green lap length, first and last
+  sample within 60 m, first sample within 50 m of the session's median lap
+  start. `404` when no lap qualifies (never an empty `points`).
 - `GET /api/sessions/{key}/regulation` → `regulation_event` row.
 
 ## Model results (from `model_result`)
