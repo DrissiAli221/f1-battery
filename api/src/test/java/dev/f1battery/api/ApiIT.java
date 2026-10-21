@@ -78,6 +78,8 @@ class ApiIT {
         quality(j, 44, 2, true, null);
         j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", CIRCUIT, 1, "Main straight", 0.0f, 0.12f);
         j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", CIRCUIT, 2, "Back straight", 0.4f, 0.55f);
+        // A third straight on the fixture circuit with no model rows at all: has_results is false.
+        j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", CIRCUIT, 3, "Short kink", 0.7f, 0.72f);
         // A straight on the circuit of EMPTY_SESSION, which has no results: has_results is unknown there.
         j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", 8, 1, "Only straight", 0.0f, 0.2f);
         j.update("insert into regulation_event values (?,?,?,?,?,?)", SESSION, 3, 8.5, 9.0, 50, true);
@@ -101,9 +103,20 @@ class ApiIT {
         loop(j, QUALI_Q, 5, java.time.Instant.parse("2026-08-19T13:05:00Z").toEpochMilli(), 0, 40);
         String run = "11111111-1111-1111-1111-111111111111";
         for (int d : new int[] {1, 44}) {
+            // straight 1: three laps analysed and detected, so a median exists.
             res(j, run, d, 1, 1, "cutoff_distance_m", 700.0 + d, 690.0, 710.0);
             res(j, run, d, 2, 1, "cutoff_distance_m", 710.0 + d, 700.0, 720.0);
+            res(j, run, d, 3, 1, "cutoff_distance_m", 705.0 + d, 695.0, 715.0);
             res(j, run, d, 0, 1, "cutoff_distance_median_m", 705.0 + d, 695.0, 715.0);
+            for (int lap = 1; lap <= 3; lap++) {
+                res(j, run, d, lap, 1, "cutoff_detected", 1, null, null);
+            }
+            // straight 2: three laps analysed, two detected: below the three-lap rule, no median.
+            res(j, run, d, 1, 2, "cutoff_detected", 1, null, null);
+            res(j, run, d, 2, 2, "cutoff_detected", 1, null, null);
+            res(j, run, d, 3, 2, "cutoff_detected", 0, null, null);
+            res(j, run, d, 1, 2, "cutoff_distance_m", 400.0, 390.0, 410.0);
+            res(j, run, d, 2, 2, "cutoff_distance_m", 402.0, 392.0, 412.0);
             res(j, run, d, 1, null, "regime_share_deploy", 0.4, null, null);
             res(j, run, d, 1, null, "regime_share_plateau", 0.3, null, null);
             res(j, run, d, 1, null, "regime_share_lift", 0.2, null, null);
@@ -201,10 +214,11 @@ class ApiIT {
     @Test
     void straightsAndRegulation() throws Exception {
         mvc.perform(get("/api/circuits/" + CIRCUIT + "/straights"))
-                .andExpect(jsonPath("$.items", hasSize(2)))
+                .andExpect(jsonPath("$.items", hasSize(3)))
                 .andExpect(jsonPath("$.items[0].label", is("Main straight")))
                 .andExpect(jsonPath("$.items[0].has_results", is(true)))
-                .andExpect(jsonPath("$.items[1].has_results", is(false)))
+                .andExpect(jsonPath("$.items[1].has_results", is(true)))
+                .andExpect(jsonPath("$.items[2].has_results", is(false)))
                 .andExpect(jsonPath("$.items[1].start_pct", is(0.4)));
         mvc.perform(get("/api/circuits/8/straights"))
                 .andExpect(jsonPath("$.items", hasSize(1)))
@@ -253,12 +267,12 @@ class ApiIT {
                 .andExpect(jsonPath("$.items", hasSize(1)))
                 .andExpect(jsonPath("$.items[0].model_version", is("proxy-v1")));
         mvc.perform(get("/api/results?session=" + SESSION + "&driver=1&variable=cutoff_distance_m"))
-                .andExpect(jsonPath("$.total", is(2)))
+                .andExpect(jsonPath("$.total", is(5)))
                 .andExpect(jsonPath("$.items[0].straight_id", is(1)))
                 .andExpect(jsonPath("$.items[0].ci_low", is(690.0)));
         mvc.perform(get("/api/results?session=" + SESSION + "&size=3&page=1"))
                 .andExpect(jsonPath("$.items", hasSize(3)))
-                .andExpect(jsonPath("$.total", is(18)));
+                .andExpect(jsonPath("$.total", is(36)));
         mvc.perform(get("/api/results?model=nope")).andExpect(jsonPath("$.items", hasSize(0)));
     }
 
@@ -267,8 +281,16 @@ class ApiIT {
         mvc.perform(get("/api/sessions/" + SESSION + "/summary"))
                 .andExpect(jsonPath("$.items", hasSize(2)))
                 .andExpect(jsonPath("$.items[0].team_name", is("Team One")))
+                .andExpect(jsonPath("$.items[0].straights", hasSize(2)))
+                .andExpect(jsonPath("$.items[0].straights[0].straight_id", is(1)))
+                .andExpect(jsonPath("$.items[0].straights[0].laps_analysed", is(3)))
+                .andExpect(jsonPath("$.items[0].straights[0].laps_detected", is(3)))
                 .andExpect(jsonPath("$.items[0].straights[0].cutoff_distance_median_m", is(706.0)))
                 .andExpect(jsonPath("$.items[0].straights[0].ci_high", is(715.0)))
+                .andExpect(jsonPath("$.items[0].straights[1].straight_id", is(2)))
+                .andExpect(jsonPath("$.items[0].straights[1].laps_analysed", is(3)))
+                .andExpect(jsonPath("$.items[0].straights[1].laps_detected", is(2)))
+                .andExpect(jsonPath("$.items[0].straights[1].cutoff_distance_median_m").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.items[0].regime_shares.deploy", is(0.4)));
         mvc.perform(get("/api/sessions/" + EMPTY_SESSION + "/summary"))
                 .andExpect(status().isOk())

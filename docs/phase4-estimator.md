@@ -60,6 +60,37 @@ estimator, detected / analysable laps; medians need >= 3 laps). Experimental: `r
 `session_cda_m2`, the session-wide CdA (m^2, at rho 1.2) used by the hinge and the energy (range 0.4-1.6;
 values at the grid edge 0.4 or 1.6 are bounds, not estimates, and 16 of 45 sessions sit there).
 
+## What is not written, and why
+
+* **Drivers without a green lap.** Outside the excluded Hungary race 11342 (D17), 29 car-sessions have telemetry but no `model_result` rows because
+  `lap_quality` has no green lap for them (lap-1 retirements, cars that never set a classified lap, the seven
+  Singapore sprint cars with 1–7 laps none of them green): 11230: 3, 18, 55 · 11234: 27, 81 · 11236: 11 ·
+  11245: 1, 5, 23, 81 · 11275: 27, 41 · 11282: 23, 30 · 11291: 41 · 11299: 3 · 11334: 63 · 11353: 3, 87 ·
+  11361: 16 · 11365: 87 · 11383: 5, 6, 11, 18, 43, 63, 77 · 11384: 6. `estimate.py` skips them, and the
+  summary endpoint leaves them out rather than listing them with zero laps (a deliberate choice: the driver
+  list of the session already carries them).
+* **Medians in qualifying.** A per-driver median needs `MIN_LAPS_FOR_SUMMARY` = 3 detected laps. A
+  qualifying driver has a median of 5 green laps (quartiles 3–6, range 1–16) and the detector fires on 69 %
+  of analysed laps (61 % in sprint qualifying), so of the 1,149 driver-straight entries in qualifying 647
+  (56 %) have a median, 220 (19 %) have one or two detections and no median, 282 (25 %) have none; sprint
+  qualifying: 446 entries, 207 / 109 / 130. Example: 11384 Singapore Q straight 3, 19 drivers analysed, 7
+  with a cut-off, 2 with a median. The summary endpoint reports `laps_analysed` and `laps_detected` per
+  straight so the view can say "2 laps, no median" rather than "no data". This is the method's resolution,
+  not a fault. Reproduce (published run):
+
+  ```sql
+  with e as (select m.session_key, m.driver_number, m.straight_id, s.session_name, count(*) analysed,
+                    sum(value)::int detected
+             from model_result m join session s using (session_key)
+             where m.run_id = '6f9df732-b7d1-42b5-b084-a2dc08f91662' and m.lap_number > 0
+               and m.variable = 'cutoff_detected' group by 1, 2, 3, 4)
+  select session_name, count(*), count(*) filter (where detected >= 3), count(*) filter (where detected in (1, 2)),
+         count(*) filter (where detected = 0), round(avg(detected::float / analysed)::numeric, 2)
+  from e where session_name in ('Qualifying', 'Sprint Qualifying') group by 1;
+  ```
+* **Short straights.** Sections under about 250 m never meet the 4 s full-throttle rule (`straight.analysable`,
+  docs/phase2-alignment.md).
+
 ## Why `hinge_*` is experimental
 
 * Singapore straight 3: the hinge flags 27.5 % of laps (limit 10 %) although the spike and the primary
