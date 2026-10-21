@@ -557,3 +557,20 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - Caveat recorded for later: revisit before the site is linked publicly from
   applications; trademark use that is fine for a private project can draw
   attention once it is public.
+
+## D33 — 2026-10-21 — A straight across the line needs usable, not green, samples from the previous lap
+- The window of a straight that crosses the start/finish line is measured
+  back from the lap's own line crossing, so the previous lap only has to
+  supply real, continuous samples there. The gate was "previous lap green",
+  which in qualifying is never true (the lap before a flying lap is the
+  out-lap), so straight 1 had no rows and no speed profile in all 14
+  qualifying and sprint-qualifying sessions (docs/backend-review-2026-10-21.md).
+- **Decision:** the gate is `pipeline.tail_usable`: consecutive, resolved,
+  not neutralised, not an in-lap, no telemetry gap over `MAX_GAP_S`, at least
+  `MIN_SAMPLES` samples. Flags are used rather than `reason`, which names only
+  the first failed rule and would hide a gapped or neutralised lap behind
+  `out_lap`. Race laps change only where lap 1 (standing start) or a slow lap
+  precedes a green lap. Results are recomputed for every session under a new
+  run id and published; the previous run stays in the table, unpublished.
+- Numbering: D32 is taken by the view rebuild on `feat/web-rebuild`.
+

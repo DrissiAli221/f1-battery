@@ -21,6 +21,13 @@ Distances: metres from the start/finish line of the lap the straight is attribut
 line** (only the straight across the line, id 1 at most circuits). Speeds kph. A straight with no usable
 full-throttle run (>= 4 s, >= 2.5 s after guards) on a lap has no rows for that lap.
 
+The straight across the line is placed by measuring back from the lap's own line crossing, so its first part
+lies in the previous lap. It is analysed when that previous lap is consecutive and its closing samples are
+usable (`pipeline.tail_usable`: resolved bounds, not neutralised, not an in-lap, no telemetry gap over
+`MAX_GAP_S`, at least `MIN_SAMPLES` samples); the previous lap does not have to be green. Until D33 it had to
+be, which left the main straight without rows or speed profile in every qualifying session (the lap before a
+flying lap is the out-lap). `profile.py` applies the same rule.
+
 Per straight per lap (`lap_number` = lap, `straight_id`):
 | variable | meaning |
 |---|---|
