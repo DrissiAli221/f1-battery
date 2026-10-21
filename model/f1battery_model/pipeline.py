@@ -79,6 +79,31 @@ class Prepared:
     lap_no: np.ndarray
     med_len: float
     wins: list
+    tail_ok: np.ndarray                    # per lap: its last samples may serve a straight across the line
+
+
+def tail_usable(q: pd.DataFrame, bounds: pd.DataFrame) -> np.ndarray:
+    """Laps whose closing samples are trustworthy, whether or not the lap is green.
+
+    A straight across the start/finish line is placed by measuring back from
+    the next lap's own line crossing, so the previous lap only has to provide
+    real, continuous samples there: resolved bounds, not neutralised, not an
+    in-lap, no telemetry gap and enough samples. Out-laps and slow laps count
+    (an out-lap's last kilometre at full throttle is how every qualifying lap
+    starts); ``reason`` is not used because it names only the first failed
+    rule and would hide a gapped or neutralised lap behind ``out_lap``.
+    """
+    gap_ok = q["max_gap_s"].fillna(np.inf).to_numpy(dtype=float) <= al.MAX_GAP_S
+    return (bounds["resolved"].to_numpy(dtype=bool)
+            & ~q["neutralised"].to_numpy(dtype=bool)
+            & ~q["pit"].to_numpy(dtype=bool)
+            & gap_ok
+            & (q["n_samples"].to_numpy(dtype=int) >= al.MIN_SAMPLES))
+
+
+def wrap_ok(tail_ok: np.ndarray, lap_no: np.ndarray, i: int) -> bool:
+    """Whether lap row ``i`` may use the end of the previous row for a straight across the line."""
+    return i > 0 and int(lap_no[i - 1]) == int(lap_no[i]) - 1 and bool(tail_ok[i - 1])
 
 
 def _lap_windows(wins: list, scale: float, lap_len: float):
@@ -109,7 +134,7 @@ def prepare_driver(conn, ctx: SessionContext, driver: int) -> Prepared | None:
     lap_len = q["lap_length_m"].to_numpy(dtype=float)
     med_len = float(np.median(lap_len[green]))
     return Prepared(tr, derate.full_throttle_runs(tr), green, lap_len, q["lap_number"].to_numpy(),
-                    med_len, straights.straight_windows(conn, sk, med_len))
+                    med_len, straights.straight_windows(conn, sk, med_len), tail_usable(q, bounds))
 
 
 def sweep(prep: Prepared, ctx: SessionContext, cda: float, hinge: bool = True) -> list[dict]:
@@ -117,8 +142,8 @@ def sweep(prep: Prepared, ctx: SessionContext, cda: float, hinge: bool = True) -
     rows = []
     for i in np.flatnonzero(prep.green):
         for sid, s, e, wraps in _lap_windows(prep.wins, prep.lap_len[i] / prep.med_len, prep.lap_len[i]):
-            # A straight across the line needs the previous lap's tail to be a clean green lap too.
-            if wraps and not (i > 0 and prep.green[i - 1] and prep.lap_no[i - 1] == prep.lap_no[i] - 1):
+            # A straight across the line needs real, continuous samples from the previous lap.
+            if wraps and not wrap_ok(prep.tail_ok, prep.lap_no, i):
                 continue
             r = derate.straight_lap(prep.tr, i, (s, e), prep.runs, cda, ctx.rate_kw_s, hinge=hinge)
             if r is not None:
