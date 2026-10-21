@@ -223,9 +223,11 @@ def analyse_driver(prep: Prepared, ctx: SessionContext, driver: int, cda_hinge: 
     # per-straight plateau reference, and with it every pre-D33 row, unchanged.
     relaxed = ~df["prev_green"].astype(bool) if len(df) else pd.Series(dtype=bool)
     if relaxed.any():
-        df.loc[relaxed, ["detected", "fit_ok"]] = False
+        for col in ("detected", "fit_ok", "hinge_valid"):
+            if col in df:
+                df.loc[relaxed, col] = False
         for col in ("hinge_d", "hinge_v_kph", "p_deploy", "p_plateau", "delta_wkg", "tau_s", "sse", "n_fit",
-                    "sse_ratio", "delta_kw", "ramp_rate_kw_s", "plateau_accel", "hinge_valid"):
+                    "sse_ratio", "delta_kw", "ramp_rate_kw_s", "plateau_accel"):
             if col in df:
                 df.loc[relaxed, col] = np.nan
 
