@@ -6,7 +6,7 @@ Run: `cd model && PYTHONPATH=. ../.venv/bin/python -m f1battery_model.estimate -
 
 ## Run
 
-Published run (2026-10-21, D33): `model_version = 'proxy-0.2'`, `run_id = ea214d44-7bd5-4849-bdcc-ce8b3d953d46`,
+Published run (2026-10-21, D33): `model_version = 'proxy-0.2'`, `run_id = 26862846-4455-495b-98c0-3cb1dff4fcb3`,
 45 sessions, no failures; every row of the previous run is unchanged and straight 1 gains rows after a
 non-green previous lap (counts on PR #10). The run below is the frozen findings run (docs/findings.md); it stays
 in the table under `proxy-0.1`, unpublished.

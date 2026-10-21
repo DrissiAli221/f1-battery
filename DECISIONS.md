@@ -589,6 +589,6 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - `MODEL_VERSION` becomes `proxy-0.2`, so the frozen findings run (`proxy-0.1`,
   `6f9df732…`, docs/findings.md) stays reproducible and is not overwritten by
   the recipe at HEAD. Results are recomputed for every session under run id
-  `ea214d44-7bd5-4849-bdcc-ce8b3d953d46` and published; until the run lifecycle of PR #1 is
+  `26862846-4455-495b-98c0-3cb1dff4fcb3` and published; until the run lifecycle of PR #1 is
   merged, publishing is a row in `model_run` written by hand.
 - Numbering: D32 is taken by the view rebuild on `feat/web-rebuild`.
