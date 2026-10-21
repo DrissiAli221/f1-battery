@@ -137,17 +137,30 @@ def prepare_driver(conn, ctx: SessionContext, driver: int) -> Prepared | None:
                     med_len, straights.straight_windows(conn, sk, med_len), tail_usable(q, bounds))
 
 
-def sweep(prep: Prepared, ctx: SessionContext, cda: float, hinge: bool = True) -> list[dict]:
-    """Analyse every straight of every green lap with the given CdA."""
+def prev_green(prep: Prepared, i: int) -> bool:
+    """The strict gate: the previous row is a consecutive green lap."""
+    return i > 0 and bool(prep.green[i - 1]) and int(prep.lap_no[i - 1]) == int(prep.lap_no[i]) - 1
+
+
+def sweep(prep: Prepared, ctx: SessionContext, cda: float, hinge: bool = True, strict_wrap: bool = False) -> list[dict]:
+    """Analyse every straight of every green lap with the given CdA.
+
+    A straight across the line needs samples from the previous lap. With
+    ``strict_wrap`` the previous lap must be green (the gate used for the pooled
+    CdA, whose hinge fit does not hold on runs that start from an out-lap or a
+    cool-down lap, D33); otherwise it only has to be usable (``tail_usable``).
+    Each row records ``prev_green`` so the caller can tell the two apart.
+    """
     rows = []
     for i in np.flatnonzero(prep.green):
         for sid, s, e, wraps in _lap_windows(prep.wins, prep.lap_len[i] / prep.med_len, prep.lap_len[i]):
-            # A straight across the line needs real, continuous samples from the previous lap.
-            if wraps and not wrap_ok(prep.tail_ok, prep.lap_no, i):
+            strict = prev_green(prep, i)
+            if wraps and not (strict if strict_wrap else wrap_ok(prep.tail_ok, prep.lap_no, i)):
                 continue
             r = derate.straight_lap(prep.tr, i, (s, e), prep.runs, cda, ctx.rate_kw_s, hinge=hinge)
             if r is not None:
-                r.update(lap_row=int(i), lap_number=int(prep.lap_no[i]), straight_id=int(sid))
+                r.update(lap_row=int(i), lap_number=int(prep.lap_no[i]), straight_id=int(sid),
+                         prev_green=(strict or not wraps))
                 rows.append(r)
     return rows
 
@@ -161,7 +174,7 @@ def cda_profile(prep: Prepared, ctx: SessionContext, grid=CDA_GRID) -> tuple[np.
     """
     sse, n = np.zeros(len(grid)), np.zeros(len(grid))
     for k, cda in enumerate(grid):
-        for r in sweep(prep, ctx, cda):
+        for r in sweep(prep, ctx, cda, strict_wrap=True):
             if "sse" in r:
                 sse[k] += r["sse"]
                 n[k] += r["n_fit"]
@@ -225,6 +238,16 @@ def analyse_driver(prep: Prepared, ctx: SessionContext, driver: int, cda_hinge: 
         refs = {int(sid): float(g["p_plateau"].median()) for sid, g in fit.groupby("straight_id")}
         df["p_ref"] = df["straight_id"].map(refs).fillna(glob)
         df["energy_rel"] = df["energy_p"] - df["p_ref"] * df["energy_dur"]
+        # Rows whose window starts in a non-green lap (D33) keep the threshold cut-off and the
+        # entry speed only: the hinge model fits those runs badly (its residual rises with CdA),
+        # so the hinge outputs and the energy, which is measured against the hinge plateau,
+        # are not written for them.
+        relaxed = ~df["prev_green"].astype(bool)
+        if relaxed.any():
+            df.loc[relaxed, ["detected", "fit_ok"]] = False
+            for col in ("hinge_d", "hinge_v_kph", "energy_rel"):
+                if col in df:
+                    df.loc[relaxed, col] = np.nan
 
     lap_bins: dict[int, np.ndarray] = {}
     agr = {"mean": np.nan, "min": np.nan, "pairs": 0}

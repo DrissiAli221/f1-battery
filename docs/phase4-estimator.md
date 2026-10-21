@@ -6,6 +6,11 @@ Run: `cd model && PYTHONPATH=. ../.venv/bin/python -m f1battery_model.estimate -
 
 ## Run
 
+Published run (2026-10-21, D33): `model_version = 'proxy-0.2'`, `run_id = 5b91540f-6b7a-4516-9d3f-ba55385ea129`,
+45 sessions, no failures; every row of the previous run is unchanged and straight 1 gains rows after a
+non-green previous lap (counts on PR #10). The run below is the frozen findings run (docs/findings.md); it stays
+in the table under `proxy-0.1`, unpublished.
+
 `model_version = 'proxy-0.1'`, `run_id = 6f9df732-b7d1-42b5-b084-a2dc08f91662`. 45 sessions
 written, Hungary race 11342 skipped (D17), no failures. **2,136,042 rows in 373 s**
 (about 501 MB with indexes). The run was done twice: the first run (2,237,303 rows) was deleted and
@@ -24,9 +29,14 @@ full-throttle run (>= 4 s, >= 2.5 s after guards) on a lap has no rows for that 
 The straight across the line is placed by measuring back from the lap's own line crossing, so its first part
 lies in the previous lap. It is analysed when that previous lap is consecutive and its closing samples are
 usable (`pipeline.tail_usable`: resolved bounds, not neutralised, not an in-lap, no telemetry gap over
-`MAX_GAP_S`, at least `MIN_SAMPLES` samples); the previous lap does not have to be green. Until D33 it had to
-be, which left the main straight without rows or speed profile in every qualifying session (the lap before a
-flying lap is the out-lap). `profile.py` applies the same rule.
+`MAX_GAP_S`, at least `MIN_SAMPLES` samples). The previous lap does not have to be green: out-laps, cool-down
+laps, length outliers, `no_start` laps and a race's standing-start lap 1 all count. Until D33 it had to be
+green, which left the main straight without rows or speed profile in every qualifying session (the lap
+before a flying lap is the out-lap). `profile.py` applies the same rule. For a row whose window starts in a
+non-green lap only `cutoff_detected`, `cutoff_distance_m`, `cutoff_speed_kph`, `plateau_accel_ms2` and
+`entry_speed_kph` are written: the hinge model fits those runs badly, so `hinge_*` and `deploy_energy_rel`
+stay unwritten, and the pooled CdA is fitted on the strict (previous lap green) rows only (D33). After an
+out-lap the cut-off can sit earlier than after a flying lap (Baku Q 11373: −1,072 m against −577 m).
 
 Per straight per lap (`lap_number` = lap, `straight_id`):
 | variable | meaning |

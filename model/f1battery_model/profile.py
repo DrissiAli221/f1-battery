@@ -8,7 +8,8 @@ straight (bin n covers [50 n, 50 n + 50) m from the straight's start), with
 lap_number 0 and the straight's id:
 
 * ``speed_bin_<n>``  median over the driver's clean (green) laps of the lap's mean
-  speed in the bin, whole kph;
+  speed in the bin, whole kph (for the straight across the line the part before
+  the line comes from the previous lap, which only has to be usable, D33);
 * ``accel_bin_<n>``  median over the same laps of the lap's mean acceleration in
   the bin, m/s^2, 1 decimal.
 
