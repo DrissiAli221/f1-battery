@@ -46,8 +46,11 @@ Endpoints:
 - `GET /api/models` → distinct `model_version` with `run_id, created_at`.
 - `GET /api/results?session=&driver=&variable=&straight=&lap=&model=` →
   paginated rows; `model` defaults to the latest version.
-- `GET /api/sessions/{key}/summary?model=` → per driver: median cut-off per
-  straight with CI, regime shares averaged over green laps, team_name.
+- `GET /api/sessions/{key}/summary?model=` → per driver: one `straights[]`
+  entry per straight the driver has per-lap rows on, with `laps_analysed`,
+  `laps_detected` and the median cut-off with CI (null unless at least three
+  laps were detected, `pipeline.MIN_LAPS_FOR_SUMMARY`); regime shares averaged
+  over green laps; team_name. Drivers with no results (no green lap) are absent.
 - `GET /api/sessions/{key}/laps/{lap}/regimes?driver=&model=` → the regime
   label per 50 m distance bin for that lap (from `model_result` variable
   `regime_bin_<n>` stored as value 0..3, or a compact JSON column if Phase 4
