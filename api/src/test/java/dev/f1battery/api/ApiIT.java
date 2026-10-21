@@ -78,6 +78,8 @@ class ApiIT {
         quality(j, 44, 2, true, null);
         j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", CIRCUIT, 1, "Main straight", 0.0f, 0.12f);
         j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", CIRCUIT, 2, "Back straight", 0.4f, 0.55f);
+        // A straight on the circuit of EMPTY_SESSION, which has no results: has_results is unknown there.
+        j.update("insert into straight (circuit_key, straight_id, label, start_pct, end_pct) values (?,?,?,?,?)", 8, 1, "Only straight", 0.0f, 0.2f);
         j.update("insert into regulation_event values (?,?,?,?,?,?)", SESSION, 3, 8.5, 9.0, 50, true);
         // The circuit is a 1000-unit (100 m) square, one sample every 100 units, 40 per lap.
         // Driver 44 lap 1 and driver 1 lap 1 start at the line (0,0); driver 1 lap 3 starts at
@@ -201,7 +203,12 @@ class ApiIT {
         mvc.perform(get("/api/circuits/" + CIRCUIT + "/straights"))
                 .andExpect(jsonPath("$.items", hasSize(2)))
                 .andExpect(jsonPath("$.items[0].label", is("Main straight")))
+                .andExpect(jsonPath("$.items[0].has_results", is(true)))
+                .andExpect(jsonPath("$.items[1].has_results", is(false)))
                 .andExpect(jsonPath("$.items[1].start_pct", is(0.4)));
+        mvc.perform(get("/api/circuits/8/straights"))
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.items[0].has_results").value(org.hamcrest.Matchers.nullValue()));
         mvc.perform(get("/api/circuits/999/straights")).andExpect(jsonPath("$.items", hasSize(0)));
         mvc.perform(get("/api/sessions/" + SESSION + "/regulation"))
                 .andExpect(jsonPath("$.issue_in_force", is(3)))

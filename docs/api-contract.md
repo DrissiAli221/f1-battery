@@ -14,7 +14,11 @@ immutable per `model_version`.
 - `GET /api/sessions/{key}/laps?driver=` → from `lap` joined to
   `lap_quality`: `lap_number, date_start, lap_duration, green, reason`.
 - `GET /api/circuits/{circuit_key}/straights` → from `straight`:
-  `straight_id, label, start_pct, end_pct`.
+  `straight_id, label, start_pct, end_pct, has_results` (whether the
+  published run has per-lap rows on the straight in any session of the
+  circuit; null when the circuit has no results at all). The curated files
+  label 120–250 m stretches "Straight" that the detector usually cannot use,
+  so a view can draw `has_results = false` straights quieter.
 - `GET /api/circuits/{circuit_key}/outline` → a coarse track outline for the
   map: one reference lap's `location` x/y downsampled to ~50 m spacing with
   cumulative distance; derived, not raw.
