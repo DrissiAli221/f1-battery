@@ -22,9 +22,11 @@ import org.springframework.stereotype.Service;
  * has a lap clock several minutes off a frozen feed, so its lap window is an open arc that
  * does not start at the line (docs/data-quality-notes.md, D17). Each candidate is therefore
  * checked before it is used: enough samples, a path length close to the circuit's measured
- * lap length, a ring that closes, and a first point at the start/finish line (where the
- * session's other green laps start). The first candidate that passes is the outline; when
- * none does, there is no outline and the endpoint answers 404.
+ * lap length, a ring that closes, and a first point close to where the session's other
+ * green laps start (their median first sample). That last check catches one lap whose clock
+ * is off; it cannot catch a session whose clock is off as a whole, since the reference is
+ * the same session. The first candidate that passes is the outline; when none does, there
+ * is no outline and the endpoint answers 404, and that answer is cached too.
  */
 @Service
 public class OutlineService {
@@ -37,7 +39,7 @@ public class OutlineService {
     static final double LENGTH_TOLERANCE = 0.03;
     /** The last sample must come back to within this distance of the first (the ring closes). */
     static final double CLOSING_GAP_M = 60.0;
-    /** The first sample must lie within this distance of where the session's green laps start. */
+    /** The first sample must lie within this distance of the session's median lap start. */
     static final double START_TOLERANCE_M = 50.0;
     /** OpenF1 location x/y/z are stored in tenths of a metre. */
     static final double UNIT_M = 0.1;
@@ -47,7 +49,7 @@ public class OutlineService {
     private final JdbcTemplate jdbc;
     private final Schema schema;
     private final double spacing;
-    private final Map<Integer, Map<String, Object>> cache = new ConcurrentHashMap<>();
+    private final Map<Integer, Optional<Map<String, Object>>> cache = new ConcurrentHashMap<>();
 
     public OutlineService(
             JdbcTemplate jdbc, Schema schema, @Value("${api.outline.spacing-units:500}") double spacing) {
@@ -57,13 +59,9 @@ public class OutlineService {
     }
 
     public Optional<Map<String, Object>> outline(int circuitKey) {
-        Map<String, Object> cached = cache.get(circuitKey);
-        if (cached != null) {
-            return Optional.of(cached);
-        }
-        Optional<Map<String, Object>> built = build(circuitKey);
-        built.ifPresent(o -> cache.put(circuitKey, o));
-        return built;
+        // Both answers are cached: a circuit with no usable lap would otherwise rerun every
+        // candidate query on every request. The cache lives until restart, like the data.
+        return cache.computeIfAbsent(circuitKey, this::build);
     }
 
     private Optional<Map<String, Object>> build(int circuitKey) {
@@ -84,6 +82,10 @@ public class OutlineService {
                     c.driver(),
                     java.sql.Timestamp.from(c.start()),
                     java.sql.Timestamp.from(end));
+            // Cheap checks first; the start-line median is only computed for a lap that passes them.
+            if (!drawsTheCircuit(samples, referenceM, null)) {
+                continue;
+            }
             double[] lineStart = startBySession.computeIfAbsent(c.sessionKey(), k -> lineStart(k, quality));
             if (!drawsTheCircuit(samples, referenceM, lineStart)) {
                 continue;
@@ -109,7 +111,8 @@ public class OutlineService {
         String sql = "select session_key, driver_number, lap_number, date_start, lap_duration from ("
                 + "select l.session_key, l.driver_number, l.lap_number, l.date_start, l.lap_duration, s.session_name, "
                 + "s.date_start as session_start, "
-                + "row_number() over (partition by l.session_key order by l.lap_duration) as rank "
+                + "row_number() over (partition by l.session_key order by l.lap_duration, l.driver_number, "
+                + "l.lap_number) as rank "
                 + "from lap l join session s on s.session_key = l.session_key "
                 + (quality
                         ? "join lap_quality q on q.session_key = l.session_key and q.driver_number = l.driver_number "
@@ -119,7 +122,8 @@ public class OutlineService {
                 + "and coalesce(l.is_pit_out_lap, false) = false "
                 + (quality ? "and q.green and coalesce(q.boundary_source, 'laps') = 'laps' " : "")
                 + ") c where rank <= ? "
-                + "order by case when session_name = 'Race' then 0 else 1 end, session_start, lap_duration";
+                + "order by case when session_name = 'Race' then 0 else 1 end, session_start, lap_duration, "
+                + "driver_number, lap_number";
         return jdbc.query(
                 sql,
                 (rs, i) -> new Candidate(
@@ -155,7 +159,7 @@ public class OutlineService {
                         : "")
                 + "where l.session_key = ? and l.date_start is not null and l.lap_duration is not null "
                 + (quality ? "and q.green " : "")
-                + "order by l.lap_duration limit 100";
+                + "order by l.lap_duration, l.driver_number, l.lap_number limit 100";
         List<double[]> rows = jdbc.query(
                 "select percentile_cont(0.5) within group (order by p.x), "
                         + "percentile_cont(0.5) within group (order by p.y) from (" + laps + ") l "

@@ -30,7 +30,14 @@ class ApiIT {
 
     static final int SESSION = 9001;
     static final int EMPTY_SESSION = 9002;
+    /** A qualifying session on a third circuit whose green lap has no location rows. */
+    static final int BLIND_SESSION = 9003;
+    /** A race on CIRCUIT_Q with no usable lap, and the qualifying that holds its outline. */
+    static final int RACE_Q = 9004;
+    static final int QUALI_Q = 9005;
     static final int CIRCUIT = 7;
+    static final int CIRCUIT_BLIND = 9;
+    static final int CIRCUIT_Q = 11;
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
@@ -50,6 +57,12 @@ class ApiIT {
                 "Italy", "Otherplace", ts("2026-09-05T13:00:00Z"), ts("2026-09-05T14:00:00Z"), 2026);
         j.update("insert into driver values (?,?,?,?,?)", SESSION, 1, "AAA", "Alice A", "Team One");
         j.update("insert into driver values (?,?,?,?,?)", SESSION, 44, "BBB", "Bob B", "Team Two");
+        j.update("insert into session values (?,?,?,?,?,?,?,?,?,?)", BLIND_SESSION, 502, CIRCUIT_BLIND, "Qualifying",
+                "Qualifying", "Italy", "Blindtown", ts("2026-08-12T13:00:00Z"), ts("2026-08-12T14:00:00Z"), 2026);
+        j.update("insert into session values (?,?,?,?,?,?,?,?,?,?)", RACE_Q, 503, CIRCUIT_Q, "Race", "Race", "Italy",
+                "Quietville", ts("2026-08-20T13:00:00Z"), ts("2026-08-20T15:00:00Z"), 2026);
+        j.update("insert into session values (?,?,?,?,?,?,?,?,?,?)", QUALI_Q, 503, CIRCUIT_Q, "Qualifying", "Qualifying",
+                "Italy", "Quietville", ts("2026-08-19T13:00:00Z"), ts("2026-08-19T14:00:00Z"), 2026);
         // driver 1: lap 1 slow, lap 2 fastest overall but not green, lap 3 green and fast but its
         // location starts a quarter-lap past the line (a lap-clock fault); driver 44: lap 1 green
         // with a full loop of location, lap 2 the fastest green lap with no location at all.
@@ -76,6 +89,14 @@ class ApiIT {
         // A location row outside the lap window must not leak into the outline.
         j.update("insert into location values (?,?,?,?,?,?)", new java.sql.Timestamp(t0 + 600_000L), SESSION, 44, 99999,
                 99999, 0);
+        // CIRCUIT_BLIND: a green lap with no location rows at all (the Monaco race after the feed stop).
+        lapIn(j, BLIND_SESSION, 5, 1, "2026-08-12T13:05:00Z", 90.0);
+        // CIRCUIT_Q: the race's only green lap is an open arc (a frozen feed), the qualifying lap is a
+        // full loop; races are tried first, so the outline must fall through to the qualifying session.
+        lapIn(j, RACE_Q, 5, 1, "2026-08-20T13:05:00Z", 90.0);
+        loop(j, RACE_Q, 5, java.time.Instant.parse("2026-08-20T13:05:00Z").toEpochMilli(), 0, 30);
+        lapIn(j, QUALI_Q, 5, 1, "2026-08-19T13:05:00Z", 91.0);
+        loop(j, QUALI_Q, 5, java.time.Instant.parse("2026-08-19T13:05:00Z").toEpochMilli(), 0, 40);
         String run = "11111111-1111-1111-1111-111111111111";
         for (int d : new int[] {1, 44}) {
             res(j, run, d, 1, 1, "cutoff_distance_m", 700.0 + d, 690.0, 710.0);
@@ -101,15 +122,27 @@ class ApiIT {
                 + "values (?,?,?,?,?,?)", SESSION, driver, lap, green, reason, green ? 400.0f : null);
     }
 
-    /** One lap of location samples round the square, one per second, starting at sample index {@code from}. */
+    /** A green lap in another session, with its lap_quality row. */
+    static void lapIn(JdbcTemplate j, int session, int driver, int lap, String start, double dur) {
+        j.update("insert into lap (session_key, driver_number, lap_number, date_start, lap_duration, is_pit_out_lap) "
+                + "values (?,?,?,?,?,false)", session, driver, lap, ts(start), dur);
+        j.update("insert into lap_quality (session_key, driver_number, lap_number, green, reason, lap_length_m) "
+                + "values (?,?,?,?,?,?)", session, driver, lap, true, null, 400.0f);
+    }
+
     static void loop(JdbcTemplate j, int driver, long t0, int from) {
-        for (int i = 0; i < 40; i++) {
+        loop(j, SESSION, driver, t0, from, 40);
+    }
+
+    /** {@code n} location samples round the square, one per second, starting at sample index {@code from}. */
+    static void loop(JdbcTemplate j, int session, int driver, long t0, int from, int n) {
+        for (int i = 0; i < n; i++) {
             int k = (from + i) % 40;
             int side = k / 10;
             int along = (k % 10) * 100;
             int x = side == 0 ? along : side == 1 ? 1000 : side == 2 ? 1000 - along : 0;
             int y = side == 0 ? 0 : side == 1 ? along : side == 2 ? 1000 : 1000 - along;
-            j.update("insert into location values (?,?,?,?,?,?)", new java.sql.Timestamp(t0 + i * 1000L), SESSION,
+            j.update("insert into location values (?,?,?,?,?,?)", new java.sql.Timestamp(t0 + i * 1000L), session,
                     driver, x, y, 10);
         }
     }
@@ -135,7 +168,7 @@ class ApiIT {
     void sessionsListWithHasResultsAndPagination() throws Exception {
         mvc.perform(get("/api/sessions"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total", is(2)))
+                .andExpect(jsonPath("$.total", is(5)))
                 .andExpect(jsonPath("$.page", is(0)))
                 .andExpect(jsonPath("$.size", is(100)))
                 .andExpect(jsonPath("$.items[0].session_key", is(SESSION)))
@@ -145,7 +178,7 @@ class ApiIT {
         mvc.perform(get("/api/sessions?size=1&page=1"))
                 .andExpect(jsonPath("$.items", hasSize(1)))
                 .andExpect(jsonPath("$.items[0].session_key", is(EMPTY_SESSION)))
-                .andExpect(jsonPath("$.total", is(2)));
+                .andExpect(jsonPath("$.total", is(5)));
         mvc.perform(get("/api/sessions?size=1001")).andExpect(status().isBadRequest());
         mvc.perform(get("/api/sessions?page=-1")).andExpect(status().isBadRequest());
     }
@@ -192,8 +225,19 @@ class ApiIT {
                 .andExpect(jsonPath("$.points[-1].d", is(3900.0)))
                 .andExpect(jsonPath("$.points.length()", lessThan(13)));
         mvc.perform(get("/api/circuits/12345/outline")).andExpect(status().isNotFound());
-        // A circuit whose only laps have no location rows has no outline rather than an empty one.
+        // No laps at all, and a green lap with no location rows: no outline rather than an empty one.
         mvc.perform(get("/api/circuits/8/outline")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/circuits/" + CIRCUIT_BLIND + "/outline")).andExpect(status().isNotFound());
+    }
+
+    /** Races come first, but a race whose laps are all open arcs falls through to the qualifying session. */
+    @Test
+    void outlineFallsThroughToAnotherSessionWhenEveryRaceLapFails() throws Exception {
+        mvc.perform(get("/api/circuits/" + CIRCUIT_Q + "/outline"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.session_key", is(QUALI_Q)))
+                .andExpect(jsonPath("$.driver_number", is(5)))
+                .andExpect(jsonPath("$.points[-1].d", is(3900.0)));
     }
 
     @Test
