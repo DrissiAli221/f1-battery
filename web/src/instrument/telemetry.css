@@ -16,7 +16,7 @@
 .tl:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-chip);
 }
 .tl__svg {
   position: absolute;
@@ -101,7 +101,7 @@
   left: 0;
   min-width: 128px;
   padding: 9px 11px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface-3);
   box-shadow: var(--shadow-float);
   pointer-events: none;
@@ -126,7 +126,7 @@
 .tl-tip__row i {
   width: 8px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: var(--radius-mark);
 }
 .tl-tip__row .tl-tip__blank {
   background: none;
@@ -166,7 +166,7 @@
   content: "";
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--radius-mark);
   background: var(--regime, var(--line-strong));
 }
 .tl-tip__regime:empty {

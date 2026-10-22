@@ -41,6 +41,18 @@ const PHOTO: Record<number, string> = {
   39: "Italy", 46: "Japan", 49: "China", 55: "Netherlands", 61: "Singapore", 63: "Bahrain", 144: "Azerbaijan", 149: "Saudi_Arabia", 151: "Miami",
 };
 
+// Race-day photographs from formula1.com (Getty / trackside), by circuit, preferred over the
+// generic race-hub header when known. Checked to resolve on 2026-10-22.
+const RACE_PHOTO: Record<number, string> = {
+  61: "fom-website/2026/Singapore/GettyImages-2299662779.webp", // Verstappen, race day, 11 Oct 2026
+};
+
+/** The best hero photograph for a circuit: a race-day shot when known, else the race-hub header. */
+export function circuitHero(circuitKey: number | null | undefined, w = 2400): string | null {
+  const r = circuitKey === null || circuitKey === undefined ? undefined : RACE_PHOTO[circuitKey];
+  return r ? `https://media.formula1.com/image/upload/c_fill,w_${w}/q_auto/v1740000001/${r}` : circuitPhoto(circuitKey);
+}
+
 /** A photograph of the venue for hero use, or null. */
 export function circuitPhoto(circuitKey: number | null | undefined): string | null {
   const n = circuitKey === null || circuitKey === undefined ? undefined : PHOTO[circuitKey];

@@ -21,6 +21,8 @@ interface Props {
   states: LiveState[];
   selected: number | null;
   trail: TrailPoint[];
+  /** Without a feed: the selected car's regimes on its fastest clean lap (model output). */
+  restRuns?: MapRun[];
   /** Paused: the tags hold where they are. */
   paused: boolean;
 }
@@ -43,7 +45,7 @@ function restPositions(T: Projection, n: number): number[] {
  * Positions are `lap_distance_est` mod the outline's lap (docs/phase7-replay.md): pace and
  * wrap-around are right, the absolute place along the lap is approximate and drifts.
  */
-export function LiveMap({ outline, circuit, order, states, selected, trail, paused }: Props) {
+export function LiveMap({ outline, circuit, order, states, selected, trail, paused, restRuns = [] }: Props) {
   const map = useRef<TrackMapHandle>(null);
   const shown = useRef(new Map<number, number>());
   const targets = useRef(new Map<number, number>());
@@ -105,7 +107,7 @@ export function LiveMap({ outline, circuit, order, states, selected, trail, paus
   // The selected car's trail, split into runs of one regime.
   const runs = useMemo(() => {
     const out: MapRun[] = [];
-    if (trail.length < 2 || !lap) return out;
+    if (trail.length < 2 || !lap) return restRuns;
     let start = 0;
     for (let i = 1; i <= trail.length; i++) {
       if (i === trail.length || trail[i].regime !== trail[start].regime) {
@@ -116,8 +118,8 @@ export function LiveMap({ outline, circuit, order, states, selected, trail, paus
         start = i;
       }
     }
-    return out;
-  }, [trail, lap]);
+    return out.length ? out : restRuns;
+  }, [trail, lap, restRuns]);
 
-  return <TrackMap ref={map} outline={outline} circuit={circuit} runs={runs} tags={tags} corners compass scale sf className="lv-map" label="Live track map" />;
+  return <TrackMap ref={map} outline={outline} circuit={circuit} runs={runs} tags={tags} corners compass scale sf zoom={1.3} markerScale={1.18} className="lv-map" label="Live track map" />;
 }

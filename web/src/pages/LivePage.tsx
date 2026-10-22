@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Readout } from "../components/Readout";
-import { SessionHeader } from "../components/SessionHeader";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Card, CardHead, Flag, Label, Pill, type PillTone } from "../components/system";
 import { useList, useRemote, url } from "../lib/api";
-import { date } from "../lib/format";
+import { date, lapTime } from "../lib/format";
+import { driverCode, driverName, teamColour } from "../lib/teams";
 import { href } from "../lib/router";
-import { lapLength, wrap } from "../lib/track";
+import { lapLength, regimeRuns, wrap } from "../lib/track";
+import { useRegimes } from "../explorer/data";
+import { REGIME_VAR, REGIME_WORD } from "../track/regimes";
+import type { MapRun } from "../track/TrackMap";
 import type { Driver, Lap, Outline, SessionRow } from "../lib/types";
 import { usePage } from "../motion";
-import { circuitMeta, circuitPhoto, eventName, useCircuit } from "../track/circuits";
+import { circuitHero, circuitMeta, eventName, useCircuit } from "../track/circuits";
 import { LiveAxis } from "../live/LiveAxis";
 import { LiveMap, type TrailPoint } from "../live/LiveMap";
 import { LiveTower, type TowerRow } from "../live/LiveTower";
@@ -115,6 +117,20 @@ export function LivePage({ sessionKey }: { sessionKey: number | null }) {
     });
   }, [live.states, selected, running, lap, playing]);
 
+  // Without a feed the middle line shows the selected car's regimes on its fastest clean lap,
+  // from the model (the same data the session page draws), and the caption says which lap.
+  const restLap = useMemo(() => {
+    if (running || selected === null || !laps.data) return null;
+    const mine = laps.data.filter((l) => l.driver_number === selected && l.green && l.lap_duration !== null);
+    if (!mine.length) return null;
+    return mine.reduce((a, b) => ((a.lap_duration ?? Infinity) <= (b.lap_duration ?? Infinity) ? a : b)).lap_number;
+  }, [running, selected, laps.data]);
+  const restRegimes = useRegimes(key ?? 0, selected, restLap, key !== null && !running && !!session?.has_results);
+  const restRuns = useMemo<MapRun[]>(
+    () => (restRegimes.data && lap ? regimeRuns(restRegimes.data.bins, lap).map((r) => ({ d0: r.d0, d1: r.d1, colour: REGIME_VAR[r.label] })) : []),
+    [restRegimes.data, lap],
+  );
+
   const leadLap = running && lap && rows[0] ? Math.floor((states[rows[0].driver.driver_number]?.lap_distance_est ?? 0) / lap) + 1 : null;
 
   // Map order: the tower's order, then any driver the tower does not list yet.
@@ -157,76 +173,154 @@ export function LivePage({ sessionKey }: { sessionKey: number | null }) {
 
   const page = usePage<HTMLDivElement>(undefined, [session !== null, drivers.data !== null, outline.data !== null]);
   const keyOrPending = key ?? 0;
-  const photo = circuitPhoto(circuit);
+  // The poster theme (DESIGN.md pending: black ground, red field, halftone) is scoped to the
+  // page while it is the template; the class retints the shared tokens for the whole document.
+  useEffect(() => {
+    document.documentElement.classList.add("theme-poster");
+    return () => document.documentElement.classList.remove("theme-poster");
+  }, []);
+
+  const meta = circuitMeta(circuit);
+  const photo = circuitHero(circuit);
+  const year = session?.date_start ? new Date(session.date_start).getUTCFullYear() : null;
+  const lapKm = lap ? lap / 1000 : null;
+  // Fastest lap of the session from the lap times (any lap with a duration).
+  const fastest = useMemo(() => {
+    const best = (laps.data ?? []).reduce<Lap | null>((m, l) => (l.lap_duration !== null && (!m || l.lap_duration < (m.lap_duration ?? Infinity)) ? l : m), null);
+    return best ? { lap: best, driver: names.get(best.driver_number) ?? null } : null;
+  }, [laps.data, names]);
+  // Share of each regime on the selected driver's fastest clean lap (model output, equal bins).
+  const split = useMemo(() => {
+    const bins = restRegimes.data?.bins ?? [];
+    if (!bins.length) return null;
+    const keys = ["deploy", "plateau", "lift", "brake"] as const;
+    return keys.map((k) => ({ k, pct: (100 * bins.filter((b) => b.label === k).length) / bins.length }));
+  }, [restRegimes.data]);
+  const selDriver = selected !== null ? names.get(selected) ?? null : null;
+
+  const mapEl = hasOutline ? (
+    <LiveMap
+      key={keyOrPending}
+      outline={outline.data!}
+      circuit={circuitRef}
+      order={order}
+      states={running ? Object.values(states) : []}
+      selected={selected}
+      trail={trail}
+      restRuns={restRuns}
+      paused={!playing}
+    />
+  ) : (
+    <div className="lv-map lv-map--empty" aria-hidden="true" />
+  );
+
+  const stat = (label: string, value: ReactNode, unit?: string, wide = false) => (
+    <div className={`lv-stat ${wide ? "is-wide" : ""}`}>
+      <dt>{label}</dt>
+      <dd>
+        <span className="num">{value}</span>
+        {unit && <small>{unit}</small>}
+      </dd>
+    </div>
+  );
 
   return (
     <div ref={page} className="lv">
-      <section className="lv-top" aria-labelledby="lv-h">
-        <div className={`lv-top__band ${photo ? "" : "is-plain"}`} aria-hidden="true">
-          {photo && <img src={photo} alt="" className="lv-top__img" decoding="async" />}
+      {/* Photo band: the country and the year over a race-day photograph. */}
+      <section className="lv-hero" aria-labelledby="lv-h">
+        {photo && <img className="lv-hero__img" src={photo} alt="" decoding="async" />}
+        <div className="lv-hero__in" data-intro>
+          <h1 id="lv-h" className="lv-hero__title">
+            {meta?.country ?? (session ? eventName(circuit, session.circuit_short_name) : sessions.error ? "Live" : "Loading")}
+          </h1>
+          {year && <p className="lv-hero__year">{year}</p>}
+          {session && <p className="lv-hero__date num">{date(session.date_start, "short")}</p>}
         </div>
-        <div className="wrap lv-top__in" data-intro>
-          {session ? (
-            <SessionHeader
-              session={session}
-              size="lg"
-              facts={[{ label: "Laps", value: totalLaps ?? "–" }]}
-              aside={
-                <Pill tone={status.tone} dot={status.dot} className="lv-status">
-                  {status.text}
-                </Pill>
-              }
-            />
-          ) : (
-            <h1 className="lv-top__pending">{sessions.error ? "Live" : "Loading"}</h1>
-          )}
-          <span id="lv-h" className="sr-only">
-            Live replay
-          </span>
-          {live.status !== "disabled" && live.status !== "no-topic" && (
-            <Readout label="Replay">
-              <p>{sentence}</p>
-            </Readout>
-          )}
+      </section>
+      <nav className="lv-sub" aria-label="On this page">
+        <a href="#lv-circuit">Circuit</a>
+        <a href="#lv-flag">At the flag</a>
+        <a href={key !== null ? href.session(key) : href.sessions()}>Analysis</a>
+        <Pill tone={status.tone} dot={status.dot} className="lv-sub__status">
+          {status.text}
+        </Pill>
+      </nav>
+
+      {/* The circuit: map on the left, the figures on the right, inside the red frame. */}
+      <section id="lv-circuit" className="wrap lv-circ" aria-label="Circuit">
+        {session && (
+          <p className="lv-circ__event">
+            Formula 1 {eventName(circuit, session.circuit_short_name)} {year} · {session.session_name}
+          </p>
+        )}
+        <div className="lv-circ__box">
+          <h2 className="lv-circ__head">
+            {meta?.iso2 && <Flag iso2={meta.iso2} title={meta.country} size={40} className="lv-circ__flag" />}
+            <span>{meta?.name ?? session?.circuit_short_name ?? "Circuit"}</span>
+          </h2>
+          <div className="lv-circ__body">
+            <div className="lv-circ__map">{mapEl}</div>
+            <div className="lv-circ__side">
+              <dl className="lv-stats">
+                {stat("Number of laps", totalLaps ?? "–")}
+                {stat("Circuit length", lapKm ? lapKm.toFixed(3) : "–", "km")}
+                {stat("Race distance", lapKm && totalLaps ? (lapKm * totalLaps).toFixed(3) : "–", "km")}
+                {stat("Corners", meta?.corners ?? "–")}
+                <div className="lv-stat is-wide">
+                  <dt>Fastest lap</dt>
+                  <dd>
+                    <span className="num">{fastest ? lapTime(fastest.lap.lap_duration) : "–"}</span>
+                    {fastest?.driver && (
+                      <small>
+                        {driverName(fastest.driver)} (lap {fastest.lap.lap_number})
+                      </small>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+              <ul className="lv-links">
+                <li>
+                  <a href={key !== null ? href.session(key) : href.sessions()}>Session analysis</a>
+                </li>
+                <li>
+                  <a href={key !== null ? href.session(key) : href.sessions()}>Cut-off by straight</a>
+                </li>
+                <li>
+                  <a href={href.findings}>Findings</a>
+                </li>
+                <li>
+                  <a href={href.method}>How it is estimated</a>
+                </li>
+              </ul>
+              <p className="lv-circ__note">Length measured on the circuit outline; distance is laps × length.</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="wrap lv-body" aria-label="Replay">
-        <div className="lv-stage">
-          <div className="lv-stage__map">
-            <div className="lv-stage__bar">
-              <Label>{circuitMeta(circuit)?.name ?? session?.circuit_short_name ?? "Track"}</Label>
-              {running ? (
-                <Pill tone="live" dot>
-                  {playing ? `Lap ${leadLap ?? "–"} est.` : "Paused"}
-                </Pill>
-              ) : (
-                <Pill>{live.status === "connecting" ? "Checking for a replay" : "No replay running"}</Pill>
-              )}
-            </div>
-            <div className="lv-stage__road">
-              {hasOutline ? (
-                <LiveMap
-                  key={keyOrPending}
-                  outline={outline.data!}
-                  circuit={circuitRef}
-                  order={order}
-                  states={running ? Object.values(states) : []}
-                  selected={selected}
-                  trail={trail}
-                  paused={!playing}
-                />
-              ) : (
-                <div className="lv-map lv-map--empty" aria-hidden="true" />
-              )}
-            </div>
-            <p className="lv-stage__note">
-              {running
-                ? "Tags sit at each car's estimated lap distance; the place along the lap is approximate and drifts."
-                : "Without a feed the cars wait behind the line in the order at the flag."}
-            </p>
-          </div>
-          <Card inset as="aside" className="lv-stage__tower">
+      {/* At the flag: the first three as broadcast cards, then the full order beside two cards. */}
+      <section id="lv-flag" className="wrap lv-flag" aria-labelledby="lv-flag-h">
+        <h2 id="lv-flag-h" className="lv-sec">
+          <span>{running ? "Live order" : "At the flag"}</span>
+        </h2>
+        <ol className="lv-podium">
+          {(running ? rows : flag).slice(0, 3).map((r) => (
+            <li key={r.driver.driver_number} className="lv-pod" style={{ ["--team" as string]: teamColour(r.driver) }}>
+              <span className="lv-pod__pos">{r.pos}</span>
+              <span className="lv-pod__name">
+                <span className="lv-pod__first">{r.driver.first_name ?? ""}</span>
+                <span className="lv-pod__last">{r.driver.last_name ?? driverCode(r.driver)}</span>
+                <span className="lv-pod__team">{r.driver.team_name ?? ""}</span>
+              </span>
+              <span className="lv-pod__gap num">{r.gap ?? "Leader"}</span>
+              <span className="lv-pod__no" aria-hidden="true">
+                {r.driver.driver_number}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div className="lv-flag__grid">
+          <Card inset as="div" className="lv-stage__tower">
             <div className="lv-stage__th">
               <Label>{running ? "Live order" : "Order at the flag"}</Label>
               <span className="lv-stage__tn num">{rows.length || "–"} cars</span>
@@ -236,46 +330,68 @@ export function LivePage({ sessionKey }: { sessionKey: number | null }) {
               {running ? "Order by estimated distance; gap in metres to the first car." : "Order at the flag from lap times, not the official classification."}
             </p>
           </Card>
-        </div>
-
-        <Card className="lv-axis-card">
-          <LiveAxis total={totalLaps} lap={leadLap} live={running} playing={playing} onPlay={togglePlay} speed={live.speed} />
-        </Card>
-
-        {!running && (
-          <Card className="lv-off" as="section">
-            <CardHead title="No replay running" aside={<span className="num">docs/phase7-replay.md</span>} />
-            <div className="lv-off__body">
-              <p className="lv-off__p">
-                {live.status === "connecting"
-                  ? "Checking for a running replay."
-                  : live.status === "error"
-                    ? "The replay feed dropped; retrying every 3 s."
-                    : live.status === "disabled"
-                      ? "The replay is disabled on this server."
-                      : live.status === "no-topic"
-                        ? "No replay is running."
-                        : "Replay connected; no cars yet."}{" "}
-                A replay re-emits this recorded race through Kafka at a chosen speed and moves one tag per car on the map. It needs the replay
-                profile on the server:
+          <div className="lv-flag__side">
+            <Card className="lv-card" as="section" aria-label="Regimes on the fastest lap">
+              <p className="lv-card__k">
+                Regimes{selDriver ? <> · <b style={{ color: teamColour(selDriver) }}>{driverCode(selDriver)}</b></> : null}
+                {restLap ? <> · lap <span className="num">{restLap}</span></> : null}
               </p>
-              <pre className="lv-off__cmd">
-                <code>
-                  {`docker compose --profile replay up -d
+              {split ? (
+                <>
+                  <div className="lv-card__bar" aria-hidden="true">
+                    {split
+                      .filter((r) => r.pct > 0)
+                      .map((r) => (
+                        <i key={r.k} style={{ flexGrow: r.pct, background: REGIME_VAR[r.k] }} />
+                      ))}
+                  </div>
+                  <ul className="lv-card__split">
+                    {split.map((r) => (
+                      <li key={r.k}>
+                        <span className="lv-card__sw" style={{ background: REGIME_VAR[r.k] }} />
+                        <span>{REGIME_WORD[r.k]}</span>
+                        <span className="num">{Math.round(r.pct)}%</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="lv-card__big">–</p>
+              )}
+              <p className="lv-card__note">Share of the driver's fastest clean lap, estimated by the model. The map's middle line shows the same lap. Pick a driver in the order.</p>
+            </Card>
+            <Card className="lv-card lv-replay" as="section" aria-label="Replay">
+              <p className="lv-replay__badge">
+                <span>Replay</span>
+                <b className="num">{running ? `Lap ${leadLap ?? "–"}/${totalLaps ?? "–"}` : "Off"}</b>
+              </p>
+              {running && <LiveAxis total={totalLaps} lap={leadLap} live={running} playing={playing} onPlay={togglePlay} speed={live.speed} />}
+              <div className="lv-card__foot">
+                <p className="lv-card__note">{sentence.charAt(0).toUpperCase() + sentence.slice(1)}.</p>
+                {!running && (
+                  <details className="lv-card__more">
+                    <summary>How to start one</summary>
+                    <pre className="lv-off__cmd">
+                      <code>
+                        {`docker compose --profile replay up -d
 java -jar replay/target/replay-0.1.0-SNAPSHOT.jar \\
   --mode=producer --session=${keyOrPending} --speed=20
 java -jar replay/target/replay-0.1.0-SNAPSHOT.jar \\
   --mode=consumer --session=${keyOrPending}
 API_REPLAY_ENABLED=true java -jar api/target/api-0.1.0-SNAPSHOT.jar`}
-                </code>
-              </pre>
-            </div>
-          </Card>
-        )}
+                      </code>
+                    </pre>
+                  </details>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
       </section>
 
       {races.length > 1 && (
-        <section className="wrap lv-more" aria-labelledby="lv-more-h">
+        <section className="lv-more" aria-labelledby="lv-more-h">
+          <div className="wrap">
           <Card>
             <CardHead title={<h2 id="lv-more-h">Replay another race</h2>} aside={<span className="num">{races.length} sessions</span>} />
             <ul className="lv-more__grid">
@@ -297,6 +413,7 @@ API_REPLAY_ENABLED=true java -jar api/target/api-0.1.0-SNAPSHOT.jar`}
               })}
             </ul>
           </Card>
+          </div>
         </section>
       )}
     </div>

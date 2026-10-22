@@ -38,8 +38,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(3, 3, 3, 0.55) 0%, rgba(3, 3, 3, 0.15) 35%, rgba(3, 3, 3, 0.75) 72%, var(--page-bg) 100%),
-    linear-gradient(90deg, rgba(3, 3, 3, 0.7) 0%, rgba(3, 3, 3, 0) 60%);
+    linear-gradient(180deg, rgba(17, 17, 20, 0.55) 0%, rgba(17, 17, 20, 0.15) 35%, rgba(17, 17, 20, 0.75) 72%, var(--page-bg) 100%),
+    linear-gradient(90deg, rgba(17, 17, 20, 0.7) 0%, rgba(17, 17, 20, 0) 60%);
 }
 .lv-top__pending {
   font-size: clamp(1.6rem, 1rem + 2vw, 2.6rem);
@@ -364,7 +364,7 @@
   margin: 0;
   padding: 14px 16px;
   overflow-x: auto;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface-3);
   border: 1px solid var(--line);
   font-family: var(--font-mono);
@@ -430,7 +430,7 @@
 }
 .lv-race__flag {
   height: 18px;
-  border-radius: 3px;
+  border-radius: var(--radius-mark);
 }
 .lv-race__name {
   overflow: hidden;
@@ -477,11 +477,566 @@
 
 /* v3.2: the map sizes itself from its width */
 .lv-stage__road,
-.lv-map {
+.lv-stage .lv-map {
   height: auto !important;
   min-height: 0 !important;
 }
 .lv-map {
   position: relative !important;
   inset: auto !important;
+}
+
+/* ---- v3.3: the dashboard uses the width; circuit 72 / timing 28; the tower sits back ---- */
+.lv-body.wrap {
+  max-width: 1560px !important;
+}
+@media (min-width: 1024px) {
+  .lv-stage {
+    grid-template-columns: minmax(0, 72fr) minmax(0, 28fr) !important;
+  }
+}
+.lv-stage__tower {
+  background: #141418 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+.lv-stage__tower .tower th {
+  background: #17171c !important;
+}
+.lv-stage__tower .tower td {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ================= v6: the formula1.com circuit page, dark (owner refs 2026-10-22) =================
+ * Photo band with the country and year; a sub-nav; the circuit inside a red frame that runs
+ * from the heading to the right edge and down (map left, figure cards right, red-arrow links);
+ * then the order at the flag as broadcast cards (big faded car number, name in team colour)
+ * beside the full tower, a regime card and the replay badge. No scroll effects. */
+html.theme-poster {
+  --page-bg: #0b0b0d;
+  --ground-2: #0b0b0d;
+  --surface-1: #121215;
+  --surface-2: #16161a;
+  --surface-3: #1d1d22;
+  --surface-4: #26262c;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-2: rgba(255, 255, 255, 0.16);
+}
+.lv {
+  --red: #e10600;
+}
+
+/* ---- Photo band ---- */
+.lv-hero {
+  position: relative;
+  height: clamp(340px, 34vw, 480px);
+  overflow: hidden;
+  background: #000;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+.lv-hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 55%;
+  z-index: -1;
+}
+.lv-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(60% 70% at 50% 50%, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.15) 70%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.1) 40%, rgba(0, 0, 0, 0.6));
+}
+.lv-hero__in {
+  text-align: center;
+  color: #fff;
+}
+.lv-hero__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.8rem, 1rem + 5vw, 5.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+}
+.lv-hero__year {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 700;
+  font-size: clamp(2rem, 1rem + 3vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px #fff;
+}
+.lv-hero__date {
+  display: inline-block;
+  margin: 16px 0 0;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.55);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #fff;
+}
+
+/* ---- Sub-nav ---- */
+.lv-sub {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 52px;
+  background: #15151a;
+  border-bottom: 1px solid var(--line);
+}
+.lv-sub a {
+  position: relative;
+  padding: 16px 28px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.lv-sub a + a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 18px;
+  margin-top: -9px;
+  border-left: 1px solid var(--line-2);
+}
+.lv-sub a:first-of-type::after {
+  content: "";
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 0;
+  height: 3px;
+  background: var(--red);
+}
+@media (hover: hover) {
+  .lv-sub a:hover {
+    color: #fff;
+  }
+}
+.lv-sub__status {
+  position: absolute;
+  right: var(--gutter);
+}
+@media (max-width: 760px) {
+  .lv-sub__status {
+    display: none;
+  }
+  .lv-sub a {
+    padding: 14px 16px;
+  }
+}
+
+/* ---- Circuit block ---- */
+.lv-circ {
+  padding-top: 48px;
+}
+.lv-circ__event {
+  margin: 0 0 28px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+/* The red frame: top edge from the heading to the right, a rounded corner, down the side. */
+.lv-circ__box {
+  position: relative;
+  border-top: 5px solid var(--red);
+  border-right: 5px solid var(--red);
+  border-top-right-radius: 22px;
+  padding: 40px 40px 32px 0;
+  margin-top: 18px;
+}
+.lv-circ__head {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding-right: 20px;
+  background: var(--page-bg);
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 38px;
+  color: #fff;
+}
+.lv-circ__flag {
+  width: 46px;
+  height: auto;
+  border-radius: var(--radius-mark);
+}
+.lv-circ__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  .lv-circ__box {
+    padding-right: 20px;
+  }
+  .lv-circ__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.lv-circ__map {
+  min-width: 0;
+}
+.lv-circ__note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+/* Figure cards: a hairline on the right and bottom that rounds at the corner. */
+.lv-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.lv-stat {
+  padding: 4px 16px 14px 0;
+  border-right: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  border-bottom-right-radius: 12px;
+}
+.lv-stat.is-wide {
+  grid-column: 1 / -1;
+}
+.lv-stat dt {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.lv-stat dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 6px 0 0;
+}
+.lv-stat dd .num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(30px, 1rem + 1.6vw, 40px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.lv-stat dd small {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Links with the red down-right arrow. */
+.lv-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lv-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--ink);
+  transition: color 0.15s;
+}
+.lv-links a::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-right: 2px solid var(--red);
+  border-bottom: 2px solid var(--red);
+  /* the arrow's head at the bottom-right, its shaft drawn by the gradient on the diagonal */
+  background: linear-gradient(45deg, transparent calc(50% - 1px), var(--red) calc(50% - 1px), var(--red) calc(50% + 1px), transparent calc(50% + 1px));
+}
+@media (hover: hover) {
+  .lv-links a:hover {
+    color: #fff;
+  }
+}
+
+/* ---- Section heading with the red rule ---- */
+.lv-sec {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 0 0 28px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+.lv-sec::after {
+  content: "";
+  flex: 1;
+  height: 5px;
+  background: var(--red);
+}
+
+/* ---- At the flag ---- */
+.lv-flag {
+  padding-top: 88px;
+}
+.lv-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+@media (max-width: 900px) {
+  .lv-podium {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.lv-pod {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  min-height: 112px;
+  padding: 14px 18px 14px 0;
+  overflow: hidden;
+  background: linear-gradient(90deg, #16161b, #101014);
+  border-bottom: 4px solid var(--team);
+}
+.lv-pod__pos {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  margin-right: 16px;
+  border-right: 2px solid var(--team);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 34px;
+  color: #fff;
+}
+.lv-pod__name {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  line-height: 1.05;
+}
+.lv-pod__first {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #fff;
+}
+.lv-pod__last {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--team);
+}
+.lv-pod__team {
+  margin-top: 3px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lv-pod__gap {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.lv-pod__no {
+  position: absolute;
+  right: 10px;
+  bottom: -18px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 104px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--team);
+  opacity: 0.28;
+}
+
+.lv-flag__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  .lv-flag__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.lv-flag__side {
+  display: grid;
+  gap: 16px;
+}
+.theme-poster .lv-stage__tower {
+  background: var(--surface-1) !important;
+  border-color: var(--line) !important;
+}
+.theme-poster .lv-stage__tower .tower th {
+  background: var(--surface-1) !important;
+}
+
+/* ---- Cards ---- */
+.lv-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 24px;
+}
+.lv-card__k {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lv-card__k b {
+  font-weight: 700;
+}
+.lv-card__big {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 40px;
+  line-height: 1;
+  color: #fff;
+}
+.lv-card__note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--faint);
+}
+.lv-card__bar {
+  display: flex;
+  height: 10px;
+  gap: 2px;
+}
+.lv-card__bar i {
+  display: block;
+  flex-basis: 0;
+  height: 100%;
+}
+.lv-card__split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--ink);
+}
+.lv-card__split li {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.lv-card__split .num {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+.lv-card__sw {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.lv-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.lv-card__foot .lv-card__more {
+  display: contents;
+}
+.lv-card__foot .lv-card__more[open] .lv-off__cmd {
+  flex-basis: 100%;
+}
+.lv-card__more summary {
+  margin-left: auto;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.lv-card__more .lv-off__cmd {
+  margin-top: 10px;
+  font-size: 11px;
+  background: var(--surface-3);
+}
+
+/* The replay badge: broadcast "RACE / LAP 7/58" plate. */
+.lv-replay__badge {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: stretch;
+  margin: 0;
+  border-top: 3px solid var(--red);
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  overflow: hidden;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+}
+.lv-replay__badge span {
+  padding: 8px 14px;
+  background: #24242a;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--red);
+}
+.lv-replay__badge b {
+  padding: 8px 14px;
+  background: #1a1a1f;
+  font-size: 18px;
+  font-weight: 700;
+  font-style: italic;
+  color: #fff;
+}
+
+.lv-more {
+  margin-top: 88px;
+}
+.theme-poster .lv-race.is-on {
+  background: var(--surface-3);
 }

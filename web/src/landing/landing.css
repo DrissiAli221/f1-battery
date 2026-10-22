@@ -69,7 +69,7 @@
 .lp-hero__pill .pill {
   height: 26px;
   padding: 0 12px;
-  background: rgba(3, 3, 3, 0.55);
+  background: rgba(17, 17, 20, 0.55);
   backdrop-filter: blur(8px);
 }
 .lp-hero__pill .num {
@@ -395,7 +395,7 @@
 }
 .scard__flag {
   height: 18px;
-  border-radius: 2px;
+  border-radius: var(--radius-mark);
 }
 .scard__gp {
   font-family: var(--font-display);
@@ -553,7 +553,7 @@
 }
 .sx-meeting__flag {
   height: 28px;
-  border-radius: 3px;
+  border-radius: var(--radius-mark);
 }
 .sx-meeting__gp {
   font-family: var(--font-display);

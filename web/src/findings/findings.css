@@ -74,8 +74,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to top, var(--page-bg) 0%, rgba(3, 3, 3, 0.86) 30%, rgba(3, 3, 3, 0.55) 62%, rgba(3, 3, 3, 0.7) 100%),
-    linear-gradient(to right, rgba(3, 3, 3, 0.85) 0%, rgba(3, 3, 3, 0.35) 60%, rgba(3, 3, 3, 0.2) 100%);
+    linear-gradient(to top, var(--page-bg) 0%, rgba(17, 17, 20, 0.86) 30%, rgba(17, 17, 20, 0.55) 62%, rgba(17, 17, 20, 0.7) 100%),
+    linear-gradient(to right, rgba(17, 17, 20, 0.85) 0%, rgba(17, 17, 20, 0.35) 60%, rgba(17, 17, 20, 0.2) 100%);
 }
 .fx-band__copy {
   padding-block: 72px 48px;
@@ -610,7 +610,7 @@
   top: 50%;
   height: 8px;
   translate: 0 -50%;
-  border-radius: 4px;
+  border-radius: var(--radius-chip);
   background: var(--line-2);
 }
 .fx-makers__tick {
@@ -619,7 +619,7 @@
   bottom: 5px;
   width: 3px;
   margin-left: -1.5px;
-  border-radius: 2px;
+  border-radius: var(--radius-mark);
   background: var(--ink);
 }
 .fx-makers__nums {

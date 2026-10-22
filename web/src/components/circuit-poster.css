@@ -1,0 +1,142 @@
+/* Event-branding intro (CircuitPoster.tsx). Reference: the Jeddah GP identity — red halftone
+   fade, heavy display caps, diagonal stripe bars, small mono copy. Tokens only. */
+
+.cposter {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-top: calc(-1 * var(--header-h));
+  padding-top: calc(var(--header-h) + 28px);
+  padding-bottom: 32px;
+  background: var(--page-bg);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Halftone: a dot grid in the brand red, dense at the top and fading to black. */
+.cposter__halftone {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at center, color-mix(in srgb, var(--brand) 85%, transparent) 0 1.4px, transparent 1.6px) 0 0 / 7px 7px,
+    linear-gradient(180deg, color-mix(in srgb, var(--brand) 38%, transparent), transparent 75%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.55) 45%, transparent 92%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.55) 45%, transparent 92%);
+  pointer-events: none;
+}
+
+.cposter__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.cposter__mono {
+  font-family: var(--font-mono);
+  font-size: var(--t-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.cposter__where {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.cposter__flag {
+  width: 24px;
+  height: auto;
+  border-radius: var(--radius-mark);
+}
+
+.cposter__title {
+  margin: 20px 0 0;
+  max-width: 20ch;
+  font-family: var(--font-poster, var(--font-display));
+  font-weight: 900;
+  font-stretch: var(--poster-stretch, 100%);
+  font-size: clamp(2.4rem, 1rem + 4.6vw, 5.4rem);
+  line-height: 0.92;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  color: var(--ink-head);
+}
+
+/* Stripe bar: two packs of slanted red bars around a hairline, like the F1 75 lockup. */
+.cposter__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 20px;
+}
+.cposter__stripes {
+  width: 72px;
+  height: 10px;
+  flex: none;
+  background: repeating-linear-gradient(-60deg, var(--brand) 0 6px, transparent 6px 11px);
+}
+.cposter__stripes--r {
+  width: 28px;
+}
+.cposter__bar-line {
+  height: 1px;
+  flex: 1;
+  background: var(--line-2);
+}
+
+.cposter__body {
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 1024px) {
+  .cposter__body {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    column-gap: 48px;
+    align-items: end;
+  }
+}
+.cposter__intro {
+  margin: 0;
+  max-width: 52ch;
+  font-family: var(--font-mono);
+  font-size: var(--t-mono);
+  line-height: 1.6;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+}
+
+.cposter__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin: 0;
+}
+.cposter__stats > div {
+  padding-left: 12px;
+  border-left: 2px solid var(--brand);
+}
+.cposter__stats dt {
+  font-family: var(--font-mono);
+  font-size: var(--t-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.cposter__stats dd {
+  margin: 6px 0 0;
+  font-family: var(--font-poster, var(--font-display));
+  font-weight: 800;
+  font-stretch: var(--poster-stretch, 100%);
+  font-size: clamp(1.3rem, 0.9rem + 0.8vw, 1.7rem);
+  white-space: nowrap;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-head);
+}
+.cposter__unit {
+  font-size: 0.5em;
+  font-weight: 600;
+  color: var(--ink-2);
+}

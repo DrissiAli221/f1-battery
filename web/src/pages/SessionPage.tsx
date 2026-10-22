@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { CircuitPoster } from "../components/CircuitPoster";
 import { SessionHeader } from "../components/SessionHeader";
 import { Card, CardHead, Label, SectionHead, Skeleton, Stat, Tabs } from "../components/system";
 import { CutoffChart, type ChartDriver } from "../explorer/CutoffChart";
+import { RollingNumber, Swap } from "../components/Swap";
 import { useCutoffs, useRegimes, useSessionData } from "../explorer/data";
 import { DriverSelect } from "../explorer/DriverSelect";
 import { LapAxis } from "../explorer/LapAxis";
@@ -13,10 +15,10 @@ import { SessionTower } from "../explorer/Tower";
 import { int } from "../lib/format";
 import { href, useQueryState } from "../lib/router";
 import { driverCode, teamColour } from "../lib/teams";
-import { regimeRuns } from "../lib/track";
+import { regimeRuns, wrap } from "../lib/track";
 import { straightName } from "../lib/types";
 import { scrollToTarget, usePage } from "../motion";
-import { circuitPhoto, useCircuit } from "../track/circuits";
+import { useCircuit } from "../track/circuits";
 import { REGIME_VAR, REGIME_WORD, REGIMES } from "../track/regimes";
 import { TrackMap, type MapRun, type MapTag, type MapTick } from "../track/TrackMap";
 import "../explorer/explorer.css";
@@ -40,6 +42,8 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
   const [query, setQuery] = useQueryState();
   const [playing, setPlaying] = useState(false);
   const [cursor] = useState(() => createStore<number | null>(null));
+  // Hover on the map's straight (metres along it and the pointer's place in the box).
+  const [hov, setHov] = useState<{ m: number; x: number; y: number } | null>(null);
 
   const { session, drivers, withResults, medians, laps, straights, lap: lapLen } = data;
   const circuit = useCircuit(session?.circuit_key);
@@ -187,19 +191,77 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
   const sName = straight ? straightName(straight) : "";
   const regLapShown = regimes.data?.lap ?? null;
   const mode = pState.kind === "ready" ? "ready" : pState.kind === "loading" ? "loading" : "none";
-  const photo = circuitPhoto(session.circuit_key);
 
-  // ---- the map's marks: medians per straight as ticks with brackets, the shown lap as a tag
-  const ticks: MapTick[] = [];
-  for (const s of straights) {
-    const pm = pMed?.get(s.straight_id);
-    if (pm) ticks.push({ id: `p${s.straight_id}`, d: pm.m, lo: pm.lo, hi: pm.hi, colour: "#fff", side: 1, on: s.straight_id === straightId });
-    const cm = cMed?.get(s.straight_id);
-    if (cm) ticks.push({ id: `c${s.straight_id}`, d: cm.m, lo: cm.lo, hi: cm.hi, colour: cTeam, side: -1, on: s.straight_id === straightId });
-  }
+  // ---- the map's marks on the selected straight
+  // Only the selected and the compare driver are dots with chips, each chip reading the
+  // cut-off in metres into the straight (the shown lap's, else the median). The rest of the
+  // field is one grey bracket inside the road over the middle half of their medians, with a
+  // tick at the field median: a rake of twenty ticks in a few tens of metres reads as a
+  // smudge. The hover card still names the drivers near the pointer.
   const tags: MapTag[] = [];
-  if (pDriver && lapCutLap !== null) tags.push({ id: "lap-p", code: pCode, colour: pTeam, d: lapCutLap, on: true, note: `L${lapNo}` });
-  if (cDriver && cLapCutLap !== null) tags.push({ id: "lap-c", code: cCode, colour: cTeam, d: cLapCutLap, note: `L${lapNo}` });
+  const ticks: MapTick[] = [];
+  const field: { code: string; m: number }[] = [];
+  if (straight && lapLen && has) {
+    for (const d of drivers) {
+      const m = medians.get(d.driver_number)?.get(straight.straight_id);
+      if (!m) continue;
+      const isP = d.driver_number === driver;
+      const isC = d.driver_number === compare;
+      field.push({ code: driverCode(d), m: rel(straight, m.m, lapLen) as number });
+      if (isP || isC) {
+        const at = isP && lapCutLap !== null ? lapCutLap : isC && cLapCutLap !== null ? cLapCutLap : m.m;
+        const into = rel(straight, at, lapLen);
+        tags.push({ id: d.driver_number, code: driverCode(d), colour: teamColour(d), d: at, on: isP, note: into !== null && into !== undefined ? `${int(into)}${NB}m` : undefined });
+      }
+    }
+  }
+  // The picked and compare drivers with no cut-off on this straight have no dot to show; the
+  // section label says so instead of the chip silently disappearing.
+  const noCut = straight && lapLen && has
+    ? [pDriver, cDriver].filter((d): d is NonNullable<typeof d> => !!d && !medians.get(d.driver_number)?.get(straight.straight_id)).map((d) => driverCode(d))
+    : [];
+  const sectionNote = noCut.length ? `${noCut.join(", ")} · no cut-off` : null;
+  // Straights where anyone in the session has a cut-off; the map draws the rest quieter.
+  // (Plain code, not a hook: this runs after the early returns above.)
+  const withData = has ? new Set([...medians.values()].flatMap((m) => [...m.keys()])) : null;
+  // The field on this straight: the bracket on the map; the median's value goes in the key
+  // under the map (text on the road collides with chips and corner rings).
+  const fieldMedian = (() => {
+    if (!straight || !lapLen || !has) return null;
+    const vals = drivers.flatMap((d) => {
+      const m = medians.get(d.driver_number)?.get(straight.straight_id);
+      return m ? [rel(straight, m.m, lapLen) as number] : [];
+    }).sort((a, b) => a - b);
+    if (!vals.length) return null;
+    // Quantile with linear interpolation between the sorted medians.
+    const qt = (p: number) => {
+      const i = p * (vals.length - 1);
+      const lo = Math.floor(i);
+      return vals[lo] + (vals[Math.min(lo + 1, vals.length - 1)] - vals[lo]) * (i - lo);
+    };
+    const mid = qt(0.5);
+    ticks.push({ id: "field", d: straight.d0 + mid, lo: straight.d0 + qt(0.25), hi: straight.d0 + qt(0.75), colour: "#9a9aa3" });
+    return mid;
+  })();
+  // Regime colour at full strength round the whole lap, drawn as on the live map; the picked
+  // straight is marked by its lit road edges and its label, not by fading the rest.
+  const mapRuns: MapRun[] = runs;
+  // Hover on the straight: the chart's cursor follows, and a card reads the point.
+  const onHover = (m: number | null, at: { x: number; y: number } | null) => {
+    if (m === null || !at) setHov(null);
+    else {
+      setHov({ m, x: at.x, y: at.y });
+      cursor.set(m);
+    }
+  };
+  const hovRead = (() => {
+    if (!hov || !straight || !lapLen) return null;
+    const bin = pProfile?.bins[Math.min(pProfile.bins.length - 1, Math.floor(hov.m / 50))];
+    const lapD = wrap(straight.d0 + hov.m, lapLen);
+    const reg = regIdx?.get(Math.floor(lapD / 50) * 50) ?? null;
+    const near = field.filter((f) => Math.abs(f.m - hov.m) <= 15).map((f) => f.code);
+    return { v: bin?.v_kph ?? null, a: bin?.a_ms2 ?? null, regime: reg, near };
+  })();
 
   // Per-lap cut-offs on the selected straight, for the strip drawn without a speed profile.
   const stripOf = (code: string, colour: string, cuts: typeof pCut, med: typeof median): Strip => ({
@@ -229,11 +291,20 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
 
   return (
     <div ref={root} className="ss">
-      {/* ---------- The venue, fading into the ground ---------- */}
-      <div className={`ss-photo ${photo ? "" : "ss-photo--none"}`} aria-hidden="true">
-        {photo && <img src={photo} alt="" decoding="async" />}
-        <span className="ss-photo__scrim" />
-      </div>
+      {/* ---------- Circuit poster: the place, the drawing, four numbers ---------- */}
+      <CircuitPoster
+        session={session}
+        laps={nLaps}
+        lapLength={lapLen || null}
+        cutoff={median && pDriver ? { label: `${pCode} median cut-off`, value: `${int(median.m)}${NB}m` } : null}
+        intro={
+          <>
+            {nLaps > 0 && lapLen ? `${int(nLaps)} laps of ${(lapLen / 1000).toFixed(3)} km. ` : ""}
+            F1 does not publish 2026 battery data, so this page reads it off the public speed trace.
+            {median && pDriver && sName ? ` On ${sName}, ${pCode} stops deploying a median ${int(median.m)} m into the straight.` : ""}
+          </>
+        }
+      />
 
       {/* ---------- Header: the event, the facts, the two drivers ---------- */}
       <div className="wrap ss-head" data-intro>
@@ -303,18 +374,31 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
                   straights={straights}
                   selected={straightId}
                   onSelect={pickStraight}
-                  runs={runs}
-                  ticks={has ? ticks : []}
-                  tags={has ? tags : []}
-                  cursor={straight ? { store: cursor, straight, length: length || null } : null}
+                  runs={mapRuns}
+                  tags={tags}
+                  ticks={ticks}
+                  hover={straight ? { straight, length: length || null, onHover } : null}
                   corners
-                  compass
-                  scale
                   sf
                   straightLabels
+                  sectionNote={sectionNote}
+                  straightsWithData={withData}
+                  crossfadeLines
+                  zoom={1.3}
+                  markerScale={1.18}
                   label={`${session.circuit_short_name ?? "Circuit"} track map; select a straight`}
                   className="ss-tmap"
-                />
+                >
+                  {hov && (
+                    <div className="ss-hover" style={{ left: hov.x, top: hov.y }} role="status">
+                      <b>{int(hov.m)}{NB}m</b>
+                      {hovRead?.v !== null && hovRead?.v !== undefined && <span>{int(hovRead.v)}{NB}kph</span>}
+                      {hovRead?.a !== null && hovRead?.a !== undefined && <span>{hovRead.a > 0 ? "+" : ""}{hovRead.a.toFixed(1)}{NB}m/s²</span>}
+                      {hovRead?.regime && <span style={{ color: REGIME_VAR[hovRead.regime] }}>{REGIME_WORD[hovRead.regime]}</span>}
+                      {hovRead && hovRead.near.length > 0 && <span className="ss-hover__near">cut-off: {hovRead.near.join(" ")}</span>}
+                    </div>
+                  )}
+                </TrackMap>
               ) : data.outlineError ? (
                 <p className="ss-empty">No circuit outline has been ingested for this session yet, so there is no map.</p>
               ) : data.outline ? (
@@ -338,16 +422,9 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
               )}
               {has && (
                 <ul className="ss-key">
-                  {pDriver && (
-                    <li>
-                      <i className="ss-key__tick" style={{ background: "#fff" }} /> {pCode} median est.
-                    </li>
-                  )}
-                  {cDriver && (
-                    <li>
-                      <i className="ss-key__tick" style={{ background: cTeam }} /> {cCode} median est.
-                    </li>
-                  )}
+                  <li>
+                    <i className="ss-key__tick" style={{ background: "#9a9aa3" }} /> field: middle half of the drivers' median cut-offs, tick at the median{fieldMedian !== null ? ` (${int(fieldMedian)}${NB}m)` : ""}, est.
+                  </li>
                   {regLapShown !== null &&
                     REGIMES.map((k) => (
                       <li key={k}>
@@ -363,23 +440,34 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
           <div className="ss-side" id="ss-straight" data-reveal>
             <CardHead
               className="ss-side__head"
-              title={<span id="ss-sname">{straight ? sName : "Straight"}</span>}
-              aside={straight ? <span className="ss-mono">S{straight.straight_id} · {int(length)}{NB}m</span> : null}
+              title={
+                <span id="ss-sname" key={straightId ?? "none"} className="ss-swap-in">
+                  {straight ? sName : "Straight"}
+                </span>
+              }
+              aside={
+                straight ? (
+                  <span key={straight.straight_id} className="ss-mono ss-swap-in">
+                    S{straight.straight_id} · {int(length)}
+                    {NB}m
+                  </span>
+                ) : null
+              }
             />
             {straight && lapLen ? (
               has ? (
-                <div className="ss-side__body">
+                <Swap swapKey={straight.straight_id} className="ss-side__body">
                   <div className="ss-figs">
                     <Stat
                       label={`${pCode} median est.`}
-                      value={median ? int(median.m) : "–"}
+                      value={median ? <RollingNumber value={median.m} format={int} /> : "–"}
                       unit={median ? "m" : undefined}
                       note={median && median.lo !== null && median.hi !== null ? `${int(median.lo)}–${int(median.hi)} m, 95 % interval` : median ? undefined : "no cut-off here"}
                     />
                     {lapNo !== null && pCut !== null ? (
                       <Stat
                         label={`Lap ${lapNo} est.`}
-                        value={lapCut !== null ? int(lapCut) : "–"}
+                        value={lapCut !== null ? <RollingNumber value={lapCut} format={int} /> : "–"}
                         unit={lapCut !== null ? "m" : undefined}
                         note={lapCut !== null ? "this lap's cut-off" : "no cut-off this lap"}
                         className="ss-figs__lap"
@@ -431,7 +519,7 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
                       ? `Median of clean laps, 50${NB}m bins (est.). Strip under the axis: regimes of lap ${regLapShown ?? "–"}.`
                       : `One tick per lap at its cut-off over each driver's median (est.). Strip under the axis: regimes of lap ${regLapShown ?? "–"}. The speed profile for this straight is not published yet.`}
                   </p>
-                </div>
+                </Swap>
               ) : (
                 <div className="ss-side__body">
                   <Stat label="Straight length" value={int(length)} unit="m" note={`S${straight.straight_id} of ${straights.length} on this circuit`} />
@@ -496,10 +584,17 @@ export function SessionPage({ sessionKey }: { sessionKey: number }) {
             dot to put that lap on the stage.
           </SectionHead>
           <Card className="ss-card">
-            <CardHead title={`${pCode}${cDriver ? ` vs ${cCode}` : ""} · ${sName}`} aside={<span className="ss-mono">metres into the straight</span>} />
-            <div className="card__body">
+            <CardHead
+              title={
+                <span key={straight.straight_id} className="ss-swap-in">
+                  {`${pCode}${cDriver ? ` vs ${cCode}` : ""} · ${sName}`}
+                </span>
+              }
+              aside={<span className="ss-mono">metres into the straight</span>}
+            />
+            <Swap swapKey={straight.straight_id} className="card__body">
               <CutoffChart straight={straight} lapLen={lapLen} laps={pLaps} selectedLap={lapNo} onLap={pickLap} drivers={chartDrivers} loading={pCut === null} />
-            </div>
+            </Swap>
           </Card>
         </section>
       )}

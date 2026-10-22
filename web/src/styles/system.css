@@ -249,7 +249,7 @@
   width: auto;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 2px;
+  border-radius: var(--radius-mark);
   vertical-align: -0.15em;
   background: var(--surface-3);
 }
@@ -257,7 +257,7 @@
   display: inline-block;
   width: 3px;
   height: 1.3em;
-  border-radius: 2px;
+  border-radius: var(--radius-mark);
   flex: none;
 }
 .rule {
@@ -475,7 +475,7 @@
 .shead-s__flag {
   height: 28px;
   flex: none;
-  border-radius: 4px;
+  border-radius: var(--radius-chip);
 }
 .shead-s--lg .shead-s__flag {
   height: 36px;

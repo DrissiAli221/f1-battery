@@ -13,12 +13,12 @@
   /* ---- Ground and surfaces ---- */
   /* Deep neutral black ground (the owner's call); surfaces step up from it. The map's own
      greys are sampled from the reference concept (track.css), the ground is not. */
-  --page-bg: #030303;
-  --ground-2: #0a0a0c;
-  --surface-1: #111115; /* cards */
-  --surface-2: #15151e; /* raised rows, table heads */
-  --surface-3: #1f1f27; /* chips, inputs, tooltips */
-  --surface-4: #2a2a34; /* hover on surface-3 */
+  --page-bg: #111114; /* reads as black, a shade softer than #000 (owner, 2026-10-20) */
+  --ground-2: #16161a;
+  --surface-1: #1b1b20; /* cards */
+  --surface-2: #1f1f26; /* raised rows, table heads */
+  --surface-3: #292931; /* chips, inputs, tooltips */
+  --surface-4: #34343d; /* hover on surface-3 */
   --line: rgba(255, 255, 255, 0.09);
   --line-2: rgba(255, 255, 255, 0.16);
   --line-strong: rgba(255, 255, 255, 0.3);
@@ -47,10 +47,12 @@
   --flag-red: #e10600;
 
   /* ---- Regimes (the model's four labels) ---- */
-  --regime-deploy: #19e68c;
-  --regime-plateau: #ffd400;
-  --regime-lift: #8a6cff;
-  --regime-brake: #ff4d6d;
+  /* The middle-line palette of the reference concept (sampled: teal #0bd3b7, yellow, a light
+     grey, red #f44854), assigned to the four regimes. */
+  --regime-deploy: #0bd3b7;
+  --regime-plateau: #e6c04a;
+  --regime-lift: #b4b4b8;
+  --regime-brake: #e8232e; /* a clear red, not pink, beside the cyan */
   --regime-other: #3a3a44;
 
   /* ---- The road (track map) ---- */
@@ -111,6 +113,9 @@
   --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
   /* Titillium Web: the wordmark, labels, tabs, corner numbers, driver codes, positions. */
   --font-display: "Titillium Web", "Geist", system-ui, sans-serif;
+  /* Event-branding face (session poster): Archivo, expanded. */
+  --font-poster: "Archivo", "Titillium Web", system-ui, sans-serif;
+  --poster-stretch: 125%;
 
   --t-display: clamp(2.6rem, 1rem + 4.8vw, 5.6rem);
   --t-section: clamp(1.8rem, 1rem + 2.4vw, 3.2rem);
@@ -142,23 +147,39 @@
   --card-pad: 20px;
   --spacing-01: 4px;
 
-  /* ---- Radius ---- */
-  --radius-card: 16px;
+  /* ---- Radius: one scale, five steps plus circle. Pick by role, never a raw px value. ----
+     mark    2px   flags, swatches, bars, ticks, tiny marks
+     chip    4px   driver chips, tags, badges, focus rings
+     control 8px   buttons, selects, menu options, tooltips, inputs, media
+     panel   12px  panels, cards, menus, sheets
+     pill    999px status pills only
+     data tiles (timing-tower rows, stat strips) stay square: 0 */
+  --radius-mark: 2px;
+  --radius-chip: 4px;
+  --radius-control: 8px;
   --radius-panel: 12px;
-  --radius-chip: 6px;
   --radius-pill: 999px;
   --radius-avatar: 50%;
+  --radius-card: var(--radius-panel);
   --radius: var(--radius-panel);
-  --radius-xxs: 4px;
+  /* Tailwind aliases (rounded-xxs … rounded-xl) map onto the same five steps. */
+  --radius-xxs: var(--radius-chip);
   --radius-xs: var(--radius-chip);
-  --radius-s: 8px;
+  --radius-s: var(--radius-control);
   --radius-m: var(--radius-panel);
-  --radius-l: var(--radius-card);
+  --radius-l: var(--radius-panel);
   --radius-xl: var(--radius-pill);
 
   /* ---- Shadows (two uses only) ---- */
   --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line-2);
   --shadow-pill: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  /* ---- Motion (animate skill): strong curves, UI under 300 ms ---- */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-fast: 160ms;
+  --dur-ui: 200ms;
+  --dur-enter: 240ms;
 
   /* ---- Layout and layers ---- */
   --header-h: 64px;

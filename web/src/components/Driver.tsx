@@ -81,7 +81,7 @@ export function DriverCard({
           )}
         </div>
       </div>
-      {action && <div className="absolute right-3 top-3 z-10 rounded-[28px] bg-black/50 backdrop-blur">{action}</div>}
+      {action && <div className="absolute right-3 top-3 z-10 rounded-pill bg-black/50 backdrop-blur">{action}</div>}
     </div>
   );
 }
