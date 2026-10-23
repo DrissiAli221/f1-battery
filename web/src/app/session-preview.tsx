@@ -71,7 +71,7 @@ function App(){
   const circuit=useCircuit(data.session?.circuit_key);
   const meta=circuitMeta(data.session?.circuit_key);
   const place=data.session?.circuit_short_name??'Session';
-  useEffect(()=>{document.title=`${place} / F1 Battery`},[place]);
+  useEffect(()=>{const s=data.session;document.title=s?`${meta?.meeting_name??s.circuit_short_name??place} ${s.session_name??''}`.trim().replace(/ (Race|Sprint|Qualifying)$/,m=>m.toLowerCase())+' / F1 Battery':'Session / F1 Battery'},[data.session,meta,place]);
   const [driver,setDriver]=useState(Number(query.get('driver'))||1);
   const [compare,setCompare]=useState<number|null>(query.has('compare')?Number(query.get('compare'))||null:3);
   const [sid,setSid]=useState(Number(query.get('straight'))||2);

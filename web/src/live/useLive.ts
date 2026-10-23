@@ -22,7 +22,7 @@ export interface Live {
 
 /**
  * Subscribes to /api/live/<key> (docs/phase7-replay.md). EventSource cannot read the status
- * code, so a probe request tells "replay disabled" (404 with a JSON body) from a transient
+ * code, so a probe request (sent with Accept: text/event-stream, since the endpoint answers 406 to any other type) tells "replay disabled" (404 with a JSON body) from a transient
  * connection failure. Bursts are batched into one render per 100 ms.
  *
  * The SSE record carries no speed setting, so the speed is measured: how far the newest sample
@@ -88,7 +88,7 @@ export function useLive(sessionKey: number | null): Live {
       es.onerror = () => {
         es?.close();
         if (closed) return;
-        fetch(target, { headers: { Accept: "application/json" } })
+        fetch(target, { headers: { Accept: "text/event-stream" } })
           .then(async (res) => {
             res.body?.cancel().catch(() => undefined);
             if (res.status === 404) setStatus("disabled");
@@ -105,7 +105,7 @@ export function useLive(sessionKey: number | null): Live {
     };
     // Probe first: a server with replay disabled answers 404, and an EventSource would only log
     // a failed stream and retry. Anything else opens the stream.
-    fetch(target, { headers: { Accept: "application/json" } })
+    fetch(target, { headers: { Accept: "text/event-stream" } })
       .then((res) => {
         res.body?.cancel().catch(() => undefined);
         if (closed) return;

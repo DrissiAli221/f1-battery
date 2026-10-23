@@ -246,3 +246,13 @@ body .session-preview .replay-track .tmap__tag-chip,body .session-preview .repla
  body .session-preview .full-model .finding-table-scroll table{min-width:0}
  body .session-preview .full-model .finding-table-scroll th:first-child{white-space:normal;max-width:280px;width:43%;line-height:1.6}
 }
+
+/* Hover audit: 160ms colour/background transitions and visible focus on rows, tabs and links. No transforms. */
+body .session-preview :is(.tower-row,.replay-field-rows button,.spot-check summary,.finding-disclosure summary,.method-entry summary,.method-explainer summary,.race-filters button,.record-filters button,.footer-route-links a,.page-sections a){transition:background-color 160ms var(--ease),color 160ms var(--ease)}
+body .session-preview :is(.tower-row,.replay-field-rows button,.spot-check summary,.finding-disclosure summary,.method-entry summary,.method-explainer summary,.race-filters button,.record-filters button,.footer-route-links a,.page-sections a):focus-visible{outline:2px solid #f4f4ef;outline-offset:2px}
+body .session-preview :is(.tower-row,.replay-field-rows button,.spot-check summary):focus-visible{background:rgba(255,255,255,.04)}
+@media(hover:hover) and (pointer:fine){
+ body .session-preview :is(.spot-check summary,.finding-disclosure summary,.method-entry summary,.method-explainer summary):hover{background:rgba(255,255,255,.04)}
+ body .session-preview :is(.race-filters button,.record-filters button,.footer-route-links a,.page-sections a):hover{color:#f4f4ef}
+}
+@media(prefers-reduced-motion:reduce){body .session-preview :is(.tower-row,.replay-field-rows button,.spot-check summary,.finding-disclosure summary,.method-entry summary,.method-explainer summary,.race-filters button,.record-filters button,.footer-route-links a,.page-sections a){transition:none}}
