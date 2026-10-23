@@ -1,0 +1,248 @@
+/* Scope specificity intentionally exceeds per-page defaults: Vite extracts shared CSS ahead of page CSS. */
+/* Refinement pass: keep the approved material/typography, make hierarchy and navigation consistent.
+   Data charts stay still; the existing pixel-button owns its own hover layers and transforms. */
+body .session-preview{--type-label:12px;--type-body:13px;--type-heading:26px;--text-dim:#b1b1a6}
+body .session-preview .project-header{height:64px;min-height:64px;background:#070707f5;isolation:isolate}
+body .session-preview .project-wordmark{display:flex;align-items:center;min-height:44px}
+body .session-preview .nav-island{gap:30px}
+body .session-preview .nav-island a{font-size:12px;letter-spacing:0;color:#b4b4ab}
+body .session-preview .nav-island a::after{bottom:calc(50% - 11px)}
+body .session-preview .nav-island a[aria-current]{color:#f4f4ef}
+body .session-preview .button{min-height:44px;font-size:12px;letter-spacing:0}
+body .session-preview .button-secondary{background-color:#1b1b19;border-color:#ffffff1c;box-shadow:inset 0 1px #ffffff08,0 3px 12px #0003}
+body .session-preview .button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+body .session-preview [tabindex='-1']:focus{outline:none}
+body .session-preview :is(button,a,input,select,summary,[role=button]):focus-visible{outline:2px solid #f4f4ef;outline-offset:4px}
+body .session-preview :is(input,select){color-scheme:dark}
+body .session-preview section[id]{scroll-margin-top:24px}
+body .session-preview #track{scroll-margin-top:80px}
+body .session-preview.home-preview #races{scroll-margin-top:0}
+/* These links are a reading aid, not a second application header. */
+body .session-preview .page-sections{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-block:12px;margin-block:0 24px;position:relative}
+body .session-preview .page-sections::after{content:'';position:absolute;left:var(--gutter);right:var(--gutter);bottom:0;height:1px;background:linear-gradient(90deg,#ffffff25,#ffffff0c)}
+body .session-preview .page-sections>div{display:flex;flex-wrap:wrap;gap:8px 28px}
+body .session-preview .page-sections a{position:relative;display:flex;align-items:center;gap:14px;min-height:44px;font:400 12px/1.45 KHF1,monospace;text-transform:uppercase;color:#b5b5aa;white-space:nowrap}
+body .session-preview .page-sections a[aria-current]{color:#f4f4ef}
+body .session-preview .page-sections a[aria-current]::after{content:'';position:absolute;bottom:4px;left:0;right:0;height:1px;background:#f4f4ef}
+body .session-preview .page-sections>a{color:#eee}
+body .session-preview .session-sections{margin-bottom:4px;padding-top:0}
+body .session-preview .session-controls{border-top:0;padding-top:20px}
+body .session-preview .race-hero{min-height:230px;padding-top:36px;padding-bottom:28px}
+body .session-preview .select-trigger:disabled{opacity:.55;cursor:default}
+body .session-preview .session-sections+section.track-section{padding-top:20px}
+/* Reading pages use the same baseline and whitespace, with prose allowed to breathe. */
+body .session-preview .finding-hero,body .session-preview .method-hero{min-height:370px;padding-top:64px;padding-bottom:40px;gap:64px;align-items:center}
+body .session-preview .finding-hero h1,body .session-preview .method-hero h1{font-size:clamp(70px,8vw,118px);line-height:.93}
+body .session-preview .finding-answer h2,body .session-preview .method-hero-copy h2{font-size:23px;line-height:1.3}
+body .session-preview .finding-answer>p,body .session-preview .method-hero-copy>p{font-size:15px;line-height:1.75;color:#c5c5bb}
+body .session-preview .finding-answer .finding-caveat,body .session-preview .method-hero-copy .method-small{font:400 13px/1.7 Geist,sans-serif;color:#afafa4}
+body .session-preview .finding-section-intro h2,body .session-preview .permutation-copy h2,body .session-preview .method-section-heading h2,body .session-preview .method-boundaries h2{font-size:28px;line-height:1.22;letter-spacing:-.015em}
+body .session-preview .finding-section-intro,body .session-preview .method-section-heading{gap:64px}
+body .session-preview .finding-section-intro>p,body .session-preview .method-section-heading p{line-height:1.75;color:#c5c5bb}
+body .session-preview .finding-evidence,body .session-preview .finding-checks,body .session-preview .finding-limits,body .session-preview .method-record{padding-block:60px}
+body .session-preview .finding-evidence{padding-top:30px}
+body .session-preview .finding-sample{padding-top:4px;padding-bottom:38px;gap:36px;grid-template-columns:1fr 1.4fr 1fr}
+body .session-preview .finding-sample>div{align-items:start;flex-direction:column;gap:12px;padding-top:20px}
+body .session-preview .finding-sample span{font-size:12px;max-width:none}
+body .session-preview .finding-sample strong{font-size:clamp(34px,3.8vw,54px);font-variant-numeric:tabular-nums}
+body .session-preview .run-name h3,body .session-preview .run-column-head,body .session-preview .run-figure figcaption,body .session-preview .finding-disclosure summary,body .session-preview .check-status{font-size:12px}
+body .session-preview .run-name p{font-family:Geist,sans-serif;font-size:12px;line-height:1.5;color:#b5b5aa;max-width:210px}
+body .session-preview .run-value strong{font-size:24px;font-variant-numeric:tabular-nums}
+body .session-preview .run-value span{font-size:12px;color:#b5b5aa}
+body .session-preview .run-row{min-height:100px}
+body .session-preview .run-null{background:#c5c5b680}
+body .session-preview .run-threshold{opacity:.85}
+body .session-preview .finding-table-scroll{overscroll-behavior-inline:contain}
+body .session-preview .finding-table-scroll thead th{position:sticky;top:0;background:#111110}
+body .session-preview .spot-check summary{min-height:84px}body .session-preview .check-moment{line-height:1.5}
+body .session-preview .finding-disclosure[open],body .session-preview .spot-check[open],body .session-preview .method-entry[open]{background:linear-gradient(110deg,#ffffff04,transparent 80%)}
+body .session-preview .finding-disclosure[open] summary,body .session-preview .spot-check[open] summary,body .session-preview .method-entry[open] .entry-title{color:#f4f4ef}
+body .session-preview .method-process{padding-top:12px;padding-bottom:56px}
+body .session-preview .method-process h2{font-size:16px;min-height:2.8em}
+body .session-preview .method-process p{font-size:14px;color:#c0c0b6}
+body .session-preview .method-process .process-number{margin-bottom:18px}
+body .session-preview .method-entry summary{padding-block:24px;gap:24px;grid-template-columns:30px minmax(0,1fr) 150px 20px}
+body .session-preview .entry-title{font-size:18px;line-height:1.5}
+body .session-preview .entry-meta,body .session-preview .entry-status,body .session-preview .record-count,body .session-preview .method-download{font-size:12px}
+body .session-preview .entry-short{font-size:14px;line-height:1.7;max-width:70ch}
+body .session-preview .entry-detail{padding-bottom:30px}
+/* Materials carry identity; secondary copy remains comfortably readable on them. */
+body .session-preview .home-feature-card{padding:32px 36px;gap:40px}
+body .session-preview .race-choice{padding:28px;gap:30px;background-color:#3c3c39}
+body .session-preview .race-choice .card-meta,body .session-preview .home-feature-card .card-meta{font-size:12px;color:#d6d6cb}
+body .session-preview .race-choice h3{font-size:clamp(29px,6.4cqw,56px);line-height:1.02;min-height:2.04em}
+body .session-preview .race-venue-name{font-size:12px;color:#d0d0c5;line-height:1.6}
+body .session-preview .race-session-links>a{min-height:50px;font-size:13px}
+body .session-preview .race-session-links>a>.race-link-action{display:flex;align-items:center;gap:18px;font:400 12px/1.4 KHF1,monospace;color:#deded3}
+body .session-preview .race-link-action>span{font:400 22px/1 Geist,sans-serif}
+body .session-preview .race-count{font-size:12px;line-height:1.7;color:#b9b9ae}
+body .session-preview .home-section-heading h2{font-size:28px}
+body .session-preview .home-research{padding-block:64px}
+body .session-preview .home-research h2{line-height:1.05}
+body .session-preview .home-research .research-copy>p:first-child{font-size:20px}
+/* Consistent recovery states keep a failed request from masquerading as an empty dashboard. */
+body .session-preview .load-state,body .session-preview .replay-load{min-height:260px;padding-block:48px}
+body .session-preview .load-state h2,body .session-preview .replay-load h2{font:400 26px/1.25 KHF1,monospace;text-transform:uppercase}
+body .session-preview .load-state>p,body .session-preview .replay-load>p{font:400 15px/1.7 Geist,sans-serif;color:#bcbcb2;margin-block:18px 24px;max-width:58ch}
+body .session-preview .recovery-actions{display:flex;align-items:center;flex-wrap:wrap;gap:16px 28px}
+body .session-preview .recovery-actions a{font:400 12px/1.5 KHF1,monospace;text-transform:uppercase;min-height:44px;display:flex;align-items:center}
+body .session-preview .availability-notice{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-block:18px;background:linear-gradient(110deg,#d9bd6412,transparent);color:#d9c77d;margin-block:12px 20px;font:400 13px/1.65 Geist,sans-serif}
+body .session-preview .availability-notice a,body .session-preview .availability-notice button{font:400 12px/1.5 KHF1,monospace;flex-shrink:0;min-height:44px;display:flex;align-items:center;text-transform:uppercase}
+/* Whole-field replay shows all dots. Only selected/inspected identities need permanent labels. */
+body .session-preview .replay-track .tmap__tag.is-compact{--dot:10px;z-index:3}
+body .session-preview .replay-track .tmap__tag.is-compact .tmap__tag-chip{opacity:0;transition:opacity 120ms var(--ease-out);pointer-events:none}
+body .session-preview .replay-track .tmap__tag.is-compact .tmap__tag-lead{opacity:0}
+body .session-preview .replay-track .tmap__tag.is-interactive{pointer-events:auto;cursor:pointer}
+body .session-preview .replay-track .tmap__tag.is-interactive::after{content:'';position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%}
+body .session-preview .replay-track .tmap__tag.is-interactive:focus-visible{outline:none;z-index:5}
+body .session-preview .replay-track .tmap__tag.is-interactive:focus-visible .tmap__tag-dot{box-shadow:0 0 0 3px #111,0 0 0 5px #f4f4ef}
+body .session-preview .replay-track .tmap__tag.is-compact:focus-visible .tmap__tag-chip{opacity:1}
+body .session-preview .replay-track .tmap__tag.is-on{z-index:4}
+body .session-preview .replay-field-rows{max-height:380px;scrollbar-color:#68685d #1a1a18;overscroll-behavior:contain}
+body .session-preview .replay-field-rows button{min-height:76px}
+body .session-preview .replay-field-heading>span,body .session-preview .field-display>span,body .session-preview .replay-state,body .session-preview .replay-small{font-size:12px}
+body .session-preview .field-display button{min-height:44px}
+body .session-preview .replay-hero{padding-block:54px 34px}
+body .session-preview .replay-hero>div>p{font-size:23px;line-height:1.35}
+body .session-preview .field-map-guide{font:400 12px/1.65 Geist,sans-serif;color:#b7b7ac;padding:10px 8px 16px}
+body .session-preview .feed-readout>p{max-width:70ch}
+body .session-preview .replay-context{gap:64px;padding-block:50px}
+body .session-preview .replay-lap select{min-height:56px}
+/* Routes make the footer useful without another oversized headline or decorative callout. */
+body .session-preview .footer-inner{padding-top:44px;padding-bottom:32px}
+body .session-preview .footer-route-links{display:flex;flex-wrap:wrap;gap:8px 28px;margin:20px 0 30px}
+body .session-preview .footer-route-links a{display:flex;align-items:center;min-height:44px;font:400 13px/1.4 KHF1,monospace;text-transform:uppercase;color:#d0d0c5}
+body .session-preview .footer-bottom p,body .session-preview .footer-bottom>a{font-size:12px;line-height:1.7}
+@media(hover:hover) and (pointer:fine){
+ body .session-preview .page-sections a:hover,body .session-preview .footer-route-links a:hover{color:#fff}
+ body .session-preview .button-secondary:hover{background-color:#262623;border-color:#ffffff38}
+ body .session-preview .replay-track .tmap__tag.is-compact:hover{z-index:5}
+ body .session-preview .replay-track .tmap__tag.is-compact:hover .tmap__tag-chip{opacity:1}
+ body .session-preview .race-session-links>a:hover{background:#ffffff0b}
+}
+@media(max-width:1000px){
+ body .session-preview .finding-hero,body .session-preview .method-hero,body .session-preview .finding-section-intro,body .session-preview .method-section-heading{gap:36px}
+ body .session-preview .run-axis,body .session-preview .run-row{grid-template-columns:185px minmax(0,1fr) 110px;gap:20px}
+ body .session-preview .method-process ol{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+ body .session-preview .method-process h2{min-height:0}
+}
+@media(max-width:720px){
+ body .session-preview .project-header{height:60px;min-height:60px}
+ body .session-preview .menu-toggle{font-size:12px;background:transparent;border-color:#ffffff25;padding-inline:12px;gap:14px}
+ body .session-preview .nav-island{gap:0;background:#111110;box-shadow:0 16px 32px #000a}
+ body .session-preview .nav-island a{font:900 20px/1.2 F1Black,sans-serif;min-height:56px;padding-block:14px}
+ body .session-preview .nav-island a::after{bottom:8px}
+ body .session-preview .page-sections{align-items:start;flex-wrap:wrap;gap:0;padding-block:8px;margin-bottom:20px}
+ body .session-preview .page-sections>div{gap:0 22px;flex-wrap:wrap}
+ body .session-preview .page-sections a{font-size:11px;min-height:42px}
+ body .session-preview .page-sections>a{width:100%;justify-content:space-between}
+ body .session-preview .session-sections>div{width:100%;justify-content:space-between;gap:12px}
+ body .session-preview section[id]{scroll-margin-top:24px}
+ body .session-preview #track{scroll-margin-top:76px}
+ body .session-preview .finding-hero,body .session-preview .method-hero{min-height:0;padding-top:40px;padding-bottom:28px;gap:28px;grid-template-columns:1fr}
+ body .session-preview .finding-hero h1,body .session-preview .method-hero h1{font-size:clamp(62px,18vw,100px);line-height:.94}
+ body .session-preview .finding-answer h2,body .session-preview .method-hero-copy h2{font-size:21px}
+ body .session-preview .finding-section-intro h2,body .session-preview .permutation-copy h2,body .session-preview .method-section-heading h2,body .session-preview .method-boundaries h2{font-size:24px}
+ body .session-preview .finding-sample{gap:24px 18px;grid-template-columns:1fr 1fr;padding-bottom:24px}
+ body .session-preview .finding-sample>div{gap:12px;flex-direction:column;align-items:start}
+ body .session-preview .finding-sample>div:last-child{flex-direction:row;align-items:center}
+ body .session-preview .finding-sample strong{font-size:34px}
+ body .session-preview .finding-sample span{font-size:11px;line-height:1.6}
+ body .session-preview .finding-evidence,body .session-preview .finding-checks,body .session-preview .finding-limits,body .session-preview .method-record{padding-block:38px}
+ body .session-preview .finding-section-intro,body .session-preview .method-section-heading{gap:18px}
+ body .session-preview .run-row{grid-template-columns:minmax(0,1fr) 88px;gap:0 12px;min-height:110px}
+ body .session-preview .run-axis{display:block;margin-inline:6px}
+ body .session-preview .run-name p{font-size:12px;max-width:none}
+ body .session-preview .run-name h3,body .session-preview .run-value span{font-size:11px}
+ body .session-preview .run-value strong{font-size:22px}
+ body .session-preview .method-process{padding-top:8px;padding-bottom:38px}
+ body .session-preview .method-process ol{grid-template-columns:1fr;gap:24px}
+ body .session-preview .method-process li{padding-top:16px;padding-right:0;display:grid;grid-template-columns:28px 1fr;gap:0 16px}
+ body .session-preview .method-process .process-number{grid-column:1;grid-row:1/3;font-size:14px;margin:0}
+ body .session-preview .method-process h2,body .session-preview .method-process p{grid-column:2}
+ body .session-preview .method-process h2{font-size:15px;line-height:1.5;margin-bottom:8px}
+ body .session-preview .method-process .process-arrow{display:none}
+ body .session-preview .method-entry summary{grid-template-columns:22px minmax(0,1fr) 16px;gap:10px 12px;padding-block:22px}
+ body .session-preview .entry-title{font-size:15px;line-height:1.5}
+ body .session-preview .entry-status{font-size:11px;grid-column:2;grid-row:2}
+ body .session-preview .entry-toggle{grid-column:3;grid-row:1/3}
+ body .session-preview .entry-meta{font-size:11px}
+ body .session-preview .entry-short{font-size:14px}
+ body .session-preview .home-feature-card{padding:22px;gap:30px}
+ body .session-preview .race-choice{padding:22px;gap:26px}
+ body .session-preview .home-feature-card .card-meta,body .session-preview .race-choice .card-meta{font-size:11px}
+ body .session-preview .race-choice h3{font-size:clamp(28px,8.3cqw,46px)}
+ body .session-preview .race-count{font-size:11px}
+ body .session-preview .home-section-heading h2{font-size:24px}
+ body .session-preview .race-session-links>a{font-size:12px}
+ body .session-preview .race-session-links>a>.race-link-action{font-size:11px;gap:12px}
+ body .session-preview .home-research{padding-block:40px}
+ body .session-preview .home-research .research-copy>p:first-child{font-size:18px}
+ body .session-preview .replay-hero{padding-block:38px 26px}
+ body .session-preview .replay-hero>div>p{font-size:20px}
+ body .session-preview .replay-field-rows{max-height:360px}
+ body .session-preview .replay-field-rows button{min-height:76px}
+ body .session-preview .replay-context{padding-block:36px;gap:24px}
+ body .session-preview .field-display>span,body .session-preview .replay-state{font-size:11px}
+ body .session-preview .availability-notice{flex-direction:column;align-items:start;gap:8px}
+ body .session-preview .footer-inner{padding-top:34px;padding-bottom:28px}
+ body .session-preview .footer-route-links{gap:0 24px;margin:16px 0 24px}
+ body .session-preview .footer-route-links a{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){body .session-preview *{scroll-behavior:auto!important}body .session-preview .replay-track .tmap__tag-chip{transition:none!important}}
+html[data-input=keyboard] body .session-preview .replay-track .tmap__tag-chip{transition:none!important}
+
+@media(max-width:720px){body .session-preview .race-hero{min-height:0;padding-block:34px 24px}body .session-preview .race-search input,body .session-preview .replay-lap select,body .session-preview .lap-selector select{font-size:16px}body .session-preview .session-controls{padding-top:12px}body .session-preview .session-sections{margin-bottom:4px}}
+/* Intrinsic display-font width must never expand a single-column phone grid. */
+@media(max-width:720px){
+ body .session-preview .method-hero,body .session-preview .finding-hero{grid-template-columns:minmax(0,1fr)}
+ body .session-preview .method-hero>*,body .session-preview .finding-hero>*{min-width:0}
+ body .session-preview .method-hero h1{font-size:clamp(42px,14.2vw,90px)}
+}
+
+/* A phone should show the coefficient and interval together, not an off-screen numeric column. */
+body .session-preview .skip{z-index:100}
+body .session-preview #estimator,body .session-preview #process{scroll-margin-top:84px}
+@media(max-width:720px){
+ body .session-preview #estimator,body .session-preview #process{scroll-margin-top:76px}
+ body .session-preview .full-model .finding-table-scroll{overflow:visible}
+ body .session-preview .full-model .finding-table-scroll table{min-width:0;display:block}
+ body .session-preview .full-model .finding-table-scroll thead{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0)}
+ body .session-preview .full-model .finding-table-scroll tbody{display:block}
+ body .session-preview .full-model .finding-table-scroll tbody tr{display:grid;grid-template-columns:1fr 1.35fr .8fr;gap:14px 8px;padding-block:20px;border-bottom:1px solid #ffffff20}
+ body .session-preview .full-model .finding-table-scroll th{grid-column:1/-1;padding:0;border:0;white-space:normal;font-size:12px;line-height:1.6}
+ body .session-preview .full-model .finding-table-scroll td{display:block;border:0;padding:0;text-align:left;font-size:12px}
+ body .session-preview .full-model .finding-table-scroll td::before{content:attr(data-label);display:block;margin-bottom:6px;font:400 10px/1.5 KHF1,monospace;text-transform:uppercase;color:#aead9f}
+}
+
+/* The skip link must sit above the sticky masthead, and phone maps avoid unreadable corner numbers. */
+@media(max-width:480px){body .session-preview .replay-track .tmap__corner,body .session-preview .replay-track .tmap__corner-n{display:none}}
+
+body .session-preview .feed-waiting>p{max-width:65ch}body .session-preview .feed-waiting .button{margin-top:14px;text-transform:uppercase}
+
+/* Hit targets have real bounds; label size stays readable independently of circuit scaling. */
+body .session-preview .replay-track .tmap__tag-chip{height:22px;font-size:12px;letter-spacing:0}
+body .session-preview .replay-track .tmap__tag-code{font-size:12px}
+body .session-preview .replay-track .tmap__tag.is-interactive::after{display:none}
+body .session-preview .replay-track .tmap__tag-hit{position:absolute;left:-16px;top:-16px;width:32px;height:32px;min-height:0;border:0;padding:0;background:transparent;box-shadow:none;z-index:2;cursor:pointer;border-radius:50%}
+body .session-preview .replay-track .tmap__tag-hit:focus-visible{outline:none}
+body .session-preview .replay-track .tmap__tag:has(.tmap__tag-hit:focus-visible){z-index:6}
+body .session-preview .replay-track .tmap__tag:has(.tmap__tag-hit:focus-visible) .tmap__tag-chip{opacity:1;transition:none}
+body .session-preview .replay-track .tmap__tag:has(.tmap__tag-hit:focus-visible) .tmap__tag-dot{box-shadow:0 0 0 3px #111,0 0 0 5px #f4f4ef}
+/* Map annotations retain a readable minimum even when the geometry scales down. */
+body .session-preview .tmap__tag-chip{min-height:22px;font-size:max(11px,calc(var(--M) * .56))}
+body .session-preview .tmap__tag-chip.has-note small{font-size:max(11px,calc(var(--M) * .5));font-weight:400}
+body .session-preview .replay-track .tmap__tag-chip,body .session-preview .replay-track .tmap__tag-code{font-size:12px}
+/* Keep the halftone at the edge: it must not sit behind explanatory copy on phones. */
+@media(max-width:720px){
+ body .session-preview .home-screen{height:220px;bottom:auto;mask-image:linear-gradient(#000 40%,transparent 100%)}
+ body .session-preview.home-preview #races{scroll-margin-top:24px}
+ body .session-preview section[id]:not(#track):not(#estimator):not(#process):not(#races){scroll-margin-top:32px}
+}
+/* Between phone and desktop, long display words must not widen the reading grid. */
+@media(min-width:721px) and (max-width:1000px){
+ body .session-preview .method-hero,body .session-preview .finding-hero{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+ body .session-preview .method-hero h1{font-size:clamp(54px,7.4vw,78px)}
+ body .session-preview .full-model .finding-table-scroll table{min-width:0}
+ body .session-preview .full-model .finding-table-scroll th:first-child{white-space:normal;max-width:280px;width:43%;line-height:1.6}
+}

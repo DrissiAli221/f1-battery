@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -12,9 +13,21 @@ function siteUrl(origin: string): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const page = (name: string) => resolve(__dirname, name);
   return {
     plugins: [react(), siteUrl(env.VITE_SITE_URL ?? "")],
-    // Same-origin dev: with VITE_API_BASE="" the client calls /api, which Vite forwards here.
-    server: { proxy: { "/api": env.VITE_API_PROXY ?? "http://localhost:8080" } },
+    define: { "import.meta.env.VITE_API_BASE": JSON.stringify(env.VITE_API_BASE ?? "") },
+    build: {
+      rollupOptions: {
+        input: [page("index.html"), page("session.html"), page("findings.html"), page("method.html"), page("replay.html")],
+      },
+    },
+    // Same-origin dev: the client calls /api, which Vite forwards. /api/live (long-lived stream) must match first.
+    server: {
+      proxy: {
+        "/api/live": { target: env.VITE_LIVE_PROXY ?? "http://127.0.0.1:8082", timeout: 0, proxyTimeout: 0 },
+        "/api": env.VITE_API_PROXY ?? "http://127.0.0.1:8081",
+      },
+    },
   };
 });
