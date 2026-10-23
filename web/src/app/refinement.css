@@ -68,7 +68,7 @@ body .session-preview .entry-short{font-size:14px;line-height:1.7;max-width:70ch
 body .session-preview .entry-detail{padding-bottom:30px}
 /* Materials carry identity; secondary copy remains comfortably readable on them. */
 body .session-preview .home-feature-card{padding:32px 36px;gap:40px}
-body .session-preview .race-choice{padding:20px;gap:30px;background-color:#161615;background-image:none;border:1px solid rgba(255,255,255,.08);box-shadow:none}
+body .session-preview .race-choice{padding:20px;gap:18px;background-color:#161615;background-image:none;border:1px solid rgba(255,255,255,.08);box-shadow:none}
 body .session-preview .race-choice .card-meta,body .session-preview .home-feature-card .card-meta{font-size:12px;color:#d6d6cb}
 body .session-preview .race-choice h3{font-size:clamp(29px,6.4cqw,56px);line-height:1.02;min-height:auto}
 body .session-preview .race-venue-name{font-size:12px;color:#d0d0c5;line-height:1.6}
@@ -169,7 +169,7 @@ body .session-preview .footer-bottom p,body .session-preview .footer-bottom>a{fo
  body .session-preview .entry-meta{font-size:11px}
  body .session-preview .entry-short{font-size:14px}
  body .session-preview .home-feature-card{padding:22px;gap:30px}
- body .session-preview .race-choice{padding:20px;gap:26px}
+ body .session-preview .race-choice{padding:20px;gap:18px}
  body .session-preview .home-feature-card .card-meta,body .session-preview .race-choice .card-meta{font-size:11px}
  body .session-preview .race-choice h3{font-size:clamp(28px,8.3cqw,46px)}
  body .session-preview .race-count{font-size:11px}
