@@ -13,3 +13,6 @@
 
 .maker-axis{display:flex;justify-content:space-between;margin:24px 130px 0 185px;font:400 11px GeistMono,monospace;color:#aaa99f}.finding-sample strong{font-feature-settings:'calt' 0;letter-spacing:-.015em}
 @media(max-width:720px){.maker-axis{margin:24px 0 0}}
+.finding-screen{right:0;width:360px;opacity:.62;mask-image:linear-gradient(to right,transparent 0,#000 40%),linear-gradient(to bottom,#000 45%,transparent 100%);-webkit-mask-image:linear-gradient(to right,transparent 0,#000 40%),linear-gradient(to bottom,#000 45%,transparent 100%);mask-composite:intersect;-webkit-mask-composite:source-in}
+@media(min-width:951px){.finding-answer{padding-right:150px}}
+@media(max-width:720px){.finding-screen{width:100px;bottom:50%;opacity:.5;right:0}}

@@ -256,3 +256,7 @@ body .session-preview :is(.tower-row,.replay-field-rows button,.spot-check summa
  body .session-preview :is(.race-filters button,.record-filters button,.footer-route-links a,.page-sections a):hover{color:#f4f4ef}
 }
 @media(prefers-reduced-motion:reduce){body .session-preview :is(.tower-row,.replay-field-rows button,.spot-check summary,.finding-disclosure summary,.method-entry summary,.method-explainer summary,.race-filters button,.record-filters button,.footer-route-links a,.page-sections a){transition:none}}
+body .session-preview .race-choice{display:flex;flex-direction:column}
+body .session-preview .race-choice h3{flex:0 0 auto}
+body .session-preview .race-choice .race-choice-bottom{margin-top:auto}
+body .session-preview .race-facts{font:400 12px/1.4 KHF1,monospace;text-transform:uppercase;color:#aaa99f;margin:0}

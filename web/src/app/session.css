@@ -197,3 +197,5 @@ html[data-input=keyboard] .session-preview .tmap *{transition:none!important;ani
 
 /* Short states (missing session, API failure) must still cover the viewport so the footer behind the main is never clipped. */
 .session-main{min-height:calc(100vh - 64px)}
+.map-surface{display:flex;flex-direction:column}
+.map-surface .map-footnote{margin-top:auto;padding-top:16px}
