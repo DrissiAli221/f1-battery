@@ -197,7 +197,7 @@ function ReplaySession({
             {
               id: 'review-cursor',
               code: 'REVIEW',
-              colour: colours[at?.label ?? 'other'],
+              colour: selected?.team_colour ?? colours[at?.label ?? 'other'],
               d: cursor,
               on: true,
               note: `${nf.format(cursor)} m`,
@@ -474,8 +474,17 @@ function ReplaySession({
                   </p>
                   <div className="feed-readout">
                     <span>
-                      {selected?.name_acronym ?? '—'} /{' '}
-                      {selectedRegime ? words[selectedRegime] : 'No state received'}
+                      <b
+                        className="feed-code"
+                        style={
+                          selected?.team_colour
+                            ? ({ '--team': selected.team_colour } as CSSProperties)
+                            : undefined
+                        }
+                      >
+                        {selected?.name_acronym ?? '—'}
+                      </b>{' '}
+                      / {selectedRegime ? words[selectedRegime] : 'No state received'}
                     </span>
                     <strong>{state ? `${nf.format(state.lap_distance_est)} m est.` : '—'}</strong>
                     <p className="replay-small">

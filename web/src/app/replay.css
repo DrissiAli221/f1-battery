@@ -319,7 +319,7 @@
     background: var(--team);
   }
   .replay-field-rows button.is-selected {
-    background: linear-gradient(90deg, color-mix(in srgb, var(--team) 22%, #171714), #171714);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--team) 30%, #171714), #171714);
   }
   .replay-field-rows img {
     object-fit: contain;

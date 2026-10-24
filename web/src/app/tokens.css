@@ -25,9 +25,9 @@
     --surface: #111111;
     --surface-1: #0b0b0a;
     --surface-2: #111110;
-    --surface-3: #161615;
-    --band: rgb(255 255 248/0.03);
-    --band-line: #ffffff14;
+    --surface-3: #191615;
+    --band: linear-gradient(rgb(225 6 0 / 0.025), rgb(225 6 0 / 0.025)), rgb(255 255 248 / 0.025);
+    --band-line: rgb(255 226 216 / 0.085);
     --ink: #f4f4ef;
     --muted: #aaa99f;
     --line: #2c2c2b;

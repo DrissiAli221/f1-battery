@@ -173,11 +173,16 @@ function App() {
               <div className="method-screen" aria-hidden="true">
                 <canvas ref={canvas} data-screen="hero" />
               </div>
-              <h1 id="method-title">
-                The
-                <br />
-                method.
-              </h1>
+              <div className="method-lead">
+                <p className="finding-eyebrow" data-reveal>
+                  How the estimate is built · {steps.length} steps
+                </p>
+                <h1 id="method-title">
+                  The
+                  <br />
+                  method.
+                </h1>
+              </div>
               <div className="method-hero-copy">
                 <h2>
                   Speed is public.

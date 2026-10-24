@@ -233,11 +233,21 @@ function App() {
               <div className="finding-screen" aria-hidden="true">
                 <canvas ref={canvas} data-screen="hero" />
               </div>
-              <h1 id="finding-title">
-                No
-                <br />
-                effect.
-              </h1>
+              <div className="finding-lead">
+                <p className="finding-eyebrow" data-reveal>
+                  Pre-registered test · {findings.sample.sessions_in_model} sessions
+                </p>
+                <h1 id="finding-title">
+                  No
+                  <br />
+                  effect.
+                </h1>
+                <p className="finding-hero-stats" data-reveal>
+                  <span>{int(findings.sample.events_tested)} passes tested</span>
+                  <span>odds ratio {fmt(findings.runs.point.or)}</span>
+                  <span>{findings.sample.sessions_in_model} sessions</span>
+                </p>
+              </div>
               <div className="finding-answer">
                 <h2>An earlier cut-off didn’t predict the pass.</h2>
                 <p>

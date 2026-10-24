@@ -741,7 +741,14 @@ function App() {
                       onChange={(v) => selectStraight(Number(v))}
                     />
                   </div>
-                  <div className="map-stage">
+                  <div
+                    className="map-stage"
+                    style={
+                      picked?.team_colour
+                        ? ({ '--stage-team': picked.team_colour } as CSSProperties)
+                        : undefined
+                    }
+                  >
                     <div className="map-surface" data-no-estimates={noEstimates ? 'true' : undefined}>
                       <div className="map-heading">
                         <h2>{straight?.label}</h2>
