@@ -199,3 +199,27 @@ html[data-input=keyboard] .session-preview .tmap *{transition:none!important;ani
 .session-main{min-height:calc(100vh - 64px)}
 .map-surface{display:flex;flex-direction:column}
 .map-surface .map-footnote{margin-top:auto;padding-top:16px}
+
+/* Loading and stability: settings changes never resize containers. */
+.map-status{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:24px;line-height:24px}
+.distribution-caption>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em;min-width:0}
+.estimate-label{min-height:1.4em}
+.poster-interval strong{min-width:8ch;text-align:right}
+.estimate-number,.compare-estimate .estimate-number{font-variant-numeric:tabular-nums;min-width:3ch}
+.chart-readout-lap{min-width:9ch}
+.chart-readout strong{display:inline-block;min-width:2ch;text-align:right}
+.rule-slot{margin-top:8px}.rule-slot.is-idle{visibility:hidden}
+.skeleton-status{font:400 var(--type-label)/1.5 KHF1,monospace;color:#aaa99f;text-transform:uppercase;padding-top:20px}
+.session-skeleton .session-controls{padding-top:12px}
+.select-skel{min-height:58px}
+.map-skel{min-height:480px}
+.session-skeleton .estimate-actions .button{pointer-events:none}
+.lap-select-skel{height:44px;width:100%}
+.chart-skel{height:480px}
+.analysis-layout .tower-row.skel{background:#141413}
+@media(max-width:950px){.map-skel{min-height:380px}.session-skeleton .estimate-stack{grid-template-columns:1fr}}
+.session-skeleton .driver-poster{min-height:330px}
+.analysis-layout .tower-rows:has(>.skel){max-height:none;height:560px;overflow:hidden}
+.chart-skel{height:534px}
+@media(max-width:950px){.map-skel{min-height:399px}.session-skeleton .driver-poster{min-height:337px}.analysis-layout .tower-rows:has(>.skel){height:448px}.chart-skel{height:566px}}
+.distribution-caption>span:last-child{white-space:nowrap;flex-shrink:0}
