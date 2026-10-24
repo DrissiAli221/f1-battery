@@ -33,6 +33,8 @@
     --line: #2c2c2b;
     --line-strong: #50504b;
     --red: #e10600;
+    /* red for small text on the ground: 6.2:1 against #060606 (the action red is 4.1:1) */
+    --red-text: #ff4d44;
     --accent: #f4f4ef;
     --page-bg: #030303;
     --text: #f4f4ef;

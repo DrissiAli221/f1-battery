@@ -2409,7 +2409,7 @@
       monospace;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--red);
+    color: var(--red-text);
   }
   .finding-eyebrow::before {
     content: '';
