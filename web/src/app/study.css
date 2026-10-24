@@ -186,3 +186,15 @@ details[open]::details-content{block-size:auto}
 [data-reveal-state=wait]{opacity:0}
 [data-reveal-state=in]{opacity:1;transition:opacity 240ms var(--ease) calc(var(--reveal-i,0)*50ms)!important}
 }
+
+/* Depth steps, grain and vignette. Surfaces: ground (hero) -> band -> ground -> band.
+   --line stays the structural hairline used across the site; --band-line is the faint
+   edge for band tops and bottoms. Bands are translucent so grain and vignette read through. */
+:root{--ground:#060606;--surface-1:#0b0b0a;--surface-2:#111110;--surface-3:#161615;--band:rgb(255 255 248/.03);--band-line:#ffffff14;--grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 2.2 0 0 0 -.9'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
+.session-main{overflow-x:clip}
+.session-main::before,.session-main::after{content:"";position:fixed;inset:0;pointer-events:none}
+.session-main::before{z-index:-2;background:radial-gradient(ellipse 120% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.45) 100%)}
+.session-main::after{z-index:-1;background:var(--grain) 0 0/220px 220px;opacity:.06}
+.home-races,.track-section,.session-main .method-section,.finding-evidence,.finding-checks,.method-process,.method-record,.replay-stage{position:relative}
+.home-races::before,.track-section::before,.session-main .method-section::before,.finding-evidence::before,.finding-checks::before,.method-process::before,.method-record::before,.replay-stage::before{content:"";position:absolute;z-index:-3;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;background:var(--band);border-block:1px solid var(--band-line);pointer-events:none}
+.home-research,.finding-permutation,.finding-limits,.method-boundaries{box-shadow:inset 0 1px var(--band-line),inset 0 -1px var(--band-line)}
