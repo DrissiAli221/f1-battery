@@ -42,7 +42,7 @@
 
 /* The mark is a first typographic identity study. Its separator distinguishes
    the subject from the project name without adding a decorative pictogram. */
-.project-header{height:88px;min-height:88px;position:sticky;top:0;z-index:20;background:var(--ground);border-bottom:1px solid #242423;flex-wrap:nowrap;padding-block:0;gap:24px}
+.project-header{height:88px;min-height:88px;border-bottom:0;flex-wrap:nowrap;padding-block:0;gap:24px}
 .project-wordmark{display:flex;flex-direction:column;gap:7px;flex-shrink:0;align-items:flex-start}
 .wordmark-top{display:flex;align-items:center;gap:12px;font:900 18px/1 F1Black,sans-serif;letter-spacing:0;font-feature-settings:'calt' 1;white-space:nowrap}
 .wordmark-divider{width:1px;height:16px;background:#5b5b57;display:block}
@@ -179,7 +179,7 @@ details::details-content{block-size:0;overflow:clip;overflow-clip-margin:6px;tra
 details[open]::details-content{block-size:auto}
 }
 @view-transition{navigation:auto}
-.project-header{view-transition-name:site-header}
+.site-header{view-transition-name:site-header}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:180ms}
 }
 @media(prefers-reduced-motion:reduce){
@@ -191,18 +191,14 @@ details[open]::details-content{block-size:auto}
    --line stays the structural hairline used across the site; --band-line is the faint
    edge for band tops and bottoms. Bands are translucent so grain and vignette read through. */
 :root{--ground:#060606;--surface-1:#0b0b0a;--surface-2:#111110;--surface-3:#161615;--band:rgb(255 255 248/.03);--band-line:#ffffff14;--grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 2.2 0 0 0 -.9'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
-.session-main{overflow-x:clip}
 .session-main::before,.session-main::after{content:"";position:fixed;inset:0;pointer-events:none}
 .session-main::before{z-index:-2;background:radial-gradient(ellipse 120% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.45) 100%)}
 .session-main::after{z-index:-1;background:var(--grain) 0 0/220px 220px;opacity:.06}
-.home-races,.track-section,.session-main .method-section,.finding-evidence,.finding-checks,.method-process,.method-record,.replay-stage{position:relative}
-.home-races::before,.track-section::before,.session-main .method-section::before,.finding-evidence::before,.finding-checks::before,.method-process::before,.method-record::before,.replay-stage::before{content:"";position:absolute;z-index:-3;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;background:var(--band);border-block:1px solid var(--band-line);pointer-events:none}
-.home-research,.finding-permutation,.finding-limits,.method-boundaries{box-shadow:inset 0 1px var(--band-line),inset 0 -1px var(--band-line)}
-/* Bands that follow a section rail start at the rail's own hairline, no second line. */
-.page-sections+.track-section::before{top:-4px;border-top:0}
-.page-sections+.method-process::before{top:-24px;border-top:0}
-/* Solid sections bleed to the viewport edge like the other bands; their hairlines ride the bleed. */
-.home-research,.finding-permutation,.finding-limits,.method-boundaries{position:relative;box-shadow:none}
-.home-research::before,.finding-permutation::before,.finding-limits::before,.method-boundaries::before{content:"";position:absolute;z-index:-3;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;background:inherit;border-block:1px solid var(--band-line);pointer-events:none}
-/* Sticky header and section rail are capped at the wrap width; their surfaces bleed to the viewport edge over the bands. */
-.project-header::before,.page-sections::before{content:"";position:absolute;z-index:-1;top:0;bottom:-1px;left:calc(50% - 50vw);width:100vw;background:inherit;border-bottom:inherit;pointer-events:none}
+/* Every section is a full-width outer element that owns its surface and hairlines; one inner .wrap holds the content. */
+.band{background:var(--band);border-block:1px solid var(--band-line)}
+.band-solid{background:var(--surface-3)}
+/* A band that follows a section rail starts at the rail's own hairline, no second line. */
+.section-rail+.band{margin-top:-24px;padding-top:24px;border-top:0}
+.section-rail:has(.session-sections)+.band{margin-top:-4px;padding-top:4px}
+/* Sticky header: full-width outer, inner .wrap holds the row. */
+.site-header{position:sticky;top:0;z-index:20;background:var(--ground);box-shadow:inset 0 -1px #242423}

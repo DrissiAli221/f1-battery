@@ -3,5 +3,5 @@ body .session-preview .page-sections a[aria-current]{color:#f4f4ef}
 body .session-preview .page-sections a:focus-visible{outline:2px solid #f4f4ef;outline-offset:2px}
 #evidence,#checks,#limitations,#provenance,#process,#estimator,#method-record{scroll-margin-top:120px}
 @media(min-width:951px){
-  body .session-preview .page-sections{position:sticky;top:64px;z-index:15;background:#030303;box-shadow:0 1px 0 rgba(255,255,255,.08),0 0 0 100vmax #030303;clip-path:inset(0 -100vmax -1px 0)}
+  body .session-preview .section-rail{position:sticky;top:64px;z-index:15;background:#030303;box-shadow:0 1px 0 rgba(255,255,255,.08)}
 }

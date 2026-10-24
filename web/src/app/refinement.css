@@ -2,7 +2,7 @@
 /* Refinement pass: keep the approved material/typography, make hierarchy and navigation consistent.
    Data charts stay still; the existing pixel-button owns its own hover layers and transforms. */
 body .session-preview{--type-label:12px;--type-body:13px;--type-heading:26px;--text-dim:#b1b1a6}
-body .session-preview .project-header{height:64px;min-height:64px;background:#070707f5;isolation:isolate}
+body .session-preview .project-header{height:64px;min-height:64px}body .session-preview .site-header{background:#070707f5;isolation:isolate}
 body .session-preview .project-wordmark{display:flex;align-items:center;min-height:44px}
 body .session-preview .nav-island{gap:30px}
 body .session-preview .nav-island a{font-size:12px;letter-spacing:0;color:#b4b4ab}
@@ -29,7 +29,7 @@ body .session-preview .session-sections{margin-bottom:4px;padding-top:0}
 body .session-preview .session-controls{border-top:0;padding-top:20px}
 body .session-preview .race-hero{min-height:230px;padding-top:36px;padding-bottom:28px}
 body .session-preview .select-trigger:disabled{opacity:.55;cursor:default}
-body .session-preview .session-sections+section.track-section{padding-top:20px}
+body .session-preview .section-rail:has(.session-sections)+.band>.track-section{padding-top:20px}
 /* Reading pages use the same baseline and whitespace, with prose allowed to breathe. */
 body .session-preview .finding-hero,body .session-preview .method-hero{min-height:370px;padding-top:64px;padding-bottom:40px;gap:64px;align-items:center}
 body .session-preview .finding-hero h1,body .session-preview .method-hero h1{font-size:clamp(70px,8vw,118px);line-height:.93}
@@ -86,7 +86,8 @@ body .session-preview .load-state h2,body .session-preview .replay-load h2{font:
 body .session-preview .load-state>p,body .session-preview .replay-load>p{font:400 15px/1.7 Geist,sans-serif;color:#bcbcb2;margin-block:18px 24px;max-width:58ch}
 body .session-preview .recovery-actions{display:flex;align-items:center;flex-wrap:wrap;gap:16px 28px}
 body .session-preview .recovery-actions a{font:400 12px/1.5 KHF1,monospace;text-transform:uppercase;min-height:44px;display:flex;align-items:center}
-body .session-preview .availability-notice{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-block:18px;background:linear-gradient(110deg,#d9bd6412,transparent);color:#d9c77d;margin-block:12px 20px;font:400 13px/1.65 Geist,sans-serif}
+body .session-preview .availability-band{background:linear-gradient(110deg,#d9bd6412,transparent);color:#d9c77d}
+body .session-preview .availability-notice{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-block:18px;margin-block:12px 20px;font:400 13px/1.65 Geist,sans-serif}
 body .session-preview .availability-notice a,body .session-preview .availability-notice button{font:400 12px/1.5 KHF1,monospace;flex-shrink:0;min-height:44px;display:flex;align-items:center;text-transform:uppercase}
 /* Whole-field replay shows all dots. Only selected/inspected identities need permanent labels. */
 body .session-preview .replay-track .tmap__tag.is-compact{--dot:10px;z-index:3}
@@ -184,7 +185,8 @@ body .session-preview .footer-bottom p,body .session-preview .footer-bottom>a{fo
  body .session-preview .replay-field-rows button{min-height:76px}
  body .session-preview .replay-context{padding-block:36px;gap:24px}
  body .session-preview .field-display>span,body .session-preview .replay-state{font-size:11px}
- body .session-preview .availability-notice{flex-direction:column;align-items:start;gap:8px}
+ body .session-preview .availability-band{background:linear-gradient(110deg,#d9bd6412,transparent);color:#d9c77d}
+body .session-preview .availability-notice{flex-direction:column;align-items:start;gap:8px}
  body .session-preview .footer-inner{padding-top:34px;padding-bottom:28px}
  body .session-preview .footer-route-links{gap:0 24px;margin:16px 0 24px}
  body .session-preview .footer-route-links a{font-size:12px}
@@ -261,7 +263,7 @@ body .session-preview .race-choice h3{flex:0 0 auto}
 body .session-preview .race-choice .race-choice-bottom{margin-top:auto}
 body .session-preview .race-facts{font:400 12px/1.4 KHF1,monospace;text-transform:uppercase;color:#aaa99f;margin:0}
 /* Anchor landing offsets: sticky header is 64px (60 phone); the findings/method section rail pins at top:64px on desktop. */
-body .session-preview :is(section[id],.lap-panel[id],.method-entry,.replay-modes){scroll-margin-top:104px!important}
+body .session-preview :is(section[id],.lap-panel[id],.method-entry,#replay-controls){scroll-margin-top:104px!important}
 @media(min-width:951px){body .session-preview:is(.findings-preview,.method-preview) :is(section[id],.method-entry){scroll-margin-top:136px!important}}
 body .session-preview.home-preview #races{scroll-margin-top:24px!important}
 body .session-preview.home-preview #research{scroll-margin-top:64px!important}
