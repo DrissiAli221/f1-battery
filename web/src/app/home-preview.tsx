@@ -42,8 +42,12 @@ function App() {
   const [menu, setMenu] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
-  const sessions = remote.data ?? [];
+  // The Escape handler reads the latest menu state through a ref, so it subscribes once.
+  const menuOpen = useRef(menu);
+  menuOpen.current = menu;
+  const sessions = useMemo(() => remote.data ?? [], [remote.data]);
   const feature = sessions.find((s) => s.session_key === 11361 && s.has_results);
+  const hasFeature = !!feature;
   const meetings = useMemo(() => {
     const grouped = new Map<number, SessionRow[]>();
     for (const s of sessions) {
@@ -57,7 +61,7 @@ function App() {
     return [...grouped.values()]
       .map((rows) => rows.sort((a, b) => (b.date_start ?? '').localeCompare(a.date_start ?? '')))
       .sort((a, b) => (b[0].date_start ?? '').localeCompare(a[0].date_start ?? ''));
-  }, [remote.data, filter, search]);
+  }, [sessions, filter, search]);
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
@@ -71,7 +75,7 @@ function App() {
     document
       .querySelectorAll<HTMLAnchorElement>('.home-preview .button-light')
       .forEach((el) => createPixelButton(el));
-  }, [!!feature]);
+  }, [hasFeature]);
   useEffect(() => {
     const pointer = (e: PointerEvent) => {
       document.documentElement.dataset.input = 'pointer';
@@ -81,7 +85,7 @@ function App() {
       document.documentElement.dataset.input = 'keyboard';
       if (e.key === 'Escape') {
         setMenu(false);
-        if (menu) menuButton.current?.focus();
+        if (menuOpen.current) menuButton.current?.focus();
       }
     };
     document.addEventListener('pointerdown', pointer);
@@ -90,7 +94,7 @@ function App() {
       document.removeEventListener('pointerdown', pointer);
       document.removeEventListener('keydown', key, true);
     };
-  }, [menu]);
+  }, []);
   return (
     <div className="session-preview home-preview">
       <a className="skip" href="#races">

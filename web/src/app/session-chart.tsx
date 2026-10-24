@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
 import { useSize } from '../lib/useSize';
 import { along, type TrackStraight } from '../lib/track';
 import type { Lap } from '../lib/types';
@@ -115,7 +115,11 @@ export function SessionChart({
     <div ref={ref} className={`session-chart ${dim ? 'is-loading' : ''}`} aria-busy={dim || undefined}>
       <div className="chart-summary">
         {series.map((s) => (
-          <div className="chart-summary-driver" key={s.d.number} style={{ '--team': s.d.colour } as any}>
+          <div
+            className="chart-summary-driver"
+            key={s.d.number}
+            style={{ '--team': s.d.colour } as CSSProperties}
+          >
             <span className={`chart-key ${s.d.hollow ? 'is-hollow' : ''}`} />
             <span className="chart-summary-code">{s.d.code}</span>
             <span className="chart-summary-value">
@@ -133,7 +137,7 @@ export function SessionChart({
               key={s.d.number}
               className={i > 0 && dimCompare ? 'is-loading' : undefined}
               aria-busy={(i > 0 && dimCompare) || undefined}
-              style={{ '--team': s.d.colour } as any}
+              style={{ '--team': s.d.colour } as CSSProperties}
             >
               <i className={`chart-key ${s.d.hollow ? 'is-hollow' : ''}`} />
               <b>{s.d.code}</b>

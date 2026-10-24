@@ -1,6 +1,6 @@
 import './reveal';
 import { useInitialAnchor } from './preview-navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { useList, useRateLimited } from '../lib/api';
@@ -110,7 +110,10 @@ function ReplaySession({
   );
   const lap = laps.some((l) => l.lap_number === pickedLap) ? pickedLap : (fastest?.lap_number ?? null);
   const regimes = useRegimes(sessionKey, driver, lap, mode === 'review' && !!data.session?.has_results);
-  const bins = regimes.data && (regimes.loading || regimes.data.lap === lap) ? regimes.data.bins : [];
+  const bins = useMemo(
+    () => (regimes.data && (regimes.loading || regimes.data.lap === lap) ? regimes.data.bins : []),
+    [regimes.data, regimes.loading, lap]
+  );
   const [dim, setDim] = useState(false);
   useEffect(() => {
     if (!regimes.loading) {
@@ -340,7 +343,7 @@ function ReplaySession({
               <div
                 className="mode-pane mode-top"
                 aria-hidden={mode !== 'feed' || undefined}
-                {...(mode !== 'feed' ? ({ inert: '' } as any) : {})}
+                {...(mode !== 'feed' ? ({ inert: '' } as Record<string, unknown>) : {})}
               >
                 <div className="field-display">
                   <div role="group" aria-label="Drivers displayed on track">
@@ -377,7 +380,7 @@ function ReplaySession({
                       feed.status === 'no-topic' ||
                       feed.status === 'error'
                         ? {}
-                        : ({ inert: '', tabIndex: -1, 'aria-hidden': true } as any))}
+                        : ({ inert: '', tabIndex: -1, 'aria-hidden': true } as Record<string, unknown>))}
                     >
                       Review a recorded lap <span aria-hidden="true">↗</span>
                     </button>
@@ -420,7 +423,7 @@ function ReplaySession({
                 <div
                   className="mode-pane"
                   aria-hidden={mode !== 'review' || undefined}
-                  {...(mode !== 'review' ? ({ inert: '' } as any) : {})}
+                  {...(mode !== 'review' ? ({ inert: '' } as Record<string, unknown>) : {})}
                 >
                   <div className="review-distance">
                     <div className="distance-heading">
@@ -472,7 +475,7 @@ function ReplaySession({
                 <div
                   className="mode-pane"
                   aria-hidden={mode !== 'feed' || undefined}
-                  {...(mode !== 'feed' ? ({ inert: '' } as any) : {})}
+                  {...(mode !== 'feed' ? ({ inert: '' } as Record<string, unknown>) : {})}
                 >
                   <p className="field-map-guide">
                     Every dot is a received driver. Select a dot or driver below to show its label.
@@ -505,7 +508,7 @@ function ReplaySession({
                       key={d.driver_number}
                       className={d.driver_number === driver ? 'is-selected' : ''}
                       aria-pressed={d.driver_number === driver}
-                      style={{ '--team': d.team_colour ?? '#aaa' } as any}
+                      style={{ '--team': d.team_colour ?? '#aaa' } as CSSProperties}
                       onClick={() => chooseDriver(d.driver_number)}
                     >
                       <i />
@@ -621,10 +624,18 @@ function App() {
   const [mode, setMode] = useState<'review' | 'feed'>(initial.get('mode') === 'feed' ? 'feed' : 'review');
   const [menu, setMenu] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
-  const races = (sessions.data ?? []).filter(
-    (s) => (s.session_name === 'Race' || s.session_name === 'Sprint') && s.has_results
+  // The Escape handler reads the latest menu state through a ref, so it subscribes once.
+  const menuOpen = useRef(menu);
+  menuOpen.current = menu;
+  const races = useMemo(
+    () =>
+      (sessions.data ?? []).filter(
+        (s) => (s.session_name === 'Race' || s.session_name === 'Sprint') && s.has_results
+      ),
+    [sessions.data]
   );
   const session = races.find((s) => s.session_key === key);
+  const hasSession = !!session;
   const place = session?.circuit_short_name ?? 'Session';
   useEffect(() => {
     document.title = session
@@ -639,7 +650,7 @@ function App() {
   }, [key, mode]);
   useEffect(() => {
     if (races.length && !races.some((s) => s.session_key === key)) setKey(races[0].session_key);
-  }, [sessions.data, key]);
+  }, [races, key]);
   useEffect(() => {
     const pointer = (e: PointerEvent) => {
       document.documentElement.dataset.input = 'pointer';
@@ -648,7 +659,7 @@ function App() {
     const keyboard = (e: KeyboardEvent) => {
       document.documentElement.dataset.input = 'keyboard';
       if (e.key === 'Escape') {
-        if (menu) menuButton.current?.focus();
+        if (menuOpen.current) menuButton.current?.focus();
         setMenu(false);
       }
     };
@@ -658,12 +669,12 @@ function App() {
       document.removeEventListener('pointerdown', pointer);
       document.removeEventListener('keydown', keyboard, true);
     };
-  }, [menu]);
+  }, []);
   useEffect(() => {
     document
       .querySelectorAll<HTMLAnchorElement>('.replay-preview .button-light')
       .forEach((el) => createPixelButton(el));
-  }, [key, !!session]);
+  }, [key, hasSession]);
   return (
     <div className="session-preview replay-preview">
       <a className="skip" href="#replay-controls">

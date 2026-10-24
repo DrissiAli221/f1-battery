@@ -1,6 +1,7 @@
 // Isolated style-study copy of the shared TrackMap; original repository source is unchanged.
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useId,
   useImperativeHandle,
@@ -386,20 +387,23 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   const maskId = `tmap-cut-${uid}`;
   const tagEls = useRef(new Map<number | string, HTMLDivElement>());
   const cutEls = useRef(new Map<number | string, SVGCircleElement>());
-  const placeTag = (id: number | string, d: number) => {
-    const el = tagEls.current.get(id);
-    if (!el || !T) return;
-    const q = T.pose(d);
-    // The transform is written directly (not through a custom property): a per-frame
-    // variable change on the parent would restyle the chip too.
-    el.style.transform = `translate3d(${q.x.toFixed(1)}px, ${q.y.toFixed(1)}px, 0)`;
-    const c = cutEls.current.get(id);
-    if (c) {
-      c.setAttribute('cx', q.x.toFixed(1));
-      c.setAttribute('cy', q.y.toFixed(1));
-    }
-  };
-  useImperativeHandle(ref, () => ({ place: placeTag, projection: () => T }), [T]);
+  const placeTag = useCallback(
+    (id: number | string, d: number) => {
+      const el = tagEls.current.get(id);
+      if (!el || !T) return;
+      const q = T.pose(d);
+      // The transform is written directly (not through a custom property): a per-frame
+      // variable change on the parent would restyle the chip too.
+      el.style.transform = `translate3d(${q.x.toFixed(1)}px, ${q.y.toFixed(1)}px, 0)`;
+      const c = cutEls.current.get(id);
+      if (c) {
+        c.setAttribute('cx', q.x.toFixed(1));
+        c.setAttribute('cy', q.y.toFixed(1));
+      }
+    },
+    [T]
+  );
+  useImperativeHandle(ref, () => ({ place: placeTag, projection: () => T }), [placeTag, T]);
 
   // How close a point is to the road's centreline (for chips and corner rings).
   const roadDist = useMemo(() => (T ? roadIndex(T) : null), [T]);

@@ -1,7 +1,7 @@
 import './reveal';
 import { useInitialAnchor } from './preview-navigation';
 import { useRateLimited } from '../lib/api';
-import { useEffect, useMemo, useRef, useState, useId } from 'react';
+import { useEffect, useMemo, useRef, useState, useId, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -24,6 +24,13 @@ const fmt = (v: number | null | undefined) =>
   v === null || v === undefined || !Number.isFinite(v) ? '—' : nf.format(v);
 const query = new URLSearchParams(location.search);
 const sessionKey = Number(query.get('session')) || 11361;
+/** The one place the page's selection is written to the URL. */
+const selectionUrl = (driver: number, compare: number | null, straight: number) => {
+  const q = new URLSearchParams({ driver: String(driver), straight: String(straight) });
+  q.set('compare', compare === null ? '0' : String(compare));
+  q.set('session', String(sessionKey));
+  return `${location.pathname}?${q}${location.hash}`;
+};
 function Mark() {
   return (
     <span className="wordmark-top" aria-hidden="true">
@@ -213,7 +220,7 @@ function DriverEstimate({
   return (
     <article
       className={`driver-estimate driver-poster ${other ? 'compare-estimate' : ''}`}
-      style={{ '--team': colour, '--poster-ink': ink } as any}
+      style={{ '--team': colour, '--poster-ink': ink } as CSSProperties}
       aria-label={`${d.full_name}, estimated cut-off`}
     >
       <div className="driver-poster-art" data-has-portrait={portrait ? 'true' : 'false'}>
@@ -227,7 +234,7 @@ function DriverEstimate({
         </div>
         <div className="poster-name">
           <span>{first}</span>
-          <h3 style={{ '--surname-length': Math.max(1, surname.length) } as any}>{surname}</h3>
+          <h3 style={{ '--surname-length': Math.max(1, surname.length) } as CSSProperties}>{surname}</h3>
         </div>
         {portrait && (
           <img
@@ -303,6 +310,9 @@ function App() {
   }, []);
   const [activeNav, setActiveNav] = useState('track');
   const menuButton = useRef<HTMLButtonElement>(null);
+  // The Escape handler reads the latest menu state through a ref, so it subscribes once.
+  const menuOpen = useRef(menu);
+  menuOpen.current = menu;
   const tower = useRef<HTMLDivElement>(null);
   const revealDriver = (n: number) => {
     const box = tower.current;
@@ -397,10 +407,7 @@ function App() {
     }
   }
   useEffect(() => {
-    const q = new URLSearchParams({ driver: String(driver), straight: String(sid) });
-    q.set('compare', compare === null ? '0' : String(compare));
-    q.set('session', String(sessionKey));
-    history.replaceState(null, '', `${location.pathname}?${q}${location.hash}`);
+    history.replaceState(null, '', selectionUrl(driver, compare, sid));
   }, [driver, compare, sid]);
   useEffect(() => {
     if (!data.ready) return;
@@ -427,11 +434,10 @@ function App() {
     };
     const key = (e: KeyboardEvent) => {
       document.documentElement.dataset.input = 'keyboard';
-      if (e.key === 'Escape')
-        setMenu((open) => {
-          if (open) menuButton.current?.focus();
-          return false;
-        });
+      if (e.key === 'Escape') {
+        if (menuOpen.current) menuButton.current?.focus();
+        setMenu(false);
+      }
     };
     document.addEventListener('pointerdown', pointer);
     document.addEventListener('keydown', key, true);
@@ -902,7 +908,7 @@ function App() {
                     {picked && (
                       <button
                         onClick={() => revealDriver(driver)}
-                        style={{ '--team': picked.team_colour ?? '#aaa' } as any}
+                        style={{ '--team': picked.team_colour ?? '#aaa' } as CSSProperties}
                       >
                         <span className="chart-key" />
                         Driver <b>{picked.name_acronym}</b>
@@ -912,7 +918,7 @@ function App() {
                     {compared && (
                       <button
                         onClick={() => revealDriver(compared.driver_number)}
-                        style={{ '--team': compared.team_colour ?? '#aaa' } as any}
+                        style={{ '--team': compared.team_colour ?? '#aaa' } as CSSProperties}
                       >
                         <span className="chart-key is-hollow" />
                         Compare <b>{compared.name_acronym}</b>
@@ -936,7 +942,7 @@ function App() {
                           aria-pressed={d.driver_number === driver}
                           aria-label={`Select ${d.full_name}, ${v === null ? 'no published estimate' : `estimated cut-off ${fmt(v)} metres`}${d.driver_number === compare ? ', current comparison' : ''}`}
                           onClick={() => selectDriver(d.driver_number)}
-                          style={{ '--team': d.team_colour ?? '#aaa' } as any}
+                          style={{ '--team': d.team_colour ?? '#aaa' } as CSSProperties}
                         >
                           <span className="tower-team" />
                           <Logo team={d.team_name} keepSlot />
