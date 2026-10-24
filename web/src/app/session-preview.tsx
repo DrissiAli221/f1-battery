@@ -1,3 +1,4 @@
+import './reveal';
 import { useInitialAnchor } from './preview-navigation';
 import { useRateLimited } from '../lib/api';
 import { useEffect, useMemo, useRef, useState, useId } from 'react';

@@ -57,14 +57,14 @@
 .select-detail{font:400 var(--type-label)/1.3 KHF1,monospace;color:#b8b8b0}
 .select-code{font:400 var(--type-label)/1.3 KHF1,monospace;color:var(--team);flex-shrink:0}
 .select-chevron{flex-shrink:0;color:#c8c8bf}.is-open>.select-trigger{border-bottom-color:var(--team);background-color:#232321}.is-open .select-chevron{rotate:180deg}
-.select-options{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;max-height:min(340px,45vh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#66665e #1b1b19;padding:5px;background:#1b1b19;border:1px solid #4b4b44;box-shadow:0 18px 40px #0009;animation:select-enter 150ms cubic-bezier(.23,1,.32,1)}
+.select-options{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;max-height:min(340px,45vh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#66665e #1b1b19;padding:5px;background:#1b1b19;border:1px solid #4b4b44;box-shadow:0 18px 40px #0009;animation:select-enter 180ms var(--ease)}
 .opens-above .select-options{top:auto;bottom:calc(100% - 18px)}
 .select-option{position:relative;display:flex;align-items:center;gap:12px;min-height:56px;padding:9px 10px;color:#e9e9df;cursor:pointer}
 .select-option[aria-selected=true]{background:linear-gradient(90deg,color-mix(in srgb,var(--team) 18%,#20201e),#20201e)}
 .select-option.is-active{outline:1px solid #77776b;outline-offset:-1px;background-color:#30302b}
 .select-check{width:15px;flex-shrink:0;font:400 15px/1 Arial,sans-serif;color:#f4f4ef}
 .select-trigger:focus-visible{outline:2px solid #eee;outline-offset:3px}
-@keyframes select-enter{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@keyframes select-enter{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}@keyframes select-enter-up{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}.opens-above .select-options{animation-name:select-enter-up}
 html[data-input=keyboard] .select-options{animation:none}
 @media(hover:hover) and (pointer:fine){.select-trigger:hover{background-color:#252522}}
 @media(max-width:1150px){.select-trigger,.select-value,.select-option{gap:9px}.select-trigger .select-code{display:none}}

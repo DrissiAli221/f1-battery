@@ -88,7 +88,7 @@ input[type=range]{min-height:44px;margin-block:0}select{min-height:44px}
 .footer a:not(.name):not(.project-wordmark),.method-note>div a{text-decoration:underline;text-underline-offset:3px;text-decoration-color:#77776f}
 .project-wordmark:focus-visible{outline-offset:5px}.section[tabindex="-1"]:focus,.identity[tabindex="-1"]:focus{outline:none}
 /* Keyboard changes settle immediately; pointer input restores transitions. */
-html[data-input=keyboard] *,html[data-input=keyboard] *::before,html[data-input=keyboard] *::after{transition:none!important}
+html[data-input=keyboard] *,html[data-input=keyboard] *::before,html[data-input=keyboard] *::after{transition:none!important;animation:none!important}
 @media(pointer:coarse){.inline-link{min-height:44px}.button{min-height:34px}.footer a:not(.project-wordmark){display:inline-block;padding-block:6px}}
 @media(max-width:720px){.button{font-size:11px}.disabled-example{font-size:10px}.playback-controls>div{gap:8px}.playback-controls .button{min-width:70px}}
 /* A pressed ink overlay supplies feedback on touch without shifting type. */
@@ -161,3 +161,28 @@ html[data-input=keyboard] *,html[data-input=keyboard] *::before,html[data-input=
 @keyframes skel-rule{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
 @media(prefers-reduced-motion:reduce){.skel::after,.skel-rule::after{animation:none}}
 html{scrollbar-gutter:stable}
+
+/* Motion layer: smooth anchors, scroll reveals (state set by reveal.ts), switches, disclosures, page fade. */
+@media(prefers-reduced-motion:no-preference){
+html{scroll-behavior:smooth;interpolate-size:allow-keywords}
+[data-reveal-state=wait]{opacity:0;transform:translateY(14px)}
+[data-reveal-state=wait][data-reveal-kind=enter]{transform:translateY(8px)}
+[data-reveal-state=wait][data-reveal-kind=handoff]{transform:translateY(6px)}
+[data-reveal-state=wait][data-reveal=fade]{transform:none}
+[data-reveal-state=in][data-reveal-state][data-reveal-state]{opacity:1;transform:none;transition:opacity 560ms var(--ease) calc(var(--reveal-i,0)*50ms),transform 560ms var(--ease) calc(var(--reveal-i,0)*50ms)}
+[data-reveal-state=in][data-reveal-state][data-reveal-kind=enter]{transition-duration:300ms}
+[data-reveal-state=in][data-reveal-state][data-reveal-kind=handoff]{transition-duration:200ms;transition-delay:calc(var(--reveal-i,0)*40ms)}
+.switch-in{animation:switch-in 200ms var(--ease) backwards}
+@keyframes switch-in{from{opacity:0;transform:translateY(6px)}}
+@supports selector(::details-content){
+details::details-content{block-size:0;overflow:clip;overflow-clip-margin:6px;transition:block-size 240ms var(--ease),content-visibility 240ms allow-discrete}
+details[open]::details-content{block-size:auto}
+}
+@view-transition{navigation:auto}
+.project-header{view-transition-name:site-header}
+::view-transition-old(root),::view-transition-new(root){animation-duration:180ms}
+}
+@media(prefers-reduced-motion:reduce){
+[data-reveal-state=wait]{opacity:0}
+[data-reveal-state=in]{opacity:1;transition:opacity 240ms var(--ease) calc(var(--reveal-i,0)*50ms)!important}
+}

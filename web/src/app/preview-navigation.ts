@@ -15,7 +15,7 @@ export function useInitialAnchor(ready=true){
    if(cancelled)return;
    frame=requestAnimationFrame(()=>{
     if(cancelled||!target.isConnected)return;
-    target.scrollIntoView({block:'start',behavior:'auto'});
+    target.scrollIntoView({block:'start',behavior:'instant'});
     if(document.documentElement.dataset.input==='keyboard')target.focus({preventScroll:true});
     restored.current=true;
    });

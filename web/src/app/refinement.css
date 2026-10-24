@@ -23,7 +23,7 @@ body .session-preview .page-sections::after{content:'';position:absolute;left:va
 body .session-preview .page-sections>div{display:flex;flex-wrap:wrap;gap:8px 28px}
 body .session-preview .page-sections a{position:relative;display:flex;align-items:center;gap:14px;min-height:44px;font:400 12px/1.45 KHF1,monospace;text-transform:uppercase;color:#b5b5aa;white-space:nowrap}
 body .session-preview .page-sections a[aria-current]{color:#f4f4ef}
-body .session-preview .page-sections a[aria-current]::after{content:'';position:absolute;bottom:4px;left:0;right:0;height:1px;background:#f4f4ef}
+body .session-preview .page-sections a::after{content:'';position:absolute;bottom:4px;left:0;right:0;height:1px;background:#f4f4ef;transform:scaleX(0);transform-origin:left;transition:transform 240ms var(--ease)}body .session-preview .page-sections a[aria-current]::after{transform:scaleX(1)}
 body .session-preview .page-sections>a{color:#eee}
 body .session-preview .session-sections{margin-bottom:4px;padding-top:0}
 body .session-preview .session-controls{border-top:0;padding-top:20px}
@@ -260,3 +260,25 @@ body .session-preview .race-choice{display:flex;flex-direction:column}
 body .session-preview .race-choice h3{flex:0 0 auto}
 body .session-preview .race-choice .race-choice-bottom{margin-top:auto}
 body .session-preview .race-facts{font:400 12px/1.4 KHF1,monospace;text-transform:uppercase;color:#aaa99f;margin:0}
+/* Anchor landing offsets: sticky header is 64px (60 phone); the findings/method section rail pins at top:64px on desktop. */
+body .session-preview :is(section[id],.lap-panel[id],.method-entry,.replay-modes){scroll-margin-top:104px!important}
+@media(min-width:951px){body .session-preview:is(.findings-preview,.method-preview) :is(section[id],.method-entry){scroll-margin-top:136px!important}}
+body .session-preview.home-preview #races{scroll-margin-top:24px!important}
+body .session-preview.home-preview #research{scroll-margin-top:64px!important}
+/* Motion: underline wipes, hover colour/ink, mode panes. */
+body .session-preview :is(.race-filters,.record-filters,.replay-modes>div) button::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#f4f4ef;transform:scaleX(0);transform-origin:left;transition:transform 240ms var(--ease)}
+body .session-preview .replay-modes>div button::after{bottom:0}
+body .session-preview :is(.race-filters,.record-filters,.replay-modes>div) button[aria-pressed=true]::after{transform:scaleX(1)}
+@media(hover:hover) and (pointer:fine){
+body .session-preview :is(.replay-modes>div button,.select-trigger,.race-session-links>a,.home-text-link,.home-scroll,.finding-jump,.method-jump,.finding-download,.method-download,.inline-link,.race-search input){transition:color 200ms var(--ease),background-color 200ms var(--ease),border-color 200ms var(--ease)}
+ body .session-preview .select-option{transition:background-color 120ms var(--ease)}
+ body .session-preview .nav-island a::after{transition:opacity 200ms var(--ease)}
+}
+body .session-preview .mode-pane{transition:opacity 200ms var(--ease),transform 200ms var(--ease),visibility 0s}
+body .session-preview .mode-pane[inert]{opacity:0;transform:translateY(6px);transition:opacity 200ms var(--ease),transform 200ms var(--ease),visibility 0s linear 200ms}
+@media(prefers-reduced-motion:reduce){body .session-preview .mode-pane,body .session-preview .mode-pane[inert]{transition:none}body .session-preview .mode-pane[inert]{transform:none}}
+/* Press feedback (not the pixel buttons): a small scale, restored on release. */
+@media(prefers-reduced-motion:no-preference){
+body .session-preview :is(.button:not(.pixel-button),.race-filters button,.record-filters button,.replay-modes>div button,.tabs button,.tower-row,.replay-field-rows button){transition:background-color 160ms var(--ease),color 160ms var(--ease),border-color 160ms var(--ease),transform 160ms var(--ease)}
+body .session-preview :is(.button:not(.pixel-button),.race-filters button,.record-filters button,.replay-modes>div button,.tabs button,.tower-row,.replay-field-rows button):not(:disabled):active{transform:scale(.97)}
+}
