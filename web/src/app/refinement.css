@@ -282,3 +282,10 @@ body .session-preview .mode-pane[inert]{opacity:0;transform:translateY(6px);tran
 body .session-preview :is(.button:not(.pixel-button),.race-filters button,.record-filters button,.replay-modes>div button,.tabs button,.tower-row,.replay-field-rows button){transition:background-color 160ms var(--ease),color 160ms var(--ease),border-color 160ms var(--ease),transform 160ms var(--ease)}
 body .session-preview :is(.button:not(.pixel-button),.race-filters button,.record-filters button,.replay-modes>div button,.tabs button,.tower-row,.replay-field-rows button):not(:disabled):active{transform:scale(.97)}
 }
+
+/* Race cards share one structure: two-line title slot, facts line always present, fixed-height session slots. */
+body .session-preview .race-choice>h3{min-height:2.1em}
+body .session-preview .race-facts{min-height:17px}
+body .session-preview .race-not-held{color:#6d6d66}
+body .session-preview .race-not-held>span:last-child{color:#6d6d66}
+body .session-preview .race-unavailable{min-height:50px}
