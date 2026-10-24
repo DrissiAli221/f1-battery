@@ -198,3 +198,11 @@ details[open]::details-content{block-size:auto}
 .home-races,.track-section,.session-main .method-section,.finding-evidence,.finding-checks,.method-process,.method-record,.replay-stage{position:relative}
 .home-races::before,.track-section::before,.session-main .method-section::before,.finding-evidence::before,.finding-checks::before,.method-process::before,.method-record::before,.replay-stage::before{content:"";position:absolute;z-index:-3;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;background:var(--band);border-block:1px solid var(--band-line);pointer-events:none}
 .home-research,.finding-permutation,.finding-limits,.method-boundaries{box-shadow:inset 0 1px var(--band-line),inset 0 -1px var(--band-line)}
+/* Bands that follow a section rail start at the rail's own hairline, no second line. */
+.page-sections+.track-section::before{top:-4px;border-top:0}
+.page-sections+.method-process::before{top:-24px;border-top:0}
+/* Solid sections bleed to the viewport edge like the other bands; their hairlines ride the bleed. */
+.home-research,.finding-permutation,.finding-limits,.method-boundaries{position:relative;box-shadow:none}
+.home-research::before,.finding-permutation::before,.finding-limits::before,.method-boundaries::before{content:"";position:absolute;z-index:-3;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;background:inherit;border-block:1px solid var(--band-line);pointer-events:none}
+/* Sticky header and section rail are capped at the wrap width; their surfaces bleed to the viewport edge over the bands. */
+.project-header::before,.page-sections::before{content:"";position:absolute;z-index:-1;top:0;bottom:-1px;left:calc(50% - 50vw);width:100vw;background:inherit;border-bottom:inherit;pointer-events:none}
