@@ -290,3 +290,7 @@ body .session-preview .race-not-held{color:#6d6d66}
 body .session-preview .race-not-held>span:last-child{color:#6d6d66}
 body .session-preview .race-unavailable{min-height:50px}
 body .session-preview .race-facts{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* the felt plate clears the race band hairline below it */
+body .session-preview .home-feature{padding-bottom:56px}
+@media(max-width:720px){body .session-preview .home-feature{padding-bottom:36px}}
