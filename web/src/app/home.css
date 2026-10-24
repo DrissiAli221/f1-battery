@@ -26,3 +26,8 @@ html[data-input=keyboard] .race-session-links>a>span:last-child{transition:none;
 .home-preview .card-grain{background-size:cover;background-repeat:no-repeat}
 
 @media(hover:hover) and (pointer:fine){.race-choice:hover,.race-choice:focus-within{border-color:rgba(255,255,255,.22)}.race-choice:hover h3,.race-choice:focus-within h3{color:#fff}}
+.race-count{min-height:1.7em}
+.home-feature-card.skel{min-height:476px}
+.race-choice.skel{min-height:260px}
+@media(max-width:720px){.home-feature-card.skel{min-height:361px}.race-choice.skel{min-height:237px}}
+body .session-preview .home-feature-card.skel{background-image:none;background-color:#141413}
