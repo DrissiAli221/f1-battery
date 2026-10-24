@@ -32,3 +32,6 @@
 .feed-waiting>p{min-height:3.2em}
 .feed-waiting>button[inert]{visibility:hidden}
 .review-status{display:flow-root;min-height:40px}
+
+/* feed-control matches the clean-lap control height (label + select) so the mode switch keeps the controls row height */
+.feed-control{min-height:83px}
