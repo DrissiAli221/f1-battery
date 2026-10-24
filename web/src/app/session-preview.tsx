@@ -1,4 +1,5 @@
 import './reveal';
+import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
 import { useRateLimited } from '../lib/api';
 import { useEffect, useMemo, useRef, useState, useId, type CSSProperties } from 'react';
@@ -13,7 +14,7 @@ import { SessionChart as CutoffChart } from './session-chart';
 import { along } from '../lib/track';
 import { teamLogo, headshotHd, headshot, driverName } from '../lib/teams';
 import { createPixelButton } from './hover.js';
-import { paintScreen } from './session-halftone.js';
+import { paintScreen } from './session-halftone';
 import { SessionSelect, type SelectItem } from './session-select';
 import { cssPx } from './css-tokens';
 import './session.css';
@@ -32,15 +33,6 @@ const selectionUrl = (driver: number, compare: number | null, straight: number) 
   q.set('session', String(sessionKey));
   return `${location.pathname}?${q}${location.hash}`;
 };
-function Mark() {
-  return (
-    <span className="wordmark-top" aria-hidden="true">
-      F1
-      <span className="wordmark-divider" />
-      BATTERY
-    </span>
-  );
-}
 function Logo({
   team,
   variant = 'white',
@@ -301,7 +293,6 @@ function App() {
   );
   const [sid, setSid] = useState(Number(query.get('straight')) || 2);
   const [lap, setLap] = useState<number | null>(null);
-  const [menu, setMenu] = useState(false);
   const [compactMap, setCompactMap] = useState(() => matchMedia('(max-width:720px)').matches);
   useEffect(() => {
     const mq = matchMedia('(max-width:720px)');
@@ -310,10 +301,6 @@ function App() {
     return () => mq.removeEventListener('change', update);
   }, []);
   const [activeNav, setActiveNav] = useState('track');
-  const menuButton = useRef<HTMLButtonElement>(null);
-  // The Escape handler reads the latest menu state through a ref, so it subscribes once.
-  const menuOpen = useRef(menu);
-  menuOpen.current = menu;
   const tower = useRef<HTMLDivElement>(null);
   const revealDriver = (n: number) => {
     const box = tower.current;
@@ -429,25 +416,6 @@ function App() {
     }
   }, [data.ready, data.straights, data.medians, pool, driver]);
   useEffect(() => {
-    const pointer = (e: PointerEvent) => {
-      document.documentElement.dataset.input = 'pointer';
-      if (!(e.target as Element).closest('.session-nav')) setMenu(false);
-    };
-    const key = (e: KeyboardEvent) => {
-      document.documentElement.dataset.input = 'keyboard';
-      if (e.key === 'Escape') {
-        if (menuOpen.current) menuButton.current?.focus();
-        setMenu(false);
-      }
-    };
-    document.addEventListener('pointerdown', pointer);
-    document.addEventListener('keydown', key, true);
-    return () => {
-      document.removeEventListener('pointerdown', pointer);
-      document.removeEventListener('keydown', key, true);
-    };
-  }, []);
-  useEffect(() => {
     document
       .querySelectorAll<HTMLAnchorElement>('.session-preview a.button-light')
       .forEach((el) => createPixelButton(el));
@@ -542,571 +510,530 @@ function App() {
       <a className="skip" href="#track">
         Skip to track
       </a>
-      <header
-        className="site-header session-nav"
-        onBlur={(e) => {
-          if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setMenu(false);
-        }}
-      >
-        <div className="masthead wrap project-header">
-          <a className="project-wordmark" href="/" aria-label="F1 Battery home">
-            <Mark />
-          </a>
-          <div className="nav-side">
-            <button
-              ref={menuButton}
-              className="menu-toggle utility"
-              aria-expanded={menu}
-              aria-controls="session-nav-links"
-              onClick={() => setMenu((v) => !v)}
-            >
-              Menu <span aria-hidden="true">{menu ? '×' : '+'}</span>
-            </button>
-            <nav
-              className={`nav-island ${menu ? 'is-open' : ''}`}
-              id="session-nav-links"
-              aria-label="Main navigation"
-            >
-              <a href="/#races" aria-current="page">
-                Races
-              </a>
-              <a href={`/replay.html?session=${sessionKey}&driver=${driver}`}>Replay</a>
-              <a href="/findings.html">Findings</a>
-              <a href="/method.html">Method</a>
-            </nav>
-          </div>
-        </div>
-      </header>
-      <main ref={main} className="session-main">
-        <section ref={hero} aria-labelledby="race-title">
-          <div className="race-hero wrap">
-            <div className="race-halftone" aria-hidden="true">
-              <canvas ref={background} data-screen="hero" />
-            </div>
-            <div>
-              <h1
-                id="race-title"
-                style={
-                  place.length > 6
-                    ? {
-                        fontSize: `clamp(25px,calc((100vw - 2 * var(--gutter)) / ${place.length + 1} * 1.05),122px)`,
-                      }
-                    : undefined
-                }
-              >
-                {place}.
-              </h1>
-              {(() => {
-                const mn = meta?.meeting_name;
-                const alt = [meta?.country, meta?.name ?? place].filter(Boolean).join(' / ');
-                const v =
-                  mn && mn.toLowerCase() !== place.toLowerCase()
-                    ? mn
-                    : alt.toLowerCase() !== place.toLowerCase()
-                      ? alt
-                      : (meta?.country ?? '');
-                return v && v.toLowerCase() !== place.toLowerCase() ? (
-                  <p className="race-venue">{v}</p>
-                ) : null;
-              })()}
-            </div>
-            {data.session && (
-              <p className="race-date">
-                {data.session?.session_name}
-                <span aria-hidden="true"> / </span>
-                <time dateTime={data.session?.date_start ?? undefined}>
-                  {data.session?.date_start
-                    ? new Intl.DateTimeFormat('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        timeZone: 'UTC',
-                      }).format(new Date(data.session.date_start))
-                    : ''}
-                </time>
-              </p>
-            )}
-          </div>
-        </section>
-        {data.ready && (
-          <nav className="section-rail" aria-label="Session sections">
-            <div className="wrap page-sections session-sections">
+      <SiteHeader
+        current="races"
+        replayHref={`/replay.html?session=${sessionKey}&driver=${driver}`}
+        navId="session-nav-links"
+      />
+      <PageGround>
+        <main ref={main} className="session-main">
+          <section ref={hero} aria-labelledby="race-title">
+            <div className="race-hero wrap">
+              <div className="race-halftone" aria-hidden="true">
+                <canvas ref={background} data-screen="hero" />
+              </div>
               <div>
-                {[
-                  ['track', 'Track'],
-                  ['lap-chart', 'Laps'],
-                  ['method', 'Reading guide'],
-                ].map(([id, label]) => (
-                  <a key={id} href={`#${id}`} aria-current={activeNav === id ? 'location' : undefined}>
-                    {label}
-                  </a>
-                ))}
+                <h1
+                  id="race-title"
+                  style={
+                    place.length > 6
+                      ? {
+                          fontSize: `clamp(25px,calc((100vw - 2 * var(--gutter)) / ${place.length + 1} * 1.05),122px)`,
+                        }
+                      : undefined
+                  }
+                >
+                  {place}.
+                </h1>
+                {(() => {
+                  const mn = meta?.meeting_name;
+                  const alt = [meta?.country, meta?.name ?? place].filter(Boolean).join(' / ');
+                  const v =
+                    mn && mn.toLowerCase() !== place.toLowerCase()
+                      ? mn
+                      : alt.toLowerCase() !== place.toLowerCase()
+                        ? alt
+                        : (meta?.country ?? '');
+                  return v && v.toLowerCase() !== place.toLowerCase() ? (
+                    <p className="race-venue">{v}</p>
+                  ) : null;
+                })()}
               </div>
-              <a href={`/replay.html?session=${sessionKey}&driver=${driver}&mode=review`}>
-                Review a lap <span aria-hidden="true">↗</span>
-              </a>
-            </div>
-          </nav>
-        )}
-        {data.sessionsLoaded && !data.session ? (
-          <section role="alert">
-            <div className="wrap load-state">
-              <h2>Session not found.</h2>
-              <p>This recorded session is not in the archive. Choose another race to continue.</p>
-              <a className="button button-secondary" href="/#races">
-                Choose a race <span aria-hidden="true">↗</span>
-              </a>
-            </div>
-          </section>
-        ) : data.sessionsError || data.loadError ? (
-          <section role="alert">
-            <div className="wrap load-state">
-              <h2>Session couldn’t be loaded.</h2>
-              <p>The recorded data is unavailable right now. Retry, or choose another race.</p>
-              <div className="recovery-actions">
-                <button className="button button-secondary" onClick={() => location.reload()}>
-                  Try again
-                </button>
-                <a className="inline-link" href="/#races">
-                  Choose another race ↗
-                </a>
-              </div>
-            </div>
-          </section>
-        ) : !data.ready ? (
-          <>
-            <section
-              id="track"
-              aria-label={`${place} track and selected estimates, loading`}
-              aria-busy="true"
-              className="band"
-            >
-              <div className="wrap track-section session-skeleton">
-                <p className="skeleton-status" role="status">
-                  Loading {place}’s recorded estimates…
-                  {limited && ' The API is rate limited; retrying automatically.'}
+              {data.session && (
+                <p className="race-date">
+                  {data.session?.session_name}
+                  <span aria-hidden="true"> / </span>
+                  <time dateTime={data.session?.date_start ?? undefined}>
+                    {data.session?.date_start
+                      ? new Intl.DateTimeFormat('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          timeZone: 'UTC',
+                        }).format(new Date(data.session.date_start))
+                      : ''}
+                  </time>
                 </p>
-                <div className="session-controls">
-                  {['Driver', 'Compare', 'Straight'].map((l) => (
-                    <div className="session-select" key={l}>
-                      <span className="select-label">{l}</span>
-                      <div className="skel select-skel" />
-                    </div>
+              )}
+            </div>
+          </section>
+          {data.ready && (
+            <nav className="section-rail" aria-label="Session sections">
+              <div className="wrap page-sections session-sections">
+                <div>
+                  {[
+                    ['track', 'Track'],
+                    ['lap-chart', 'Laps'],
+                    ['method', 'Reading guide'],
+                  ].map(([id, label]) => (
+                    <a key={id} href={`#${id}`} aria-current={activeNav === id ? 'location' : undefined}>
+                      {label}
+                    </a>
                   ))}
                 </div>
-                <div className="map-stage">
-                  <div className="map-surface skel map-skel" />
-                  <aside className="estimate-stack" data-count="2" aria-hidden="true">
-                    <article className="driver-estimate driver-poster skel" />
-                    <article className="driver-estimate driver-poster compare-estimate skel" />
-                    <div className="estimate-actions">
-                      <span className="text-toggle" style={{ visibility: 'hidden' }}>
-                        Use session median
-                      </span>
-                      <div className="button skel" />
-                    </div>
-                  </aside>
+                <a href={`/replay.html?session=${sessionKey}&driver=${driver}&mode=review`}>
+                  Review a lap <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </nav>
+          )}
+          {data.sessionsLoaded && !data.session ? (
+            <section role="alert">
+              <div className="wrap load-state">
+                <h2>Session not found.</h2>
+                <p>This recorded session is not in the archive. Choose another race to continue.</p>
+                <a className="button button-secondary" href="/#races">
+                  Choose a race <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </section>
+          ) : data.sessionsError || data.loadError ? (
+            <section role="alert">
+              <div className="wrap load-state">
+                <h2>Session couldn’t be loaded.</h2>
+                <p>The recorded data is unavailable right now. Retry, or choose another race.</p>
+                <div className="recovery-actions">
+                  <button className="button button-secondary" onClick={() => location.reload()}>
+                    Try again
+                  </button>
+                  <a className="inline-link" href="/#races">
+                    Choose another race ↗
+                  </a>
                 </div>
               </div>
             </section>
-            <section aria-hidden="true">
-              <div className="wrap analysis-layout">
-                <div className="driver-tower">
-                  <div className="analysis-heading">
-                    <h2>Drivers.</h2>
-                    <span className="utility">Cut-off / m est.</span>
-                  </div>
-                  <p className="quiet-note">Alphabetical order · session medians</p>
-                  <div className="tower-rows">
-                    {Array.from({ length: 9 }, (_, i) => (
-                      <div key={i} className="tower-row skel" />
+          ) : !data.ready ? (
+            <>
+              <section
+                id="track"
+                aria-label={`${place} track and selected estimates, loading`}
+                aria-busy="true"
+                className="band"
+              >
+                <div className="wrap track-section session-skeleton">
+                  <p className="skeleton-status" role="status">
+                    Loading {place}’s recorded estimates…
+                    {limited && ' The API is rate limited; retrying automatically.'}
+                  </p>
+                  <div className="session-controls">
+                    {['Driver', 'Compare', 'Straight'].map((l) => (
+                      <div className="session-select" key={l}>
+                        <span className="select-label">{l}</span>
+                        <div className="skel select-skel" />
+                      </div>
                     ))}
                   </div>
-                </div>
-                <div className="lap-panel">
-                  <div className="analysis-heading">
-                    <h2>Lap by lap.</h2>
+                  <div className="map-stage">
+                    <div className="map-surface skel map-skel" />
+                    <aside className="estimate-stack" data-count="2" aria-hidden="true">
+                      <article className="driver-estimate driver-poster skel" />
+                      <article className="driver-estimate driver-poster compare-estimate skel" />
+                      <div className="estimate-actions">
+                        <span className="text-toggle" style={{ visibility: 'hidden' }}>
+                          Use session median
+                        </span>
+                        <div className="button skel" />
+                      </div>
+                    </aside>
                   </div>
-                  <Rule on />
-                  <p className="quiet-note">
-                    Compare estimates across laps. Select a lap to inspect both drivers.
-                  </p>
-                  <div className="lap-selector">
-                    <div className="skel lap-select-skel" />
-                  </div>
-                  <div className="skel chart-skel" />
                 </div>
-              </div>
-            </section>
-          </>
-        ) : (
-          <>
-            {data.summaryError && (
-              <aside role="alert" className="availability-band">
-                <div className="wrap availability-notice">
-                  <p>Cut-off estimates couldn’t be loaded. The track and lap records are still available.</p>
-                  <button className="text-toggle" onClick={() => location.reload()}>
-                    Try again ↗
-                  </button>
-                </div>
-              </aside>
-            )}
-            {!data.session?.has_results && (
-              <aside className="availability-band">
-                <div className="wrap availability-notice">
-                  <p>No published estimates for this session. Choose another race to compare cut-offs.</p>
-                  <a href="/#races">Choose a race ↗</a>
-                </div>
-              </aside>
-            )}
-            <section
-              id="track"
-              tabIndex={-1}
-              aria-label={`${place} track and selected estimates`}
-              className="band"
-            >
-              <div className="wrap track-section">
-                <div className="session-controls">
-                  <SessionSelect
-                    pending={!data.ready && !data.loadError && !data.sessionsError}
-                    label="Driver"
-                    value={String(driver)}
-                    items={pool.map(driverOption)}
-                    onChange={(v) => selectDriver(Number(v))}
-                  />
-                  <SessionSelect
-                    pending={!data.ready && !data.loadError && !data.sessionsError}
-                    label="Compare"
-                    value={compare === null ? '' : String(compare)}
-                    items={[
-                      { value: '', name: 'No comparison' },
-                      ...pool.filter((d) => d.driver_number !== driver).map(driverOption),
-                    ]}
-                    onChange={(v) => {
-                      setCompare(v ? Number(v) : null);
-                      setLap(null);
-                    }}
-                  />
-                  <SessionSelect
-                    pending={!data.ready && !data.loadError && !data.sessionsError}
-                    label="Straight"
-                    value={String(sid)}
-                    items={data.straights.map((s) => ({
-                      value: String(s.straight_id),
-                      name: s.label ?? `Straight ${s.straight_id}`,
-                      code: `S${s.straight_id}`,
-                      detail: `${fmt(s.len)} m${straightsWithData.has(s.straight_id) ? '' : ' · No estimate for selection'}`,
-                    }))}
-                    onChange={(v) => selectStraight(Number(v))}
-                  />
-                </div>
-                <div className="map-stage">
-                  <div className="map-surface" data-no-estimates={noEstimates ? 'true' : undefined}>
-                    <div className="map-heading">
-                      <h2>{straight?.label}</h2>
-                      <span className="utility">
-                        S{sid} / {fmt(straight?.len)} m
-                      </span>
+              </section>
+              <section aria-hidden="true">
+                <div className="wrap analysis-layout">
+                  <div className="driver-tower">
+                    <div className="analysis-heading">
+                      <h2>Drivers.</h2>
+                      <span className="utility">Cut-off / m est.</span>
                     </div>
-                    <Rule on={pBusy || cBusy} />
-                    {data.outline && straight ? (
-                      <TrackMap
-                        outline={data.outline}
-                        circuit={circuit}
-                        straights={data.straights}
-                        selected={sid}
-                        onSelect={selectStraight}
-                        straightsWithData={straightsWithData}
-                        tags={tags}
-                        arrows={false}
-                        runs={[picked, compared].filter(Boolean).map((d, i) => ({
-                          d0: straight.d0,
-                          d1: straight.d1,
-                          colour: d!.team_colour ?? '#f4f4ef',
-                          offset: compared ? (i === 0 ? -2 : 2) : 0,
-                        }))}
-                        corners
-                        sf
-                        straightLabels
-                        rotation={data.session?.circuit_key === 39 ? 85 : (meta?.rotation ?? undefined)}
-                        maxHeight={520}
-                        markerScale={compactMap ? 1 : 1.2}
-                        label={`${place} track with estimated deployment cut-off markers`}
-                      />
-                    ) : (
-                      <p className="quiet-note">Track geometry could not be loaded.</p>
-                    )}
-                    <p className="map-status" role="status">
-                      {noEstimates
-                        ? `No published estimate for ${picked?.name_acronym ?? 'this driver'}${compared ? ` or ${compared.name_acronym}` : ''} on this straight.`
-                        : ''}
-                    </p>
-                    <p className="map-footnote">
-                      Tags mark estimated cut-offs.
-                      {compare !== null ? ' Solid dot: driver. Ring: comparison.' : ''} Values are metres into
-                      the straight; intervals appear in the cards and chart.
-                    </p>
-                  </div>
-                  <aside
-                    className="estimate-stack"
-                    data-count={details.filter((x) => x.d).length}
-                    aria-label="Selected driver estimates"
-                  >
-                    {details.map(({ d, md, value, other }) =>
-                      d && straight ? (
-                        <DriverEstimate
-                          key={other ? 'compare' : 'primary'}
-                          d={d}
-                          value={value}
-                          lo={lap === null ? relative(md?.lo) : null}
-                          hi={lap === null ? relative(md?.hi) : null}
-                          samples={other ? comparisonSamples : primarySamples}
-                          domain={domain}
-                          lap={lap}
-                          other={other}
-                          busy={other ? cBusy : pBusy}
-                        />
-                      ) : null
-                    )}
-                    <div className="estimate-actions">
-                      <button
-                        className="text-toggle"
-                        onClick={() => setLap(null)}
-                        aria-hidden={lap === null || undefined}
-                        tabIndex={lap === null ? -1 : undefined}
-                        style={lap === null ? { visibility: 'hidden' } : undefined}
-                      >
-                        Use session median
-                      </button>
-                      <a className="button button-light" href="#lap-chart">
-                        Explore laps <span aria-hidden="true">↓</span>
-                      </a>
+                    <p className="quiet-note">Alphabetical order · session medians</p>
+                    <div className="tower-rows">
+                      {Array.from({ length: 9 }, (_, i) => (
+                        <div key={i} className="tower-row skel" />
+                      ))}
                     </div>
-                  </aside>
-                </div>
-              </div>
-            </section>
-            {(pCutRequest.error || cCutRequest.error) && (
-              <aside role="alert" className="availability-band">
-                <div className="wrap availability-notice">
-                  <p>
-                    Lap estimates couldn’t be loaded for one of the selected drivers. Session medians remain
-                    available.
-                  </p>
-                  <button className="text-toggle" onClick={() => location.reload()}>
-                    Try again ↗
-                  </button>
-                </div>
-              </aside>
-            )}
-            <section aria-label="Driver and lap comparisons">
-              <div className="wrap analysis-layout">
-                <div className="driver-tower">
-                  <div className="analysis-heading">
-                    <h2>Drivers.</h2>
-                    <span className="utility">Cut-off / m est.</span>
                   </div>
-                  <p className="quiet-note">Alphabetical order · session medians</p>
-                  <div className="tower-selection">
-                    {picked && (
-                      <button
-                        onClick={() => revealDriver(driver)}
-                        style={{ '--team': picked.team_colour ?? '#aaa' } as CSSProperties}
-                      >
-                        <span className="chart-key" />
-                        Driver <b>{picked.name_acronym}</b>
-                        <span aria-hidden="true">↓</span>
-                      </button>
-                    )}
-                    {compared && (
-                      <button
-                        onClick={() => revealDriver(compared.driver_number)}
-                        style={{ '--team': compared.team_colour ?? '#aaa' } as CSSProperties}
-                      >
-                        <span className="chart-key is-hollow" />
-                        Compare <b>{compared.name_acronym}</b>
-                        <span aria-hidden="true">↓</span>
-                      </button>
-                    )}
-                  </div>
-                  <div
-                    className={`tower-rows ${pBusy ? 'is-loading' : ''}`}
-                    aria-busy={pBusy || undefined}
-                    ref={tower}
-                  >
-                    {pool.map((d) => {
-                      const med = data.medians.get(d.driver_number)?.get(sid);
-                      const v = relative(med?.m);
-                      return (
-                        <button
-                          key={d.driver_number}
-                          data-driver={d.driver_number}
-                          className={`tower-row ${d.driver_number === driver ? 'selected' : ''} ${d.driver_number === compare ? 'compared' : ''}`}
-                          aria-pressed={d.driver_number === driver}
-                          aria-label={`Select ${d.full_name}, ${v === null ? 'no published estimate' : `estimated cut-off ${fmt(v)} metres`}${d.driver_number === compare ? ', current comparison' : ''}`}
-                          onClick={() => selectDriver(d.driver_number)}
-                          style={{ '--team': d.team_colour ?? '#aaa' } as CSSProperties}
-                        >
-                          <span className="tower-team" />
-                          <Logo team={d.team_name} keepSlot />
-                          <span className="tower-identity">
-                            <span className="tower-fullname">{driverName(d)}</span>
-                            <span className="tower-name">{d.team_name}</span>
-                          </span>
-                          <span className="tower-code">{d.name_acronym}</span>
-                          <span className="tower-value">{fmt(v)}</span>
-                        </button>
-                      );
-                    })}
+                  <div className="lap-panel">
+                    <div className="analysis-heading">
+                      <h2>Lap by lap.</h2>
+                    </div>
+                    <Rule on />
+                    <p className="quiet-note">
+                      Compare estimates across laps. Select a lap to inspect both drivers.
+                    </p>
+                    <div className="lap-selector">
+                      <div className="skel lap-select-skel" />
+                    </div>
+                    <div className="skel chart-skel" />
                   </div>
                 </div>
-                <div className="lap-panel" id="lap-chart" tabIndex={-1}>
-                  <div className="analysis-heading">
-                    <h2>Lap by lap.</h2>
-                    <span className="utility">{straight?.label}</span>
-                  </div>
-                  <Rule on={pBusy || cBusy} />
-                  <p className="quiet-note">
-                    Compare estimates across laps. Select a lap to inspect both drivers.
-                  </p>
-                  <div className="lap-selector">
-                    <label htmlFor="lap-pick">Lap</label>
-                    <select
-                      id="lap-pick"
-                      value={lap ?? ''}
-                      onChange={(e) => setLap(e.target.value ? Number(e.target.value) : null)}
-                    >
-                      <option value="">Session median</option>
-                      {laps
-                        .filter((l) => pCut?.get(l.lap_number)?.has(sid))
-                        .map((l) => (
-                          <option key={l.lap_number} value={l.lap_number}>
-                            Lap {l.lap_number}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  {straight && data.lap ? (
-                    <CutoffChart
-                      straight={straight}
-                      lapLen={data.lap}
-                      laps={laps}
-                      selectedLap={lap}
-                      onLap={setLap}
-                      drivers={[
-                        {
-                          number: driver,
-                          code: picked?.name_acronym ?? '',
-                          colour: picked?.team_colour ?? '#fff',
-                          hollow: false,
-                          cutoffs: pCut,
-                          median: primaryMedian,
-                        },
-                        ...(compare !== null
-                          ? [
-                              {
-                                number: compare,
-                                code: compared?.name_acronym ?? '',
-                                colour: compared?.team_colour ?? '#aaa',
-                                hollow: true,
-                                cutoffs: cCut,
-                                median: compareMedian,
-                              },
-                            ]
-                          : []),
-                      ]}
-                      loading={pCut === null}
-                      compareLoading={compare !== null && cCut === null}
-                      dim={pBusy}
-                      dimCompare={cBusy}
-                    />
-                  ) : null}
-                  <p className="chart-caption">
-                    Filled dots identify the driver; hollow dots identify the comparison. Values are estimates
-                    in metres from the start of the straight.
-                  </p>
-                </div>
-              </div>
-            </section>
-            <section id="method" tabIndex={-1} className="band">
-              <div className="wrap method-section">
-                <aside className="notice notice-caution">
-                  <svg
-                    className="notice-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    aria-hidden="true"
-                  >
-                    <path d="M8 3h8l5 5v8l-5 5H8l-5-5V8Z" />
-                    <path d="M12 7v6m0 3v1" />
-                  </svg>
-                  <div className="notice-content">
-                    <h2>Deployment is estimated.</h2>
+              </section>
+            </>
+          ) : (
+            <>
+              {data.summaryError && (
+                <aside role="alert" className="availability-band">
+                  <div className="wrap availability-notice">
                     <p>
-                      Battery state and electrical power aren’t public. These values are inferred from
-                      telemetry.
+                      Cut-off estimates couldn’t be loaded. The track and lap records are still available.
                     </p>
+                    <button className="text-toggle" onClick={() => location.reload()}>
+                      Try again ↗
+                    </button>
                   </div>
                 </aside>
-                <details className="method-note">
-                  <summary>
-                    How to read these estimates<span aria-hidden="true">+</span>
-                  </summary>
-                  <div>
-                    <p>
-                      The cut-off is an energy-management proxy, not a measurement of battery power. Positions
-                      are shown in metres from the start of the selected straight. Median intervals describe
-                      lap-to-lap uncertainty.
-                    </p>
-                    <p>
-                      Drag, mass and modelling assumptions limit interpretation. A later cut-off does not
-                      establish a faster car. The project’s pre-registered analysis found no detectable effect
-                      beyond its controls.
-                    </p>
-                    <p>
-                      This page serves recorded session aggregates from the project API. It does not show a
-                      live race or raw telemetry samples.
-                    </p>
-                    <a className="inline-link utility" href="/method.html">
-                      Read the full method record <span aria-hidden="true">↗</span>
-                    </a>
+              )}
+              {!data.session?.has_results && (
+                <aside className="availability-band">
+                  <div className="wrap availability-notice">
+                    <p>No published estimates for this session. Choose another race to compare cut-offs.</p>
+                    <a href="/#races">Choose a race ↗</a>
                   </div>
-                </details>
-              </div>
-            </section>
+                </aside>
+              )}
+              <section
+                id="track"
+                tabIndex={-1}
+                aria-label={`${place} track and selected estimates`}
+                className="band"
+              >
+                <div className="wrap track-section">
+                  <div className="session-controls">
+                    <SessionSelect
+                      pending={!data.ready && !data.loadError && !data.sessionsError}
+                      label="Driver"
+                      value={String(driver)}
+                      items={pool.map(driverOption)}
+                      onChange={(v) => selectDriver(Number(v))}
+                    />
+                    <SessionSelect
+                      pending={!data.ready && !data.loadError && !data.sessionsError}
+                      label="Compare"
+                      value={compare === null ? '' : String(compare)}
+                      items={[
+                        { value: '', name: 'No comparison' },
+                        ...pool.filter((d) => d.driver_number !== driver).map(driverOption),
+                      ]}
+                      onChange={(v) => {
+                        setCompare(v ? Number(v) : null);
+                        setLap(null);
+                      }}
+                    />
+                    <SessionSelect
+                      pending={!data.ready && !data.loadError && !data.sessionsError}
+                      label="Straight"
+                      value={String(sid)}
+                      items={data.straights.map((s) => ({
+                        value: String(s.straight_id),
+                        name: s.label ?? `Straight ${s.straight_id}`,
+                        code: `S${s.straight_id}`,
+                        detail: `${fmt(s.len)} m${straightsWithData.has(s.straight_id) ? '' : ' · No estimate for selection'}`,
+                      }))}
+                      onChange={(v) => selectStraight(Number(v))}
+                    />
+                  </div>
+                  <div className="map-stage">
+                    <div className="map-surface" data-no-estimates={noEstimates ? 'true' : undefined}>
+                      <div className="map-heading">
+                        <h2>{straight?.label}</h2>
+                        <span className="utility">
+                          S{sid} / {fmt(straight?.len)} m
+                        </span>
+                      </div>
+                      <Rule on={pBusy || cBusy} />
+                      {data.outline && straight ? (
+                        <TrackMap
+                          outline={data.outline}
+                          circuit={circuit}
+                          straights={data.straights}
+                          selected={sid}
+                          onSelect={selectStraight}
+                          straightsWithData={straightsWithData}
+                          tags={tags}
+                          arrows={false}
+                          runs={[picked, compared].filter(Boolean).map((d, i) => ({
+                            d0: straight.d0,
+                            d1: straight.d1,
+                            colour: d!.team_colour ?? '#f4f4ef',
+                            offset: compared ? (i === 0 ? -2 : 2) : 0,
+                          }))}
+                          corners
+                          sf
+                          straightLabels
+                          rotation={data.session?.circuit_key === 39 ? 85 : (meta?.rotation ?? undefined)}
+                          maxHeight={520}
+                          markerScale={compactMap ? 1 : 1.2}
+                          label={`${place} track with estimated deployment cut-off markers`}
+                        />
+                      ) : (
+                        <p className="quiet-note">Track geometry could not be loaded.</p>
+                      )}
+                      <p className="map-status" role="status">
+                        {noEstimates
+                          ? `No published estimate for ${picked?.name_acronym ?? 'this driver'}${compared ? ` or ${compared.name_acronym}` : ''} on this straight.`
+                          : ''}
+                      </p>
+                      <p className="map-footnote">
+                        Tags mark estimated cut-offs.
+                        {compare !== null ? ' Solid dot: driver. Ring: comparison.' : ''} Values are metres
+                        into the straight; intervals appear in the cards and chart.
+                      </p>
+                    </div>
+                    <aside
+                      className="estimate-stack"
+                      data-count={details.filter((x) => x.d).length}
+                      aria-label="Selected driver estimates"
+                    >
+                      {details.map(({ d, md, value, other }) =>
+                        d && straight ? (
+                          <DriverEstimate
+                            key={other ? 'compare' : 'primary'}
+                            d={d}
+                            value={value}
+                            lo={lap === null ? relative(md?.lo) : null}
+                            hi={lap === null ? relative(md?.hi) : null}
+                            samples={other ? comparisonSamples : primarySamples}
+                            domain={domain}
+                            lap={lap}
+                            other={other}
+                            busy={other ? cBusy : pBusy}
+                          />
+                        ) : null
+                      )}
+                      <div className="estimate-actions">
+                        <button
+                          className="text-toggle"
+                          onClick={() => setLap(null)}
+                          aria-hidden={lap === null || undefined}
+                          tabIndex={lap === null ? -1 : undefined}
+                          style={lap === null ? { visibility: 'hidden' } : undefined}
+                        >
+                          Use session median
+                        </button>
+                        <a className="button button-light" href="#lap-chart">
+                          Explore laps <span aria-hidden="true">↓</span>
+                        </a>
+                      </div>
+                    </aside>
+                  </div>
+                </div>
+              </section>
+              {(pCutRequest.error || cCutRequest.error) && (
+                <aside role="alert" className="availability-band">
+                  <div className="wrap availability-notice">
+                    <p>
+                      Lap estimates couldn’t be loaded for one of the selected drivers. Session medians remain
+                      available.
+                    </p>
+                    <button className="text-toggle" onClick={() => location.reload()}>
+                      Try again ↗
+                    </button>
+                  </div>
+                </aside>
+              )}
+              <section aria-label="Driver and lap comparisons">
+                <div className="wrap analysis-layout">
+                  <div className="driver-tower">
+                    <div className="analysis-heading">
+                      <h2>Drivers.</h2>
+                      <span className="utility">Cut-off / m est.</span>
+                    </div>
+                    <p className="quiet-note">Alphabetical order · session medians</p>
+                    <div className="tower-selection">
+                      {picked && (
+                        <button
+                          onClick={() => revealDriver(driver)}
+                          style={{ '--team': picked.team_colour ?? '#aaa' } as CSSProperties}
+                        >
+                          <span className="chart-key" />
+                          Driver <b>{picked.name_acronym}</b>
+                          <span aria-hidden="true">↓</span>
+                        </button>
+                      )}
+                      {compared && (
+                        <button
+                          onClick={() => revealDriver(compared.driver_number)}
+                          style={{ '--team': compared.team_colour ?? '#aaa' } as CSSProperties}
+                        >
+                          <span className="chart-key is-hollow" />
+                          Compare <b>{compared.name_acronym}</b>
+                          <span aria-hidden="true">↓</span>
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className={`tower-rows ${pBusy ? 'is-loading' : ''}`}
+                      aria-busy={pBusy || undefined}
+                      ref={tower}
+                    >
+                      {pool.map((d) => {
+                        const med = data.medians.get(d.driver_number)?.get(sid);
+                        const v = relative(med?.m);
+                        return (
+                          <button
+                            key={d.driver_number}
+                            data-driver={d.driver_number}
+                            className={`tower-row ${d.driver_number === driver ? 'selected' : ''} ${d.driver_number === compare ? 'compared' : ''}`}
+                            aria-pressed={d.driver_number === driver}
+                            aria-label={`Select ${d.full_name}, ${v === null ? 'no published estimate' : `estimated cut-off ${fmt(v)} metres`}${d.driver_number === compare ? ', current comparison' : ''}`}
+                            onClick={() => selectDriver(d.driver_number)}
+                            style={{ '--team': d.team_colour ?? '#aaa' } as CSSProperties}
+                          >
+                            <span className="tower-team" />
+                            <Logo team={d.team_name} keepSlot />
+                            <span className="tower-identity">
+                              <span className="tower-fullname">{driverName(d)}</span>
+                              <span className="tower-name">{d.team_name}</span>
+                            </span>
+                            <span className="tower-code">{d.name_acronym}</span>
+                            <span className="tower-value">{fmt(v)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="lap-panel" id="lap-chart" tabIndex={-1}>
+                    <div className="analysis-heading">
+                      <h2>Lap by lap.</h2>
+                      <span className="utility">{straight?.label}</span>
+                    </div>
+                    <Rule on={pBusy || cBusy} />
+                    <p className="quiet-note">
+                      Compare estimates across laps. Select a lap to inspect both drivers.
+                    </p>
+                    <div className="lap-selector">
+                      <label htmlFor="lap-pick">Lap</label>
+                      <select
+                        id="lap-pick"
+                        value={lap ?? ''}
+                        onChange={(e) => setLap(e.target.value ? Number(e.target.value) : null)}
+                      >
+                        <option value="">Session median</option>
+                        {laps
+                          .filter((l) => pCut?.get(l.lap_number)?.has(sid))
+                          .map((l) => (
+                            <option key={l.lap_number} value={l.lap_number}>
+                              Lap {l.lap_number}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    {straight && data.lap ? (
+                      <CutoffChart
+                        straight={straight}
+                        lapLen={data.lap}
+                        laps={laps}
+                        selectedLap={lap}
+                        onLap={setLap}
+                        drivers={[
+                          {
+                            number: driver,
+                            code: picked?.name_acronym ?? '',
+                            colour: picked?.team_colour ?? '#fff',
+                            hollow: false,
+                            cutoffs: pCut,
+                            median: primaryMedian,
+                          },
+                          ...(compare !== null
+                            ? [
+                                {
+                                  number: compare,
+                                  code: compared?.name_acronym ?? '',
+                                  colour: compared?.team_colour ?? '#aaa',
+                                  hollow: true,
+                                  cutoffs: cCut,
+                                  median: compareMedian,
+                                },
+                              ]
+                            : []),
+                        ]}
+                        loading={pCut === null}
+                        compareLoading={compare !== null && cCut === null}
+                        dim={pBusy}
+                        dimCompare={cBusy}
+                      />
+                    ) : null}
+                    <p className="chart-caption">
+                      Filled dots identify the driver; hollow dots identify the comparison. Values are
+                      estimates in metres from the start of the straight.
+                    </p>
+                  </div>
+                </div>
+              </section>
+              <section id="method" tabIndex={-1} className="band">
+                <div className="wrap method-section">
+                  <aside className="notice notice-caution">
+                    <svg
+                      className="notice-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 3h8l5 5v8l-5 5H8l-5-5V8Z" />
+                      <path d="M12 7v6m0 3v1" />
+                    </svg>
+                    <div className="notice-content">
+                      <h2>Deployment is estimated.</h2>
+                      <p>
+                        Battery state and electrical power aren’t public. These values are inferred from
+                        telemetry.
+                      </p>
+                    </div>
+                  </aside>
+                  <details className="method-note">
+                    <summary>
+                      How to read these estimates<span aria-hidden="true">+</span>
+                    </summary>
+                    <div>
+                      <p>
+                        The cut-off is an energy-management proxy, not a measurement of battery power.
+                        Positions are shown in metres from the start of the selected straight. Median
+                        intervals describe lap-to-lap uncertainty.
+                      </p>
+                      <p>
+                        Drag, mass and modelling assumptions limit interpretation. A later cut-off does not
+                        establish a faster car. The project’s pre-registered analysis found no detectable
+                        effect beyond its controls.
+                      </p>
+                      <p>
+                        This page serves recorded session aggregates from the project API. It does not show a
+                        live race or raw telemetry samples.
+                      </p>
+                      <a className="inline-link utility" href="/method.html">
+                        Read the full method record <span aria-hidden="true">↗</span>
+                      </a>
+                    </div>
+                  </details>
+                </div>
+              </section>
+            </>
+          )}
+        </main>
+      </PageGround>
+      <SiteFooter
+        ref={footer}
+        notes={
+          <>
+            Data: OpenF1 / f1-battery.
+            <br />
+            Team marks: Formula 1 media. Circuit reference: MultiViewer.
+            <br />
+            Typeface: Formula 1, Kurppa Hosk Type, Vercel.
           </>
-        )}
-      </main>
-      <footer ref={footer} className="session-footer">
-        <div className="wrap footer-inner">
-          <a className="footer-mark" href="/" aria-label="F1 Battery home">
-            <Mark />
-          </a>
-          <nav className="footer-route-links" aria-label="Footer navigation">
-            <a href="/#races">Races</a>
-            <a href="/replay.html">Replay</a>
-            <a href="/findings.html">Findings</a>
-            <a href="/method.html">Method</a>
-          </nav>
-          <div className="footer-bottom">
-            <p>
-              A private, non-commercial project.
-              <br />
-              Not affiliated with Formula 1, FIA or FOM.
-            </p>
-            <p>
-              Data: OpenF1 / f1-battery.
-              <br />
-              Team marks: Formula 1 media. Circuit reference: MultiViewer.
-              <br />
-              Typeface: Formula 1, Kurppa Hosk Type, Vercel.
-            </p>
-            <a href="#race-title">Back to top ↑</a>
-          </div>
-        </div>
-      </footer>
+        }
+        top={{ href: '#race-title', label: 'Back to top ↑' }}
+      />
     </div>
   );
 }

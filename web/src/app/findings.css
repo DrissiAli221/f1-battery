@@ -1,8 +1,10 @@
 @layer tokens, base, components, pages, overrides;
 @layer pages {
   /* Evidence stays static. Colour distinguishes recorded outcomes, never statistical importance. */
-  .findings-main {
+  .findings-ground {
     background: radial-gradient(ellipse 100% 750px at 5% 600px, #181816, transparent 85%), #060606;
+  }
+  .findings-main {
     padding-bottom: 0;
   }
   .finding-hero {

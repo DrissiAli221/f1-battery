@@ -2609,19 +2609,20 @@
   /* Depth steps, grain and vignette. Surfaces: ground (hero) -> band -> ground -> band.
    --line stays the structural hairline used across the site; --band-line is the faint
    edge for band tops and bottoms. Bands are translucent so grain and vignette read through. */
-  .session-main::before,
-  .session-main::after {
-    content: '';
+  .atmosphere {
     position: fixed;
     inset: 0;
+    z-index: 0;
     pointer-events: none;
   }
-  .session-main::before {
-    z-index: -2;
+  .atmosphere > * {
+    position: absolute;
+    inset: 0;
+  }
+  .atmosphere-vignette {
     background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
   }
-  .session-main::after {
-    z-index: -1;
+  .atmosphere-grain {
     background: var(--grain) 0 0/220px 220px;
     opacity: 0.06;
   }

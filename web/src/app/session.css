@@ -1,13 +1,19 @@
 @layer tokens, base, components, pages, overrides;
 @layer pages {
-  .session-main {
+  /* The ground wraps <main> and the atmosphere layer: ground (opaque, hides the sticky footer), then
+     atmosphere (z 0), then <main> content (z 1). */
+  .page-ground {
     position: relative;
     z-index: 1;
     background:
       radial-gradient(ellipse 100% 700px at 12% 520px, #151514 0%, transparent 80%),
       radial-gradient(ellipse 90% 850px at 100% 1300px, #111110 0%, transparent 85%), #060606;
-    padding-bottom: 72px;
     box-shadow: 0 10px 28px #0008;
+  }
+  .session-main {
+    position: relative;
+    z-index: 1;
+    padding-bottom: 72px;
   }
   .session-nav .nav-island {
     gap: 28px;
@@ -2209,7 +2215,8 @@
 
   /* Short states (missing session, API failure) must still cover the viewport so the footer behind the main is never clipped. */
   .session-main {
-    min-height: calc(100vh - 64px);
+    min-height: calc(100vh - var(--header-h));
+    min-height: calc(100svh - var(--header-h));
   }
   .map-surface {
     display: flex;

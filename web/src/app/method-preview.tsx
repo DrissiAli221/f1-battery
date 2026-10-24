@@ -1,4 +1,5 @@
 import './reveal';
+import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -7,7 +8,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import log from '../content/method-log.json';
 import logUrl from '../content/method-log.json?url';
 import { createPixelButton } from './hover.js';
-import { paintScreen } from './session-halftone.js';
+import { paintScreen } from './session-halftone';
 import './session.css';
 import './method.css';
 import './refinement.css';
@@ -97,21 +98,10 @@ const date = (iso: string) =>
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(iso + 'T00:00:00Z'));
-function Mark() {
-  return (
-    <span className="wordmark-top" aria-hidden="true">
-      F1
-      <span className="wordmark-divider" />
-      BATTERY
-    </span>
-  );
-}
 function App() {
   useInitialAnchor();
   const [filter, setFilter] = useState('All entries');
   const [switched, setSwitched] = useState(false);
-  const [menu, setMenu] = useState(false);
-  const menuButton = useRef<HTMLButtonElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const hero = useRef<HTMLElement>(null);
   const entries = log.entries.filter((e) => filter === 'All entries' || outcomes[e.id]?.group === filter);
@@ -170,338 +160,272 @@ function App() {
     ro.observe(c);
     return () => ro.disconnect();
   }, []);
-  useEffect(() => {
-    const pointer = (e: PointerEvent) => {
-      document.documentElement.dataset.input = 'pointer';
-      if (!(e.target as Element).closest('.session-nav')) setMenu(false);
-    };
-    const key = (e: KeyboardEvent) => {
-      document.documentElement.dataset.input = 'keyboard';
-      if (e.key === 'Escape') {
-        if (menu) menuButton.current?.focus();
-        setMenu(false);
-      }
-    };
-    document.addEventListener('pointerdown', pointer);
-    document.addEventListener('keydown', key, true);
-    return () => {
-      document.removeEventListener('pointerdown', pointer);
-      document.removeEventListener('keydown', key, true);
-    };
-  }, [menu]);
   return (
     <div className="session-preview method-preview">
       <a className="skip" href="#method-record">
         Skip to method record
       </a>
-      <header
-        className="site-header session-nav"
-        onBlur={(e) => {
-          if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setMenu(false);
-        }}
-      >
-        <div className="masthead wrap project-header">
-          <a className="project-wordmark" href="/" aria-label="F1 Battery home">
-            <Mark />
-          </a>
-          <div className="nav-side">
-            <button
-              ref={menuButton}
-              className="menu-toggle utility"
-              aria-expanded={menu}
-              aria-controls="method-nav"
-              onClick={() => setMenu((v) => !v)}
-            >
-              Menu <span aria-hidden="true">{menu ? '×' : '+'}</span>
-            </button>
-            <nav
-              className={`nav-island ${menu ? 'is-open' : ''}`}
-              id="method-nav"
-              aria-label="Main navigation"
-            >
-              <a href="/#races">Races</a>
-              <a href="/replay.html">Replay</a>
-              <a href="/findings.html">Findings</a>
-              <a href="/method.html" aria-current="page" onClick={() => setMenu(false)}>
-                Method
-              </a>
-            </nav>
-          </div>
-        </div>
-      </header>
-      <main className="session-main method-main">
-        <section ref={hero} aria-labelledby="method-title">
-          <div className="wrap method-hero">
-            <div className="method-screen" aria-hidden="true">
-              <canvas ref={canvas} data-screen="hero" />
-            </div>
-            <h1 id="method-title">
-              The
-              <br />
-              method.
-            </h1>
-            <div className="method-hero-copy">
-              <h2>
-                Speed is public.
+      <SiteHeader current="method" />
+      <PageGround className="method-ground">
+        <main className="session-main method-main">
+          <section ref={hero} aria-labelledby="method-title">
+            <div className="wrap method-hero">
+              <div className="method-screen" aria-hidden="true">
+                <canvas ref={canvas} data-screen="hero" />
+              </div>
+              <h1 id="method-title">
+                The
                 <br />
-                Battery power isn’t.
-              </h2>
-              <p>
-                This project estimates where electrical deployment may end using public telemetry. It then
-                tests whether that proxy predicts being passed.
-              </p>
-              <p className="method-small">
-                The checks, failures and changes are part of the record. No state-of-charge numbers are
-                claimed.
-              </p>
-              <a href="#method-record" className="method-jump">
-                Read the record <span aria-hidden="true">↓</span>
+                method.
+              </h1>
+              <div className="method-hero-copy">
+                <h2>
+                  Speed is public.
+                  <br />
+                  Battery power isn’t.
+                </h2>
+                <p>
+                  This project estimates where electrical deployment may end using public telemetry. It then
+                  tests whether that proxy predicts being passed.
+                </p>
+                <p className="method-small">
+                  The checks, failures and changes are part of the record. No state-of-charge numbers are
+                  claimed.
+                </p>
+                <a href="#method-record" className="method-jump">
+                  Read the record <span aria-hidden="true">↓</span>
+                </a>
+              </div>
+            </div>
+          </section>
+          <nav className="section-rail" aria-label="Method sections">
+            <div className="wrap page-sections">
+              <div>
+                <a href="#process">Overview</a>
+                <a href="#estimator">Estimator</a>
+                <a href="#method-record">The record</a>
+              </div>
+              <a href="/findings.html">
+                See the findings <span aria-hidden="true">↗</span>
               </a>
             </div>
-          </div>
-        </section>
-        <nav className="section-rail" aria-label="Method sections">
-          <div className="wrap page-sections">
-            <div>
-              <a href="#process">Overview</a>
-              <a href="#estimator">Estimator</a>
-              <a href="#method-record">The record</a>
+          </nav>
+          <section
+            id="process"
+            tabIndex={-1}
+            aria-label="From public telemetry to the hypothesis test"
+            className="band"
+          >
+            <div className="wrap method-process">
+              <ol>
+                {steps.map(([title, description], i) => (
+                  <li key={title}>
+                    <span className="process-number">{String(i + 1).padStart(2, '0')}</span>
+                    <h2>{title}</h2>
+                    <p>{description}</p>
+                    <span className="process-arrow" aria-hidden="true">
+                      →
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
-            <a href="/findings.html">
-              See the findings <span aria-hidden="true">↗</span>
-            </a>
-          </div>
-        </nav>
-        <section
-          id="process"
-          tabIndex={-1}
-          aria-label="From public telemetry to the hypothesis test"
-          className="band"
-        >
-          <div className="wrap method-process">
-            <ol>
-              {steps.map(([title, description], i) => (
-                <li key={title}>
-                  <span className="process-number">{String(i + 1).padStart(2, '0')}</span>
-                  <h2>{title}</h2>
-                  <p>{description}</p>
-                  <span className="process-arrow" aria-hidden="true">
-                    →
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-        <section id="estimator" tabIndex={-1} aria-labelledby="estimator-title">
-          <div className="wrap method-estimator">
-            <div className="session-card method-plate">
-              <h2 id="estimator-title">
-                A cut-off.
-                <br />
-                Not a<br />
-                charge level.
-                <span className="card-grain" aria-hidden="true">
+          </section>
+          <section id="estimator" tabIndex={-1} aria-labelledby="estimator-title">
+            <div className="wrap method-estimator">
+              <div className="session-card method-plate">
+                <h2 id="estimator-title">
                   A cut-off.
                   <br />
                   Not a<br />
                   charge level.
-                </span>
-              </h2>
-              <p>The primary threshold-crossing estimator</p>
-            </div>
-            <div className="estimator-copy">
-              <h3>What marks the point?</h3>
-              <p>
-                The primary cut-off is the first point above 250 km/h where acceleration stays below 0.5 m/s²
-                for four consecutive 0.25-second steps.
-              </p>
-              <dl className="estimator-rules">
-                <div>
-                  <dt>
-                    250<span>km/h</span>
-                  </dt>
-                  <dd>Minimum speed</dd>
-                </div>
-                <div>
-                  <dt>
-                    0.5<span>m/s²</span>
-                  </dt>
-                  <dd>Acceleration threshold</dd>
-                </div>
-                <div>
-                  <dt>
-                    4<span>steps</span>
-                  </dt>
-                  <dd>Sustained crossing</dd>
-                </div>
-              </dl>
-              <p>
-                Per-car session medians and lap-bootstrap intervals summarise the estimates. The explorer
-                places them in metres from the start of each straight.
-              </p>
-              <details className="method-explainer">
-                <summary>
-                  What the threshold cannot establish <span aria-hidden="true">+</span>
-                </summary>
+                  <span className="card-grain" aria-hidden="true">
+                    A cut-off.
+                    <br />
+                    Not a<br />
+                    charge level.
+                  </span>
+                </h2>
+                <p>The primary threshold-crossing estimator</p>
+              </div>
+              <div className="estimator-copy">
+                <h3>What marks the point?</h3>
                 <p>
-                  It is an energy-management proxy, not a measurement of electrical power. Drag, mass, engine
-                  behaviour and unobserved aero limit interpretation. The primary estimator may include lift
-                  leakage. A separate hinge-ramp detector remains experimental and is not used in the frozen
-                  test.
+                  The primary cut-off is the first point above 250 km/h where acceleration stays below 0.5
+                  m/s² for four consecutive 0.25-second steps.
                 </p>
-              </details>
-              <p className="method-small">
-                These are estimator rules, not FIA power limits. Source: the Phase 3–4 estimator and findings
-                notes.
-              </p>
-            </div>
-          </div>
-        </section>
-        <section id="method-record" tabIndex={-1} aria-labelledby="record-title" className="band">
-          <div className="wrap method-record">
-            <div className="method-section-heading">
-              <h2 id="record-title">
-                The record.
-                <br />
-                Including the failures.
-              </h2>
-              <p>
-                Pre-set checks stay as written. A later change is recorded as a separate decision, rather than
-                rewriting the original outcome.
-              </p>
-            </div>
-            <div className="record-filters" role="group" aria-label="Method topic">
-              {['All entries', 'Feasibility', 'Data quality', 'Estimator', 'Validation'].map((f) => (
-                <button
-                  key={f}
-                  aria-pressed={filter === f}
-                  onClick={() => {
-                    if (f !== filter) setSwitched(true);
-                    setFilter(f);
-                  }}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-            <p className="record-count" role="status">
-              {entries.length} of {log.entries.length} recorded entries
-            </p>
-            <div key={filter} className={`method-entries${switched ? ' switch-in' : ''}`}>
-              {entries.map((e) => {
-                const outcome = outcomes[e.id];
-                const index = log.entries.findIndex((x) => x.id === e.id);
-                return (
-                  <details className={`method-entry outcome-${outcome.tone}`} id={e.id} key={e.id}>
-                    <summary>
-                      <span className="entry-number">{String(index + 1).padStart(2, '0')}</span>
-                      <span className="entry-overview">
-                        <span className="entry-title">{e.title}</span>
-                        <span className="entry-meta">
-                          {e.phase} <span aria-hidden="true">/</span>{' '}
-                          <time dateTime={e.date}>{date(e.date)}</time>
-                        </span>
-                        <span className="entry-short">{outcome.short}</span>
-                      </span>
-                      <span className="entry-status">{outcome.label}</span>
-                      <span className="entry-toggle" aria-hidden="true">
-                        +
-                      </span>
-                    </summary>
-                    <div className="entry-detail">
-                      <dl>
-                        {[
-                          ['Tried', e.tried],
-                          ['Pre-set check', e.check],
-                          ['Found', e.found],
-                          ['Changed', e.consequence],
-                        ].map(([label, copy]) => (
-                          <div key={label}>
-                            <dt>{label}</dt>
-                            <dd>{copy}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                      <div className="entry-sources">
-                        <span>Source notes</span>
-                        <ul>
-                          {e.sources.map((source) => (
-                            <li key={source.path}>
-                              <code>{source.label}</code>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      {e.id === 'phase-s-taper' && (
-                        <p className="regulation-reference">
-                          Regulation reference: FIA Section C, Issue 20 (5 August 2026), Article C5.2.8, as
-                          recorded in docs/regulations.md. Per-event limits remain flagged where unknown.
-                        </p>
-                      )}
-                    </div>
-                  </details>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-        <section aria-labelledby="boundaries-title" className="band band-solid">
-          <div className="wrap method-boundaries">
-            <h2 id="boundaries-title">
-              Keep the
-              <br />
-              uncertainty in view.
-            </h2>
-            <div>
-              <p>
-                There is no public battery ground truth. Coarse, integer-speed telemetry and modelling
-                assumptions limit what can be inferred.
-              </p>
-              <p>
-                The frozen test’s “no effect” result applies to this estimator and the sample with detected
-                approach-straight cut-offs. It does not establish that energy management never matters.
-              </p>
-              <div className="method-next-actions">
-                <a className="button button-light" href="/findings.html">
-                  Read the findings
-                </a>
-                <a className="method-download" href={logUrl} download="f1-battery-method-log.json">
-                  Download the method record <span aria-hidden="true">↓</span>
-                </a>
+                <dl className="estimator-rules">
+                  <div>
+                    <dt>
+                      250<span>km/h</span>
+                    </dt>
+                    <dd>Minimum speed</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      0.5<span>m/s²</span>
+                    </dt>
+                    <dd>Acceleration threshold</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      4<span>steps</span>
+                    </dt>
+                    <dd>Sustained crossing</dd>
+                  </div>
+                </dl>
+                <p>
+                  Per-car session medians and lap-bootstrap intervals summarise the estimates. The explorer
+                  places them in metres from the start of each straight.
+                </p>
+                <details className="method-explainer">
+                  <summary>
+                    What the threshold cannot establish <span aria-hidden="true">+</span>
+                  </summary>
+                  <p>
+                    It is an energy-management proxy, not a measurement of electrical power. Drag, mass,
+                    engine behaviour and unobserved aero limit interpretation. The primary estimator may
+                    include lift leakage. A separate hinge-ramp detector remains experimental and is not used
+                    in the frozen test.
+                  </p>
+                </details>
+                <p className="method-small">
+                  These are estimator rules, not FIA power limits. Source: the Phase 3–4 estimator and
+                  findings notes.
+                </p>
               </div>
             </div>
-          </div>
-        </section>
-      </main>
-      <footer className="session-footer method-footer">
-        <div className="wrap footer-inner">
-          <a className="footer-mark" href="/" aria-label="F1 Battery home">
-            <Mark />
-          </a>
-          <nav className="footer-route-links" aria-label="Footer navigation">
-            <a href="/#races">Races</a>
-            <a href="/replay.html">Replay</a>
-            <a href="/findings.html">Findings</a>
-            <a href="/method.html">Method</a>
-          </nav>
-          <div className="footer-bottom">
-            <p>
-              A private, non-commercial project.
-              <br />
-              Not affiliated with Formula 1, FIA or FOM.
-            </p>
-            <p>
-              Data: OpenF1 / f1-battery.
-              <br />
-              All energy outputs are estimates.
-              <br />
-              Typeface: Formula 1, Kurppa Hosk Type, Vercel.
-            </p>
-            <a href="#method-title">Back to top ↑</a>
-          </div>
-        </div>
-      </footer>
+          </section>
+          <section id="method-record" tabIndex={-1} aria-labelledby="record-title" className="band">
+            <div className="wrap method-record">
+              <div className="method-section-heading">
+                <h2 id="record-title">
+                  The record.
+                  <br />
+                  Including the failures.
+                </h2>
+                <p>
+                  Pre-set checks stay as written. A later change is recorded as a separate decision, rather
+                  than rewriting the original outcome.
+                </p>
+              </div>
+              <div className="record-filters" role="group" aria-label="Method topic">
+                {['All entries', 'Feasibility', 'Data quality', 'Estimator', 'Validation'].map((f) => (
+                  <button
+                    key={f}
+                    aria-pressed={filter === f}
+                    onClick={() => {
+                      if (f !== filter) setSwitched(true);
+                      setFilter(f);
+                    }}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              <p className="record-count" role="status">
+                {entries.length} of {log.entries.length} recorded entries
+              </p>
+              <div key={filter} className={`method-entries${switched ? ' switch-in' : ''}`}>
+                {entries.map((e) => {
+                  const outcome = outcomes[e.id];
+                  const index = log.entries.findIndex((x) => x.id === e.id);
+                  return (
+                    <details className={`method-entry outcome-${outcome.tone}`} id={e.id} key={e.id}>
+                      <summary>
+                        <span className="entry-number">{String(index + 1).padStart(2, '0')}</span>
+                        <span className="entry-overview">
+                          <span className="entry-title">{e.title}</span>
+                          <span className="entry-meta">
+                            {e.phase} <span aria-hidden="true">/</span>{' '}
+                            <time dateTime={e.date}>{date(e.date)}</time>
+                          </span>
+                          <span className="entry-short">{outcome.short}</span>
+                        </span>
+                        <span className="entry-status">{outcome.label}</span>
+                        <span className="entry-toggle" aria-hidden="true">
+                          +
+                        </span>
+                      </summary>
+                      <div className="entry-detail">
+                        <dl>
+                          {[
+                            ['Tried', e.tried],
+                            ['Pre-set check', e.check],
+                            ['Found', e.found],
+                            ['Changed', e.consequence],
+                          ].map(([label, copy]) => (
+                            <div key={label}>
+                              <dt>{label}</dt>
+                              <dd>{copy}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                        <div className="entry-sources">
+                          <span>Source notes</span>
+                          <ul>
+                            {e.sources.map((source) => (
+                              <li key={source.path}>
+                                <code>{source.label}</code>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        {e.id === 'phase-s-taper' && (
+                          <p className="regulation-reference">
+                            Regulation reference: FIA Section C, Issue 20 (5 August 2026), Article C5.2.8, as
+                            recorded in docs/regulations.md. Per-event limits remain flagged where unknown.
+                          </p>
+                        )}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+          <section aria-labelledby="boundaries-title" className="band band-solid">
+            <div className="wrap method-boundaries">
+              <h2 id="boundaries-title">
+                Keep the
+                <br />
+                uncertainty in view.
+              </h2>
+              <div>
+                <p>
+                  There is no public battery ground truth. Coarse, integer-speed telemetry and modelling
+                  assumptions limit what can be inferred.
+                </p>
+                <p>
+                  The frozen test’s “no effect” result applies to this estimator and the sample with detected
+                  approach-straight cut-offs. It does not establish that energy management never matters.
+                </p>
+                <div className="method-next-actions">
+                  <a className="button button-light" href="/findings.html">
+                    Read the findings
+                  </a>
+                  <a className="method-download" href={logUrl} download="f1-battery-method-log.json">
+                    Download the method record <span aria-hidden="true">↓</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </PageGround>
+      <SiteFooter
+        className="method-footer"
+        notes={
+          <>
+            Data: OpenF1 / f1-battery.
+            <br />
+            All energy outputs are estimates.
+            <br />
+            Typeface: Formula 1, Kurppa Hosk Type, Vercel.
+          </>
+        }
+        top={{ href: '#method-title', label: 'Back to top ↑' }}
+      />
     </div>
   );
 }

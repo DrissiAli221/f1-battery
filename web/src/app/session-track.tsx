@@ -24,7 +24,7 @@ import {
   type TrackStraight,
 } from '../lib/track';
 import { useSize } from '../lib/useSize';
-import { prefersReducedMotion } from '../motion';
+import { prefersReducedMotion } from './env';
 import type { Outline } from '../lib/types';
 import '../track/track.css';
 

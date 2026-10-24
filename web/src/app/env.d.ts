@@ -4,4 +4,3 @@ declare namespace JSX {
   }
 }
 declare module './hover.js';
-declare module './session-halftone.js';

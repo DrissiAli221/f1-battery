@@ -1,4 +1,5 @@
 import './reveal';
+import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -33,15 +34,6 @@ const words: Record<string, string> = {
   brake: 'Braking',
   other: 'Other',
 };
-function Mark() {
-  return (
-    <span className="wordmark-top" aria-hidden="true">
-      F1
-      <span className="wordmark-divider" />
-      BATTERY
-    </span>
-  );
-}
 function ReplayStageSkeleton({ label }: { label: string }) {
   return (
     <section aria-label={label} aria-busy="true" className="band">
@@ -622,11 +614,6 @@ function App() {
   useInitialAnchor(!!sessions.data || !!sessions.error);
   const [key, setKey] = useState(Number(initial.get('session')) || 11361);
   const [mode, setMode] = useState<'review' | 'feed'>(initial.get('mode') === 'feed' ? 'feed' : 'review');
-  const [menu, setMenu] = useState(false);
-  const menuButton = useRef<HTMLButtonElement>(null);
-  // The Escape handler reads the latest menu state through a ref, so it subscribes once.
-  const menuOpen = useRef(menu);
-  menuOpen.current = menu;
   const races = useMemo(
     () =>
       (sessions.data ?? []).filter(
@@ -652,25 +639,6 @@ function App() {
     if (races.length && !races.some((s) => s.session_key === key)) setKey(races[0].session_key);
   }, [races, key]);
   useEffect(() => {
-    const pointer = (e: PointerEvent) => {
-      document.documentElement.dataset.input = 'pointer';
-      if (!(e.target as Element).closest('.session-nav')) setMenu(false);
-    };
-    const keyboard = (e: KeyboardEvent) => {
-      document.documentElement.dataset.input = 'keyboard';
-      if (e.key === 'Escape') {
-        if (menuOpen.current) menuButton.current?.focus();
-        setMenu(false);
-      }
-    };
-    document.addEventListener('pointerdown', pointer);
-    document.addEventListener('keydown', keyboard, true);
-    return () => {
-      document.removeEventListener('pointerdown', pointer);
-      document.removeEventListener('keydown', keyboard, true);
-    };
-  }, []);
-  useEffect(() => {
     document
       .querySelectorAll<HTMLAnchorElement>('.replay-preview .button-light')
       .forEach((el) => createPixelButton(el));
@@ -680,143 +648,96 @@ function App() {
       <a className="skip" href="#replay-controls">
         Skip to replay controls
       </a>
-      <header
-        className="site-header session-nav"
-        onBlur={(e) => {
-          if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setMenu(false);
-        }}
-      >
-        <div className="masthead wrap project-header">
-          <a className="project-wordmark" href="/" aria-label="F1 Battery home">
-            <Mark />
-          </a>
-          <div className="nav-side">
-            <button
-              ref={menuButton}
-              className="menu-toggle utility"
-              aria-expanded={menu}
-              aria-controls="replay-nav"
-              onClick={() => setMenu((v) => !v)}
-            >
-              Menu <span aria-hidden="true">{menu ? '×' : '+'}</span>
-            </button>
-            <nav
-              className={`nav-island ${menu ? 'is-open' : ''}`}
-              id="replay-nav"
-              aria-label="Main navigation"
-            >
-              <a href="/#races">Races</a>
-              <a href="/replay.html" aria-current="page">
-                Replay
-              </a>
-              <a href="/findings.html">Findings</a>
-              <a href="/method.html">Method</a>
-            </nav>
-          </div>
-        </div>
-      </header>
-      <main className="session-main replay-main">
-        <section>
-          <div className="wrap replay-hero">
-            <h1>
-              Race
-              <br />
-              replay.
-            </h1>
-            <div>
-              <p>
-                Revisit the recorded race.
+      <SiteHeader current="replay" />
+      <PageGround className="replay-ground">
+        <main className="session-main replay-main">
+          <section>
+            <div className="wrap replay-hero">
+              <h1>
+                Race
                 <br />
-                Keep the estimates in view.
-              </p>
-              <SessionSelect
-                pending={sessions.loading}
-                label="Recorded session"
-                value={String(key)}
-                items={races.map((s) => ({
-                  value: String(s.session_key),
-                  name: s.circuit_short_name ?? 'Session',
-                  detail: `${s.session_name} · ${s.date_start ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(s.date_start)) : ''}`,
-                }))}
-                onChange={(v) => setKey(Number(v))}
-              />
-            </div>
-          </div>
-        </section>
-        <div id="replay-controls" tabIndex={-1}>
-          <div className="wrap replay-modes">
-            <div role="group" aria-label="Replay mode">
-              <button aria-pressed={mode === 'review'} onClick={() => setMode('review')}>
-                Lap review
-              </button>
-              <button aria-pressed={mode === 'feed'} onClick={() => setMode('feed')}>
-                Replay feed
-              </button>
-            </div>
-            <span>
-              {place} / {mode === 'review' ? 'Recorded model outputs' : 'Local recorded feed'}
-            </span>
-          </div>
-        </div>
-        {sessions.error ? (
-          <section role="alert">
-            <div className="wrap replay-load">
-              Recorded sessions could not be loaded.
-              <button className="button button-secondary" onClick={() => location.reload()}>
-                Try again
-              </button>
+                replay.
+              </h1>
+              <div>
+                <p>
+                  Revisit the recorded race.
+                  <br />
+                  Keep the estimates in view.
+                </p>
+                <SessionSelect
+                  pending={sessions.loading}
+                  label="Recorded session"
+                  value={String(key)}
+                  items={races.map((s) => ({
+                    value: String(s.session_key),
+                    name: s.circuit_short_name ?? 'Session',
+                    detail: `${s.session_name} · ${s.date_start ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(s.date_start)) : ''}`,
+                  }))}
+                  onChange={(v) => setKey(Number(v))}
+                />
+              </div>
             </div>
           </section>
-        ) : session ? (
-          <ReplaySession key={key} sessionKey={key} mode={mode} onReview={() => setMode('review')} />
-        ) : sessions.loading ? (
-          <>
-            <p className="wrap replay-load-line" role="status">
-              Loading recorded sessions…{limited && ' The API is rate limited; retrying automatically.'}
-            </p>
-            <section aria-hidden="true">
-              <div className="wrap replay-controls replay-skeleton">
-                <div className="skel replay-skel-control" />
-                <div className="skel replay-skel-control" />
-                <div className="skel replay-skel-control" />
+          <div id="replay-controls" tabIndex={-1}>
+            <div className="wrap replay-modes">
+              <div role="group" aria-label="Replay mode">
+                <button aria-pressed={mode === 'review'} onClick={() => setMode('review')}>
+                  Lap review
+                </button>
+                <button aria-pressed={mode === 'feed'} onClick={() => setMode('feed')}>
+                  Replay feed
+                </button>
+              </div>
+              <span>
+                {place} / {mode === 'review' ? 'Recorded model outputs' : 'Local recorded feed'}
+              </span>
+            </div>
+          </div>
+          {sessions.error ? (
+            <section role="alert">
+              <div className="wrap replay-load">
+                Recorded sessions could not be loaded.
+                <button className="button button-secondary" onClick={() => location.reload()}>
+                  Try again
+                </button>
               </div>
             </section>
-            <ReplayStageSkeleton label="Loading circuit and driver field" />
+          ) : session ? (
+            <ReplaySession key={key} sessionKey={key} mode={mode} onReview={() => setMode('review')} />
+          ) : sessions.loading ? (
+            <>
+              <p className="wrap replay-load-line" role="status">
+                Loading recorded sessions…{limited && ' The API is rate limited; retrying automatically.'}
+              </p>
+              <section aria-hidden="true">
+                <div className="wrap replay-controls replay-skeleton">
+                  <div className="skel replay-skel-control" />
+                  <div className="skel replay-skel-control" />
+                  <div className="skel replay-skel-control" />
+                </div>
+              </section>
+              <ReplayStageSkeleton label="Loading circuit and driver field" />
+            </>
+          ) : (
+            <section role="status">
+              <div className="wrap replay-load">No recorded races are available.</div>
+            </section>
+          )}
+        </main>
+      </PageGround>
+      <SiteFooter
+        className="replay-footer"
+        notes={
+          <>
+            Data: OpenF1 / f1-battery.
+            <br />
+            Circuit reference: MultiViewer. Team marks: Formula 1 media.
+            <br />
+            All energy outputs and replay positions are estimates.
           </>
-        ) : (
-          <section role="status">
-            <div className="wrap replay-load">No recorded races are available.</div>
-          </section>
-        )}
-      </main>
-      <footer className="session-footer replay-footer">
-        <div className="wrap footer-inner">
-          <a className="footer-mark" href="/" aria-label="F1 Battery home">
-            <Mark />
-          </a>
-          <nav className="footer-route-links" aria-label="Footer navigation">
-            <a href="/#races">Races</a>
-            <a href="/replay.html">Replay</a>
-            <a href="/findings.html">Findings</a>
-            <a href="/method.html">Method</a>
-          </nav>
-          <div className="footer-bottom">
-            <p>
-              A private, non-commercial project.
-              <br />
-              Not affiliated with Formula 1, FIA or FOM.
-            </p>
-            <p>
-              Data: OpenF1 / f1-battery.
-              <br />
-              Circuit reference: MultiViewer. Team marks: Formula 1 media.
-              <br />
-              All energy outputs and replay positions are estimates.
-            </p>
-            <a href="/#races">Choose another race ↗</a>
-          </div>
-        </div>
-      </footer>
+        }
+        top={{ href: '/#races', label: 'Choose another race ↗' }}
+      />
     </div>
   );
 }

@@ -1,7 +1,9 @@
 @layer tokens, base, components, pages, overrides;
 @layer pages {
-  .replay-main {
+  .replay-ground {
     background: radial-gradient(ellipse 100% 900px at 15% 550px, #191917, transparent 85%), #060606;
+  }
+  .replay-main {
   }
   .replay-hero {
     display: grid;

@@ -46,7 +46,8 @@
     cursor: not-allowed;
     box-shadow: none;
   }
-  [tabindex='-1']:focus {
+  /* Only the in-page landing targets that preview-navigation focuses (elements with an id); any other programmatically focused element keeps its ring. */
+  [id][tabindex='-1']:focus {
     outline: none;
   }
   :is(button, a, input, select, summary, [role='button']):focus-visible {

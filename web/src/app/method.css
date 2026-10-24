@@ -1,8 +1,10 @@
 @layer tokens, base, components, pages, overrides;
 @layer pages {
   /* The method is a reading page: static evidence, native disclosures, and the approved material palette. */
-  .method-main {
+  .method-ground {
     background: radial-gradient(ellipse 100% 700px at 8% 650px, #181816, transparent 85%), #060606;
+  }
+  .method-main {
     padding-bottom: 0;
   }
   .method-hero {

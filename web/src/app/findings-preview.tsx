@@ -1,6 +1,7 @@
 import './reveal';
+import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -8,7 +9,7 @@ import findings from '../content/findings.json';
 import notes from '../content/findings-notes.json';
 import reportUrl from '../content/findings.json?url';
 import { createPixelButton } from './hover.js';
-import { paintScreen } from './session-halftone.js';
+import { paintScreen } from './session-halftone';
 import './session.css';
 import './findings.css';
 import './refinement.css';
@@ -34,15 +35,6 @@ const runs = [
 const OR_MIN = 0.6,
   OR_MAX = 1.6;
 const percent = (n: number) => (100 * (n - OR_MIN)) / (OR_MAX - OR_MIN);
-function Mark() {
-  return (
-    <span className="wordmark-top" aria-hidden="true">
-      F1
-      <span className="wordmark-divider" />
-      BATTERY
-    </span>
-  );
-}
 function RunChart() {
   return (
     <figure
@@ -171,8 +163,6 @@ function Permutation() {
 }
 function App() {
   useInitialAnchor();
-  const [menu, setMenu] = useState(false);
-  const menuButton = useRef<HTMLButtonElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const hero = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -230,414 +220,352 @@ function App() {
     ro.observe(c);
     return () => ro.disconnect();
   }, []);
-  useEffect(() => {
-    const pointer = (e: PointerEvent) => {
-      document.documentElement.dataset.input = 'pointer';
-      if (!(e.target as Element).closest('.session-nav')) setMenu(false);
-    };
-    const key = (e: KeyboardEvent) => {
-      document.documentElement.dataset.input = 'keyboard';
-      if (e.key === 'Escape') {
-        if (menu) menuButton.current?.focus();
-        setMenu(false);
-      }
-    };
-    document.addEventListener('pointerdown', pointer);
-    document.addEventListener('keydown', key, true);
-    return () => {
-      document.removeEventListener('pointerdown', pointer);
-      document.removeEventListener('keydown', key, true);
-    };
-  }, [menu]);
   return (
     <div className="session-preview findings-preview">
       <a className="skip" href="#evidence">
         Skip to evidence
       </a>
-      <header
-        className="site-header session-nav"
-        onBlur={(e) => {
-          if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setMenu(false);
-        }}
-      >
-        <div className="masthead wrap project-header">
-          <a className="project-wordmark" href="/" aria-label="F1 Battery home">
-            <Mark />
-          </a>
-          <div className="nav-side">
-            <button
-              ref={menuButton}
-              className="menu-toggle utility"
-              aria-expanded={menu}
-              aria-controls="findings-nav"
-              onClick={() => setMenu((v) => !v)}
-            >
-              Menu <span aria-hidden="true">{menu ? '×' : '+'}</span>
-            </button>
-            <nav
-              id="findings-nav"
-              className={`nav-island ${menu ? 'is-open' : ''}`}
-              aria-label="Main navigation"
-            >
-              <a href="/#races">Races</a>
-              <a href="/replay.html">Replay</a>
-              <a href="/findings.html" aria-current="page" onClick={() => setMenu(false)}>
-                Findings
-              </a>
-              <a href="/method.html">Method</a>
-            </nav>
-          </div>
-        </div>
-      </header>
-      <main className="session-main findings-main">
-        <section ref={hero} aria-labelledby="finding-title">
-          <div className="wrap finding-hero">
-            <div className="finding-screen" aria-hidden="true">
-              <canvas ref={canvas} data-screen="hero" />
-            </div>
-            <h1 id="finding-title">
-              No
-              <br />
-              effect.
-            </h1>
-            <div className="finding-answer">
-              <h2>An earlier cut-off didn’t predict the pass.</h2>
-              <p>
-                Once pace and Overtake availability were controlled, this energy-management proxy added no
-                detectable signal.
-              </p>
-              <p className="finding-caveat">{notes.caveat}</p>
-              <a className="finding-jump" href="#evidence">
-                See the evidence <span aria-hidden="true">↓</span>
-              </a>
-            </div>
-          </div>
-        </section>
-        <nav className="section-rail" aria-label="Findings sections">
-          <div className="wrap page-sections">
-            <div>
-              <a href="#evidence">Evidence</a>
-              <a href="#checks">Spot checks</a>
-              <a href="#limitations">Limits</a>
-              <a href="#provenance">Source</a>
-            </div>
-            <a href="/method.html">
-              How it works <span aria-hidden="true">↗</span>
-            </a>
-          </div>
-        </nav>
-        <section aria-label="Sample used in the frozen test">
-          <div className="wrap finding-sample">
-            {[
-              [findings.sample.events_tested, 'Passes tested'],
-              [findings.sample.non_events_tested, 'Close-following non-passes'],
-              [findings.sample.sessions_in_model, 'Sessions in the model'],
-            ].map(([n, label]) => (
-              <div key={label}>
-                <strong>{int(Number(n))}</strong>
-                <span>{label}</span>
+      <SiteHeader current="findings" />
+      <PageGround className="findings-ground">
+        <main className="session-main findings-main">
+          <section ref={hero} aria-labelledby="finding-title">
+            <div className="wrap finding-hero">
+              <div className="finding-screen" aria-hidden="true">
+                <canvas ref={canvas} data-screen="hero" />
               </div>
-            ))}
-          </div>
-        </section>
-        <section id="evidence" tabIndex={-1} aria-labelledby="evidence-title" className="band">
-          <div className="wrap finding-evidence">
-            <div className="finding-section-intro">
-              <h2 id="evidence-title">
-                Three runs.
+              <h1 id="finding-title">
+                No
                 <br />
-                Same verdict.
-              </h2>
-              <p>
-                The median cut-off has uncertainty. The frozen test runs at its point estimate and both
-                interval edges, controlling for pace, tyre age, lap number, Overtake availability and session.
-              </p>
-            </div>
-            <RunChart />
-            <div className="evidence-explanation">
-              <p>
-                All three estimates sit below 1, opposite to the proposed direction. Two intervals include 1.
-                None reaches the pre-registered effect threshold of 1.3.
-              </p>
-              <details className="finding-disclosure">
-                <summary>
-                  How to read the odds ratio <span aria-hidden="true">+</span>
-                </summary>
+                effect.
+              </h1>
+              <div className="finding-answer">
+                <h2>An earlier cut-off didn’t predict the pass.</h2>
                 <p>
-                  An odds ratio above 1 means higher odds of being passed per one standard deviation earlier
-                  cut-off; below 1 means lower odds. The horizontal line is the 95% confidence interval. The
-                  pre-registered result required an odds ratio of at least 1.3, an interval excluding 1 in all
-                  three runs, and a passed permutation control.
+                  Once pace and Overtake availability were controlled, this energy-management proxy added no
+                  detectable signal.
                 </p>
-              </details>
-            </div>
-          </div>
-        </section>
-        <section aria-labelledby="permutation-title" className="band band-solid">
-          <div className="wrap finding-permutation">
-            <div className="permutation-copy">
-              <h2 id="permutation-title">
-                The shuffle
-                <br />
-                check failed.
-              </h2>
-              <p>
-                The energy variables were shuffled together within each session {int(findings.permutation.n)}{' '}
-                times. The observed coefficient was more extreme than {fmt(findings.permutation.pct_abs, 1)}%
-                of the shuffled ones. The frozen requirement was more than 95%.
-              </p>
-              <p className="permutation-p">
-                <span>Two-sided permutation p</span>
-                <strong>{fmt(findings.permutation.p_two_sided, 3)}</strong>
-              </p>
-              <p className="finding-small">
-                The histogram is the saved permutation output, not a simulated illustration.
-              </p>
-            </div>
-            <div className="permutation-chart">
-              <Permutation />
-              <p className="finding-small">
-                Coefficient / log-odds per standard deviation of later cut-off. This fitted coefficient uses
-                the inverse direction to the earlier-cut-off odds ratios above.
-              </p>
-            </div>
-          </div>
-        </section>
-        <section id="checks" tabIndex={-1} aria-labelledby="checks-title" className="band">
-          <div className="wrap finding-checks">
-            <div className="finding-section-intro">
-              <h2 id="checks-title">
-                The checks
-                <br />
-                stay on record.
-              </h2>
-              <p>
-                Five spot checks, fixed before the model output. Three failed, one passed and one could not be
-                tested. The expected signs were kept.
-              </p>
-            </div>
-            <div className="check-list">
-              {notes.spot_checks.map((c) => (
-                <details key={c.n} className={`spot-check check-${c.result.replace(' ', '-')}`}>
-                  <summary>
-                    <span className="check-number">{String(c.n).padStart(2, '0')}</span>
-                    <span className="check-moment">{c.moment}</span>
-                    <span className="check-status">{c.result}</span>
-                    <span className="check-toggle" aria-hidden="true">
-                      +
-                    </span>
-                  </summary>
-                  <p>{c.detail}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-        <section aria-labelledby="more-title">
-          <div className="wrap finding-more">
-            <div className="finding-section-intro">
-              <h2 id="more-title">Look closer.</h2>
-              <p>
-                The full model and the maker comparison add context. Maker differences are descriptive; they
-                do not measure energy capacity.
-              </p>
-            </div>
-            <details className="finding-disclosure full-model">
-              <summary>
-                Full model coefficients <span aria-hidden="true">+</span>
-              </summary>
-              <p>
-                Point-estimate fit. Continuous terms are per one standard deviation; binary terms compare 1
-                against 0. The cut-off deviation here is the fitted <strong>later-cut-off</strong> direction.
-              </p>
-              <div
-                className="finding-table-scroll"
-                role="region"
-                aria-label="Full model odds ratios"
-                tabIndex={0}
-              >
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Term</th>
-                      <th>Odds ratio</th>
-                      <th>95% interval</th>
-                      <th>p</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {findings.terms.map((t) => (
-                      <tr key={t.term}>
-                        <th scope="row">{(notes.terms as Record<string, string>)[t.term]}</th>
-                        <td data-label="Odds ratio">{fmt(t.or, 3)}</td>
-                        <td data-label="95% interval">
-                          {fmt(t.lo, 3)}–{fmt(t.hi, 3)}
-                        </td>
-                        <td data-label="p">{t.p < 0.001 ? '<0.001' : fmt(t.p, 3)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <p className="finding-caveat">{notes.caveat}</p>
+                <a className="finding-jump" href="#evidence">
+                  See the evidence <span aria-hidden="true">↓</span>
+                </a>
               </div>
-              <p>
-                The energy terms together add no detectable improvement over the controls: likelihood-ratio χ²{' '}
-                {fmt(findings.energy_terms_lr.chi2)}, {findings.energy_terms_lr.df} degrees of freedom, p ={' '}
-                {fmt(findings.energy_terms_lr.p, 3)}. This comparison is a post-hoc sensitivity check.
-              </p>
-            </details>
-            <details className="finding-disclosure maker-details">
-              <summary>
-                Power-unit makers across races <span aria-hidden="true">+</span>
-              </summary>
-              <p>
-                Descriptive analysis outside the frozen test. Mean offset from all makers’ mean in each
-                race/straight cell with at least three makers. Bands show ±1 standard deviation across cells,
-                not confidence intervals.
-              </p>
-              <div className="maker-axis" aria-hidden="true">
-                <span>−100 m</span>
-                <span>0</span>
-                <span>+100 m</span>
-              </div>
-              <div className="maker-rows">
-                {findings.makers.map((m) => (
-                  <div className="maker-row" key={m.maker}>
-                    <span>{m.maker}</span>
-                    <div className="maker-plot" aria-hidden="true">
-                      <i className="maker-zero" />
-                      <i
-                        className="maker-spread"
-                        style={{
-                          left: `${50 + (m.mean_offset_m - m.sd_offset_m) / 2}%`,
-                          width: `${m.sd_offset_m}%`,
-                        }}
-                      />
-                      <i className="maker-mean" style={{ left: `${50 + m.mean_offset_m / 2}%` }} />
-                    </div>
-                    <strong>
-                      {m.mean_offset_m > 0 ? '+' : ''}
-                      {fmt(m.mean_offset_m, 1)} m
-                    </strong>
-                    <span className="maker-detail">
-                      ±{fmt(m.sd_offset_m, 1)} m SD · {m.cells} cells
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <p>
-                Honda represents two cars. Drag, mass assumptions and car-to-car differences cannot be
-                separated here. A difference in this proxy is not a difference in battery or energy capacity.
-              </p>
-            </details>
-          </div>
-        </section>
-        <section id="limitations" tabIndex={-1} aria-labelledby="limits-title" className="band band-solid">
-          <div className="wrap finding-limits">
-            <div className="finding-section-intro">
-              <h2 id="limits-title">
-                What this
-                <br />
-                cannot say.
-              </h2>
-              <p>
-                No public battery ground truth. No state-of-charge claim. These limitations are part of the
-                finding.
-              </p>
             </div>
-            <dl>
-              {notes.limits.map(([title, detail]) => (
-                <div key={title}>
-                  <dt>{title}</dt>
-                  <dd>
-                    {title === 'Unknown limits'
-                      ? 'Per-event race energy limits are not public. The model uses assumptions flagged as unknown.'
-                      : detail}
-                  </dd>
+          </section>
+          <nav className="section-rail" aria-label="Findings sections">
+            <div className="wrap page-sections">
+              <div>
+                <a href="#evidence">Evidence</a>
+                <a href="#checks">Spot checks</a>
+                <a href="#limitations">Limits</a>
+                <a href="#provenance">Source</a>
+              </div>
+              <a href="/method.html">
+                How it works <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </nav>
+          <section aria-label="Sample used in the frozen test">
+            <div className="wrap finding-sample">
+              {[
+                [findings.sample.events_tested, 'Passes tested'],
+                [findings.sample.non_events_tested, 'Close-following non-passes'],
+                [findings.sample.sessions_in_model, 'Sessions in the model'],
+              ].map(([n, label]) => (
+                <div key={label}>
+                  <strong>{int(Number(n))}</strong>
+                  <span>{label}</span>
                 </div>
               ))}
-            </dl>
-            <aside className="finding-limit-note">
-              <span aria-hidden="true">!</span>
-              <p>
-                A lap-level proxy may miss an effect that happens inside a single straight. “No effect” here
-                is a result for this estimator and sample.
-              </p>
-            </aside>
-          </div>
-        </section>
-        <section id="provenance" tabIndex={-1} aria-labelledby="provenance-title">
-          <div className="wrap finding-provenance">
-            <div>
-              <h2 id="provenance-title">Traceable to the run.</h2>
-              <p>
-                Pre-registered{' '}
-                {new Intl.DateTimeFormat('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                  timeZone: 'UTC',
-                }).format(new Date(notes.frozen + 'T00:00:00Z'))}
-                . Model {findings.source.model_version}.
-              </p>
-              <details className="finding-disclosure">
+            </div>
+          </section>
+          <section id="evidence" tabIndex={-1} aria-labelledby="evidence-title" className="band">
+            <div className="wrap finding-evidence">
+              <div className="finding-section-intro">
+                <h2 id="evidence-title">
+                  Three runs.
+                  <br />
+                  Same verdict.
+                </h2>
+                <p>
+                  The median cut-off has uncertainty. The frozen test runs at its point estimate and both
+                  interval edges, controlling for pace, tyre age, lap number, Overtake availability and
+                  session.
+                </p>
+              </div>
+              <RunChart />
+              <div className="evidence-explanation">
+                <p>
+                  All three estimates sit below 1, opposite to the proposed direction. Two intervals include
+                  1. None reaches the pre-registered effect threshold of 1.3.
+                </p>
+                <details className="finding-disclosure">
+                  <summary>
+                    How to read the odds ratio <span aria-hidden="true">+</span>
+                  </summary>
+                  <p>
+                    An odds ratio above 1 means higher odds of being passed per one standard deviation earlier
+                    cut-off; below 1 means lower odds. The horizontal line is the 95% confidence interval. The
+                    pre-registered result required an odds ratio of at least 1.3, an interval excluding 1 in
+                    all three runs, and a passed permutation control.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </section>
+          <section aria-labelledby="permutation-title" className="band band-solid">
+            <div className="wrap finding-permutation">
+              <div className="permutation-copy">
+                <h2 id="permutation-title">
+                  The shuffle
+                  <br />
+                  check failed.
+                </h2>
+                <p>
+                  The energy variables were shuffled together within each session{' '}
+                  {int(findings.permutation.n)} times. The observed coefficient was more extreme than{' '}
+                  {fmt(findings.permutation.pct_abs, 1)}% of the shuffled ones. The frozen requirement was
+                  more than 95%.
+                </p>
+                <p className="permutation-p">
+                  <span>Two-sided permutation p</span>
+                  <strong>{fmt(findings.permutation.p_two_sided, 3)}</strong>
+                </p>
+                <p className="finding-small">
+                  The histogram is the saved permutation output, not a simulated illustration.
+                </p>
+              </div>
+              <div className="permutation-chart">
+                <Permutation />
+                <p className="finding-small">
+                  Coefficient / log-odds per standard deviation of later cut-off. This fitted coefficient uses
+                  the inverse direction to the earlier-cut-off odds ratios above.
+                </p>
+              </div>
+            </div>
+          </section>
+          <section id="checks" tabIndex={-1} aria-labelledby="checks-title" className="band">
+            <div className="wrap finding-checks">
+              <div className="finding-section-intro">
+                <h2 id="checks-title">
+                  The checks
+                  <br />
+                  stay on record.
+                </h2>
+                <p>
+                  Five spot checks, fixed before the model output. Three failed, one passed and one could not
+                  be tested. The expected signs were kept.
+                </p>
+              </div>
+              <div className="check-list">
+                {notes.spot_checks.map((c) => (
+                  <details key={c.n} className={`spot-check check-${c.result.replace(' ', '-')}`}>
+                    <summary>
+                      <span className="check-number">{String(c.n).padStart(2, '0')}</span>
+                      <span className="check-moment">{c.moment}</span>
+                      <span className="check-status">{c.result}</span>
+                      <span className="check-toggle" aria-hidden="true">
+                        +
+                      </span>
+                    </summary>
+                    <p>{c.detail}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section aria-labelledby="more-title">
+            <div className="wrap finding-more">
+              <div className="finding-section-intro">
+                <h2 id="more-title">Look closer.</h2>
+                <p>
+                  The full model and the maker comparison add context. Maker differences are descriptive; they
+                  do not measure energy capacity.
+                </p>
+              </div>
+              <details className="finding-disclosure full-model">
                 <summary>
-                  Source and sample accounting <span aria-hidden="true">+</span>
+                  Full model coefficients <span aria-hidden="true">+</span>
                 </summary>
                 <p>
-                  Script: <code>{findings.source.script}</code>
+                  Point-estimate fit. Continuous terms are per one standard deviation; binary terms compare 1
+                  against 0. The cut-off deviation here is the fitted <strong>later-cut-off</strong>{' '}
+                  direction.
                 </p>
+                <div
+                  className="finding-table-scroll"
+                  role="region"
+                  aria-label="Full model odds ratios"
+                  tabIndex={0}
+                >
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Term</th>
+                        <th>Odds ratio</th>
+                        <th>95% interval</th>
+                        <th>p</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {findings.terms.map((t) => (
+                        <tr key={t.term}>
+                          <th scope="row">{(notes.terms as Record<string, string>)[t.term]}</th>
+                          <td data-label="Odds ratio">{fmt(t.or, 3)}</td>
+                          <td data-label="95% interval">
+                            {fmt(t.lo, 3)}–{fmt(t.hi, 3)}
+                          </td>
+                          <td data-label="p">{t.p < 0.001 ? '<0.001' : fmt(t.p, 3)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
                 <p>
-                  Run: <code>{findings.source.run_id}</code>
+                  The energy terms together add no detectable improvement over the controls: likelihood-ratio
+                  χ² {fmt(findings.energy_terms_lr.chi2)}, {findings.energy_terms_lr.df} degrees of freedom, p
+                  = {fmt(findings.energy_terms_lr.p, 3)}. This comparison is a post-hoc sensitivity check.
                 </p>
+              </details>
+              <details className="finding-disclosure maker-details">
+                <summary>
+                  Power-unit makers across races <span aria-hidden="true">+</span>
+                </summary>
                 <p>
-                  {int(findings.sample.events_extracted)} passes and{' '}
-                  {int(findings.sample.non_events_extracted)} close-following non-passes were extracted.
-                  Complete-case selection and removal of single-class sessions leave{' '}
-                  {int(findings.sample.events_tested)} passes and {int(findings.sample.non_events_tested)}{' '}
-                  non-passes in {findings.sample.sessions_in_model} sessions. The largest drop is missing
-                  previous-lap cut-offs on the approach straight.
+                  Descriptive analysis outside the frozen test. Mean offset from all makers’ mean in each
+                  race/straight cell with at least three makers. Bands show ±1 standard deviation across
+                  cells, not confidence intervals.
+                </p>
+                <div className="maker-axis" aria-hidden="true">
+                  <span>−100 m</span>
+                  <span>0</span>
+                  <span>+100 m</span>
+                </div>
+                <div className="maker-rows">
+                  {findings.makers.map((m) => (
+                    <div className="maker-row" key={m.maker}>
+                      <span>{m.maker}</span>
+                      <div className="maker-plot" aria-hidden="true">
+                        <i className="maker-zero" />
+                        <i
+                          className="maker-spread"
+                          style={{
+                            left: `${50 + (m.mean_offset_m - m.sd_offset_m) / 2}%`,
+                            width: `${m.sd_offset_m}%`,
+                          }}
+                        />
+                        <i className="maker-mean" style={{ left: `${50 + m.mean_offset_m / 2}%` }} />
+                      </div>
+                      <strong>
+                        {m.mean_offset_m > 0 ? '+' : ''}
+                        {fmt(m.mean_offset_m, 1)} m
+                      </strong>
+                      <span className="maker-detail">
+                        ±{fmt(m.sd_offset_m, 1)} m SD · {m.cells} cells
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p>
+                  Honda represents two cars. Drag, mass assumptions and car-to-car differences cannot be
+                  separated here. A difference in this proxy is not a difference in battery or energy
+                  capacity.
                 </p>
               </details>
             </div>
-            <div className="provenance-actions">
-              <a className="button button-light" href="/#races">
-                Explore the races
-              </a>
-              <a className="finding-download" href={reportUrl} download="f1-battery-findings.json">
-                Download result summary <span aria-hidden="true">↓</span>
-              </a>
+          </section>
+          <section id="limitations" tabIndex={-1} aria-labelledby="limits-title" className="band band-solid">
+            <div className="wrap finding-limits">
+              <div className="finding-section-intro">
+                <h2 id="limits-title">
+                  What this
+                  <br />
+                  cannot say.
+                </h2>
+                <p>
+                  No public battery ground truth. No state-of-charge claim. These limitations are part of the
+                  finding.
+                </p>
+              </div>
+              <dl>
+                {notes.limits.map(([title, detail]) => (
+                  <div key={title}>
+                    <dt>{title}</dt>
+                    <dd>
+                      {title === 'Unknown limits'
+                        ? 'Per-event race energy limits are not public. The model uses assumptions flagged as unknown.'
+                        : detail}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <aside className="finding-limit-note">
+                <span aria-hidden="true">!</span>
+                <p>
+                  A lap-level proxy may miss an effect that happens inside a single straight. “No effect” here
+                  is a result for this estimator and sample.
+                </p>
+              </aside>
             </div>
-          </div>
-        </section>
-      </main>
-      <footer className="session-footer findings-footer">
-        <div className="wrap footer-inner">
-          <a className="footer-mark" href="/" aria-label="F1 Battery home">
-            <Mark />
-          </a>
-          <nav className="footer-route-links" aria-label="Footer navigation">
-            <a href="/#races">Races</a>
-            <a href="/replay.html">Replay</a>
-            <a href="/findings.html">Findings</a>
-            <a href="/method.html">Method</a>
-          </nav>
-          <div className="footer-bottom">
-            <p>
-              A private, non-commercial project.
-              <br />
-              Not affiliated with Formula 1, FIA or FOM.
-            </p>
-            <p>
-              Data: OpenF1 / f1-battery.
-              <br />
-              All energy outputs are estimates.
-              <br />
-              Typeface: Formula 1, Kurppa Hosk Type, Vercel.
-            </p>
-            <a href="#finding-title">Back to top ↑</a>
-          </div>
-        </div>
-      </footer>
+          </section>
+          <section id="provenance" tabIndex={-1} aria-labelledby="provenance-title">
+            <div className="wrap finding-provenance">
+              <div>
+                <h2 id="provenance-title">Traceable to the run.</h2>
+                <p>
+                  Pre-registered{' '}
+                  {new Intl.DateTimeFormat('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    timeZone: 'UTC',
+                  }).format(new Date(notes.frozen + 'T00:00:00Z'))}
+                  . Model {findings.source.model_version}.
+                </p>
+                <details className="finding-disclosure">
+                  <summary>
+                    Source and sample accounting <span aria-hidden="true">+</span>
+                  </summary>
+                  <p>
+                    Script: <code>{findings.source.script}</code>
+                  </p>
+                  <p>
+                    Run: <code>{findings.source.run_id}</code>
+                  </p>
+                  <p>
+                    {int(findings.sample.events_extracted)} passes and{' '}
+                    {int(findings.sample.non_events_extracted)} close-following non-passes were extracted.
+                    Complete-case selection and removal of single-class sessions leave{' '}
+                    {int(findings.sample.events_tested)} passes and {int(findings.sample.non_events_tested)}{' '}
+                    non-passes in {findings.sample.sessions_in_model} sessions. The largest drop is missing
+                    previous-lap cut-offs on the approach straight.
+                  </p>
+                </details>
+              </div>
+              <div className="provenance-actions">
+                <a className="button button-light" href="/#races">
+                  Explore the races
+                </a>
+                <a className="finding-download" href={reportUrl} download="f1-battery-findings.json">
+                  Download result summary <span aria-hidden="true">↓</span>
+                </a>
+              </div>
+            </div>
+          </section>
+        </main>
+      </PageGround>
+      <SiteFooter
+        className="findings-footer"
+        notes={
+          <>
+            Data: OpenF1 / f1-battery.
+            <br />
+            All energy outputs are estimates.
+            <br />
+            Typeface: Formula 1, Kurppa Hosk Type, Vercel.
+          </>
+        }
+        top={{ href: '#finding-title', label: 'Back to top ↑' }}
+      />
     </div>
   );
 }

@@ -1,8 +1,10 @@
 @layer tokens, base, components, pages, overrides;
 @layer pages {
   /* Home uses the approved engraved race plate as its main object. No new illustration or colour system. */
-  .home-main {
+  .home-ground {
     background: radial-gradient(ellipse 100% 700px at 5% 720px, #171715, transparent 85%), #060606;
+  }
+  .home-main {
     padding-bottom: 0;
   }
   .home-hero {
