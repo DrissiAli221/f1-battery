@@ -7,17 +7,17 @@
  * One clock: gsap.ticker drives Lenis, ScrollTrigger, the instrument's cursor and anything
  * else that moves. Nothing here starts its own requestAnimationFrame loop.
  */
-import { useEffect, useLayoutEffect, useRef, type DependencyList } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { initScroll, onScroll, resetScroll } from "./scroll";
-import { initReveals } from "./reveal";
-import { enterPage, initTransitions, whenEntered } from "./transition";
-import { prefersReducedMotion } from "./env";
+import { useEffect, useLayoutEffect, useRef, type DependencyList } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { initScroll, onScroll, resetScroll } from './scroll';
+import { initReveals } from './reveal';
+import { enterPage, initTransitions, whenEntered } from './transition';
+import { prefersReducedMotion } from './env';
 
-export { onScroll, scrollState, scrollToTarget, stopScroll, startScroll } from "./scroll";
-export { whenEntered } from "./transition";
-export { ease, isTouch, prefersReducedMotion, ENTRY_X } from "./env";
+export { onScroll, scrollState, scrollToTarget, stopScroll, startScroll } from './scroll';
+export { whenEntered } from './transition';
+export { ease, isTouch, prefersReducedMotion, ENTRY_X } from './env';
 
 let booted = false;
 
@@ -25,7 +25,7 @@ let booted = false;
 export function bootMotion() {
   if (booted) return;
   booted = true;
-  document.documentElement.classList.toggle("motion", !prefersReducedMotion());
+  document.documentElement.classList.toggle('motion', !prefersReducedMotion());
   initScroll();
   initTransitions();
   initStepAside();
@@ -39,7 +39,7 @@ function initStepAside() {
   let last = 0;
   onScroll(({ y }) => {
     if (Math.abs(y - last) < 4) return;
-    document.documentElement.classList.toggle("readout-away", y > 160 && y > last);
+    document.documentElement.classList.toggle('readout-away', y > 160 && y > last);
     last = y;
   });
 }
@@ -99,7 +99,7 @@ export function usePage<T extends HTMLElement = HTMLElement>(fn?: PageFn, deps: 
       if (state.alive) intro?.play();
     });
     return () => {
-      if (typeof cleanup === "function") cleanup();
+      if (typeof cleanup === 'function') cleanup();
       run.revert();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

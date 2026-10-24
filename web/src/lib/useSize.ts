@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Content-box size of an element, updated on resize. Returns a callback ref, so the measured

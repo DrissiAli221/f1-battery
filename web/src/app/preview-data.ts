@@ -1,9 +1,18 @@
 // Preview-only adapter: expose request failures so a failed request cannot look like an endless load.
-import { useMemo } from "react";
-import { getAll, url, useList, useLoad, useRemote } from "../lib/api";
-import { nameStraights } from "../lib/straights";
-import { lapLength, trackStraights, type TrackStraight } from "../lib/track";
-import type { Driver, Lap, Outline, RegimeBin, ResultRow, SessionRow, Straight, SummaryDriver } from "../lib/types";
+import { useMemo } from 'react';
+import { getAll, url, useList, useLoad, useRemote } from '../lib/api';
+import { nameStraights } from '../lib/straights';
+import { lapLength, trackStraights, type TrackStraight } from '../lib/track';
+import type {
+  Driver,
+  Lap,
+  Outline,
+  RegimeBin,
+  ResultRow,
+  SessionRow,
+  Straight,
+  SummaryDriver,
+} from '../lib/types';
 
 export type Median = { m: number; lo: number | null; hi: number | null };
 
@@ -30,7 +39,7 @@ export interface SessionData {
 
 /** Everything the explorer needs for one session that does not depend on the selection. */
 export function useSessionData(key: number): SessionData {
-  const sessions = useList<SessionRow>("/sessions");
+  const sessions = useList<SessionRow>('/sessions');
   const session = sessions.data?.find((s) => s.session_key === key) ?? null;
   const drivers = useList<Driver>(`/sessions/${key}/drivers`);
   const circuit = session?.circuit_key ?? null;
@@ -43,8 +52,9 @@ export function useSessionData(key: number): SessionData {
   const lap = outline.data && outline.data.points.length > 1 ? lapLength(outline.data) : null;
 
   const named = useMemo(
-    () => (lap && straights.data ? trackStraights(nameStraights(straights.data, circuit, outline.data), lap) : []),
-    [lap, straights.data, circuit, outline.data],
+    () =>
+      lap && straights.data ? trackStraights(nameStraights(straights.data, circuit, outline.data), lap) : [],
+    [lap, straights.data, circuit, outline.data]
   );
 
   const medians = useMemo(() => {
@@ -52,7 +62,8 @@ export function useSessionData(key: number): SessionData {
     for (const r of summary.data ?? []) {
       const m = new Map<number, Median>();
       for (const s of r.straights) {
-        if (s.cutoff_distance_median_m !== null) m.set(s.straight_id, { m: s.cutoff_distance_median_m, lo: s.ci_low, hi: s.ci_high });
+        if (s.cutoff_distance_median_m !== null)
+          m.set(s.straight_id, { m: s.cutoff_distance_median_m, lo: s.ci_low, hi: s.ci_high });
       }
       out.set(r.driver_number, m);
     }
@@ -71,14 +82,17 @@ export function useSessionData(key: number): SessionData {
 
   const withResults = useMemo(
     () => (drivers.data ?? []).filter((d) => (medians.get(d.driver_number)?.size ?? 0) > 0),
-    [drivers.data, medians],
+    [drivers.data, medians]
   );
 
   const summaryReady = !session?.has_results || summary.data !== null || summary.error !== null;
   // Wait for the summary before choosing, so the page does not load (and animate) a provisional driver.
   const defaultDriver = useMemo(
-    () => (summaryReady ? pickDefault(session, withResults.length ? withResults : drivers.data ?? [], lapsBy) : null),
-    [summaryReady, session, withResults, drivers.data, lapsBy],
+    () =>
+      summaryReady
+        ? pickDefault(session, withResults.length ? withResults : (drivers.data ?? []), lapsBy)
+        : null,
+    [summaryReady, session, withResults, drivers.data, lapsBy]
   );
   return {
     session,
@@ -96,7 +110,13 @@ export function useSessionData(key: number): SessionData {
     laps: lapsBy,
     withResults,
     defaultDriver,
-    ready: session !== null && drivers.data !== null && laps.data !== null && summaryReady && (outline.data !== null || outline.error !== null) && (straights.data !== null || straights.error !== null),
+    ready:
+      session !== null &&
+      drivers.data !== null &&
+      laps.data !== null &&
+      summaryReady &&
+      (outline.data !== null || outline.error !== null) &&
+      (straights.data !== null || straights.error !== null),
   };
 }
 
@@ -107,7 +127,7 @@ export function useSessionData(key: number): SessionData {
  */
 function pickDefault(session: SessionRow | null, pool: Driver[], laps: Map<number, Lap[]>): number | null {
   if (!pool.length) return null;
-  const isRace = session?.session_name === "Race" || session?.session_name === "Sprint";
+  const isRace = session?.session_name === 'Race' || session?.session_name === 'Sprint';
   const scored = pool.map((d) => {
     const list = (laps.get(d.driver_number) ?? []).filter((l) => l.lap_duration !== null);
     const last = list[list.length - 1];
@@ -123,11 +143,10 @@ export type Cutoffs = Map<number, Map<number, number>>;
 
 /** Per-lap cut-off distance for one driver: lap -> straight -> metres. */
 export function useCutoffs(session: number, driver: number | null, enabled: boolean) {
-  const r = useLoad<ResultRow[]>(
-    enabled && driver !== null ? `cut:${session}:${driver}` : null,
-    () => getAll<ResultRow>("/results", { session, driver, variable: "cutoff_distance_m" }),
+  const r = useLoad<ResultRow[]>(enabled && driver !== null ? `cut:${session}:${driver}` : null, () =>
+    getAll<ResultRow>('/results', { session, driver, variable: 'cutoff_distance_m' })
   );
-  const data=useMemo(() => {
+  const data = useMemo(() => {
     if (!r.data) return null;
     const out: Cutoffs = new Map();
     for (const row of r.data) {
@@ -137,7 +156,7 @@ export function useCutoffs(session: number, driver: number | null, enabled: bool
     }
     return out;
   }, [r.data]);
-  return {data,error:r.error,loading:r.loading};
+  return { data, error: r.error, loading: r.loading };
 }
 
 /** Regime bins for one lap; keeps the previous lap's bins on screen while the next loads. */
@@ -145,7 +164,11 @@ export function useRegimes(session: number, driver: number | null, lap: number |
   const key = enabled && driver !== null && lap !== null ? `reg:${session}:${driver}:${lap}` : null;
   return useLoad<{ lap: number; bins: RegimeBin[] }>(
     key,
-    () => getAll<RegimeBin>(`/sessions/${session}/laps/${lap}/regimes`, { driver }).then((bins) => ({ lap: lap as number, bins })),
-    true,
+    () =>
+      getAll<RegimeBin>(`/sessions/${session}/laps/${lap}/regimes`, { driver }).then((bins) => ({
+        lap: lap as number,
+        bins,
+      })),
+    true
   );
 }

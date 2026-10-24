@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import type { Page, StraightProfileResponse } from "./types";
+import { useEffect, useState } from 'react';
+import type { Page, StraightProfileResponse } from './types';
 
-const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://localhost:8080";
+const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8080';
 
 export class ApiError extends Error {
   constructor(
     public status: number,
-    message: string,
+    message: string
   ) {
     super(message);
   }
@@ -17,10 +17,10 @@ type Params = Record<string, string | number | undefined | null>;
 export function url(path: string, params: Params = {}): string {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== "") q.set(k, String(v));
+    if (v !== undefined && v !== null && v !== '') q.set(k, String(v));
   }
   const qs = q.toString();
-  return `${BASE}/api${path}${qs ? `?${qs}` : ""}`;
+  return `${BASE}/api${path}${qs ? `?${qs}` : ''}`;
 }
 
 /*
@@ -69,9 +69,9 @@ function queueSlot(afterMs: number): number {
 }
 
 async function fetchJson<T>(href: string, started = Date.now()): Promise<T> {
-  const res = await fetch(href, { headers: { Accept: "application/json" } });
+  const res = await fetch(href, { headers: { Accept: 'application/json' } });
   if (res.status === 429) {
-    const header = res.headers.get("Retry-After");
+    const header = res.headers.get('Retry-After');
     const seconds = Number(header);
     const after = Math.min(RETRY_CAP_MS, Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 1500);
     if (Date.now() - started < RETRY_BUDGET_MS) {
@@ -80,9 +80,13 @@ async function fetchJson<T>(href: string, started = Date.now()): Promise<T> {
       await new Promise((r) => setTimeout(r, wait));
       return fetchJson<T>(href, started);
     }
-    throw new ApiError(429, `Rate limited by the API. Try again in ${header ?? "a few"} seconds.`);
+    throw new ApiError(429, `Rate limited by the API. Try again in ${header ?? 'a few'} seconds.`);
   }
-  if (!res.ok) throw new ApiError(res.status, `The API answered ${res.status} for ${new URL(href, window.location.origin).pathname}.`);
+  if (!res.ok)
+    throw new ApiError(
+      res.status,
+      `The API answered ${res.status} for ${new URL(href, window.location.origin).pathname}.`
+    );
   return (await res.json()) as T;
 }
 
@@ -142,7 +146,10 @@ export function useLoad<T>(key: string | null, load: () => Promise<T>, keepPrevi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   // Between a key change and the effect, don't hand out the previous key's result as current.
-  if (state.key !== key) return key === null ? { data: null, error: null, loading: false } : { data: keepPrevious ? state.data : null, error: null, loading: true };
+  if (state.key !== key)
+    return key === null
+      ? { data: null, error: null, loading: false }
+      : { data: keepPrevious ? state.data : null, error: null, loading: true };
   return state;
 }
 
@@ -165,6 +172,10 @@ export function profileUrl(sessionKey: number, straightId: number, driver: numbe
 }
 
 /** One driver's cross-lap speed profile on one straight; feed it to `toProfile` for the instrument. */
-export function getProfile(sessionKey: number, straightId: number, driver: number): Promise<StraightProfileResponse> {
+export function getProfile(
+  sessionKey: number,
+  straightId: number,
+  driver: number
+): Promise<StraightProfileResponse> {
   return getJson<StraightProfileResponse>(profileUrl(sessionKey, straightId, driver));
 }

@@ -4,10 +4,10 @@
  * ScrollTrigger reads it directly. Either way the rest of the app hears about scroll through
  * one feed, `onScroll`, published by a single ScrollTrigger: no scroll listeners of our own.
  */
-import Lenis from "lenis";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { isTouch, prefersReducedMotion } from "./env";
+import Lenis from 'lenis';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { isTouch, prefersReducedMotion } from './env';
 
 export type ScrollState = { y: number; direction: 1 | -1; velocity: number };
 
@@ -20,7 +20,7 @@ export function initScroll() {
   if (feed) return;
   if (!prefersReducedMotion() && !isTouch()) {
     lenis = new Lenis({ lerp: 0.11, wheelMultiplier: 1 });
-    lenis.on("scroll", ScrollTrigger.update);
+    lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add((time) => lenis?.raf(time * 1000));
     gsap.ticker.lagSmoothing(0);
   }
@@ -28,7 +28,7 @@ export function initScroll() {
   // context, so route changes never revert it.
   feed = ScrollTrigger.create({
     start: 0,
-    end: "max",
+    end: 'max',
     onUpdate: (self) => {
       state.y = self.scroll();
       state.direction = self.direction === -1 ? -1 : 1;
@@ -68,10 +68,15 @@ export function scrollToTarget(target: string | HTMLElement | number, offset = 0
     });
     return;
   }
-  const el = typeof target === "string" ? document.querySelector<HTMLElement>(target) : typeof target === "number" ? null : target;
+  const el =
+    typeof target === 'string'
+      ? document.querySelector<HTMLElement>(target)
+      : typeof target === 'number'
+        ? null
+        : target;
   const top = el ? el.getBoundingClientRect().top + window.scrollY + offset : (target as number);
   window.scrollTo({
     top,
-    behavior: prefersReducedMotion() ? "auto" : "smooth",
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
   });
 }

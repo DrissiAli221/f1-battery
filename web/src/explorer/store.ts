@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from 'react';
 
 /*
  * A one-value store for state that changes per pointer move (the cursor's distance along the

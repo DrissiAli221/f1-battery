@@ -3,7 +3,7 @@
  * of the drawn-in motion; a route change swaps the page and the new page's reveals play.
  * The API is kept so the engine and the pages need no change.
  */
-import { startScroll } from "./scroll";
+import { startScroll } from './scroll';
 
 /** Called by the app once the new route's DOM is in place. */
 export function enterPage(): Promise<void> {

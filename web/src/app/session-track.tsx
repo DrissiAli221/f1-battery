@@ -1,12 +1,31 @@
 // Isolated style-study copy of the shared TrackMap; original repository source is unchanged.
-import { forwardRef, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { gsap } from "gsap";
-import type { Store } from "../explorer/store";
-import { along, project, trackAspect, wrap, type CircuitRef, type Pad, type Projection, type TrackStraight } from "../lib/track";
-import { useSize } from "../lib/useSize";
-import { prefersReducedMotion } from "../motion";
-import type { Outline } from "../lib/types";
-import "../track/track.css";
+import {
+  forwardRef,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { gsap } from 'gsap';
+import type { Store } from '../explorer/store';
+import {
+  along,
+  project,
+  trackAspect,
+  wrap,
+  type CircuitRef,
+  type Pad,
+  type Projection,
+  type TrackStraight,
+} from '../lib/track';
+import { useSize } from '../lib/useSize';
+import { prefersReducedMotion } from '../motion';
+import type { Outline } from '../lib/types';
+import '../track/track.css';
 
 /** A coloured line down the middle of the road (a regime, a car's trail, a driver's line). */
 export interface MapRun {
@@ -18,7 +37,7 @@ export interface MapRun {
   /** Faded: context, not the thing being looked at. */
   dim?: boolean;
   /** "band": a wider, fainter run under the lines (the lit straight). */
-  kind?: "trail" | "band";
+  kind?: 'trail' | 'band';
 }
 
 /** A driver: a team-colour dot on the line with the code tag above it. */
@@ -78,7 +97,11 @@ export interface TrackMapProps {
   /** A cursor dot bound to a straight: `store` holds metres along it. */
   cursor?: { store: Store<number | null>; straight: TrackStraight | null; length?: number | null } | null;
   /** Pointer over this straight reports metres along it and the pointer's place in the box (null on leave). */
-  hover?: { straight: TrackStraight; length?: number | null; onHover: (m: number | null, at: { x: number; y: number } | null) => void } | null;
+  hover?: {
+    straight: TrackStraight;
+    length?: number | null;
+    onHover: (m: number | null, at: { x: number; y: number } | null) => void;
+  } | null;
   pins?: MapPin[];
   labels?: MapLabel[];
   corners?: boolean;
@@ -135,9 +158,11 @@ const SIDE = { wide: { l: 56, r: 56, t: 52, b: 52 }, narrow: { l: 28, r: 28, t: 
 function isLight(hex: string): boolean {
   const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return false;
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  const [r, g, b] = [0, 2, 4]
+    .map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
   // Choose the higher-contrast ink for the small identity label, including orange and mid-blue.
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.20;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.2;
 }
 
 function tickLine(T: Projection, d: number, a: number, b: number) {
@@ -185,7 +210,7 @@ function smoothRuns(runs: MapRun[], lap: number, minM = 60): MapRun[] {
   const out: MapRun[] = [];
   const groups = new Map<string, MapRun[]>();
   for (const r of runs) {
-    if (r.kind === "band" || r.colour === "transparent") {
+    if (r.kind === 'band' || r.colour === 'transparent') {
       out.push(r);
       continue;
     }
@@ -205,7 +230,9 @@ function smoothRuns(runs: MapRun[], lap: number, minM = 60): MapRun[] {
         if (len(r) >= minM) break;
         const p = list[(i - 1 + n) % n];
         const q = list[(i + 1) % n];
-        const cands = [p, q].filter((x) => x !== r && x.dim === r.dim && (x === p ? touch(p, r) : touch(r, q)));
+        const cands = [p, q].filter(
+          (x) => x !== r && x.dim === r.dim && (x === p ? touch(p, r) : touch(r, q))
+        );
         if (!cands.length) continue;
         const pick = cands.reduce((a, b) => (len(b) > len(a) ? b : a));
         r.colour = pick.colour;
@@ -225,11 +252,19 @@ function smoothRuns(runs: MapRun[], lap: number, minM = 60): MapRun[] {
 /** Ink metrics of a string in a CSS font, from a shared canvas (no layout). */
 let measureCtx: CanvasRenderingContext2D | null = null;
 function inkBox(text: string, font: string) {
-  measureCtx ??= document.createElement("canvas").getContext("2d");
+  measureCtx ??= document.createElement('canvas').getContext('2d');
   if (!measureCtx) return null;
   measureCtx.font = font;
   const m = measureCtx.measureText(text);
-  return { adv: m.width, left: m.actualBoundingBoxLeft, right: m.actualBoundingBoxRight, asc: m.actualBoundingBoxAscent, desc: m.actualBoundingBoxDescent, fAsc: m.fontBoundingBoxAscent, fDesc: m.fontBoundingBoxDescent };
+  return {
+    adv: m.width,
+    left: m.actualBoundingBoxLeft,
+    right: m.actualBoundingBoxRight,
+    asc: m.actualBoundingBoxAscent,
+    desc: m.actualBoundingBoxDescent,
+    fAsc: m.fontBoundingBoxAscent,
+    fDesc: m.fontBoundingBoxDescent,
+  };
 }
 
 /** The centreline sampled every ~2 px in a 24 px grid: fast "how close is this point to the road". */
@@ -283,8 +318,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     straightsWithData = null,
     pad,
     rotation,
-    className = "",
-    label = "Track map",
+    className = '',
+    label = 'Track map',
     children,
   } = props;
   const autoHeight = props.autoHeight ?? true;
@@ -293,7 +328,10 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   const [boxRef, { w: W, h: measuredH }] = useSize<HTMLDivElement>();
   const wide = W >= 560;
   const padding = pad ?? (wide ? SIDE.wide : SIDE.narrow);
-  const ref2 = useMemo(() => (rotation === undefined ? circuit : circuit ? { ...circuit, rotation } : null), [circuit, rotation]);
+  const ref2 = useMemo(
+    () => (rotation === undefined ? circuit : circuit ? { ...circuit, rotation } : null),
+    [circuit, rotation]
+  );
   // The box's own height, from the track's aspect at this width (the track fills the width).
   const autoH = useMemo(() => {
     if (!autoHeight || W <= 0) return null;
@@ -326,7 +364,9 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   // inherit a trip from an older straight when estimates become available again.
   const lastVisibleTags = useRef<MapTag[]>([]);
   const renderedTags = tags.length ? tags : lastVisibleTags.current;
-  useLayoutEffect(() => { if (tags.length) lastVisibleTags.current = tags; }, [tags]);
+  useLayoutEffect(() => {
+    if (tags.length) lastVisibleTags.current = tags;
+  }, [tags]);
   // Tags: HTML, positioned from the ticker (live) or from props (static). Each tag also
   // owns a circle in the road's mask, so the lines are really cut around its disc (no
   // painted ring): the same call moves both.
@@ -342,8 +382,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   const travel = useRef(new Map<number | string, { tw: gsap.core.Tween; o: { d: number }; to: number }>());
   useEffect(() => () => travel.current.forEach((tr) => tr.tw.kill()), []);
 
-
-  const uid = useId().replace(/:/g, "");
+  const uid = useId().replace(/:/g, '');
   const maskId = `tmap-cut-${uid}`;
   const tagEls = useRef(new Map<number | string, HTMLDivElement>());
   const cutEls = useRef(new Map<number | string, SVGCircleElement>());
@@ -356,8 +395,8 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     el.style.transform = `translate3d(${q.x.toFixed(1)}px, ${q.y.toFixed(1)}px, 0)`;
     const c = cutEls.current.get(id);
     if (c) {
-      c.setAttribute("cx", q.x.toFixed(1));
-      c.setAttribute("cy", q.y.toFixed(1));
+      c.setAttribute('cx', q.x.toFixed(1));
+      c.setAttribute('cy', q.y.toFixed(1));
     }
   };
   useImperativeHandle(ref, () => ({ place: placeTag, projection: () => T }), [T]);
@@ -384,14 +423,21 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     const placed: { x: number; y: number; r: number }[] = [];
     // `skip`: a mark this spot may overlap (a straight's own chip, for its label); `keep`:
     // false places without reserving room (labels show one at a time).
-    const place = (d: number, side: number, r: number, skip: { x: number; y: number } | null = null, keep = true) => {
+    const place = (
+      d: number,
+      side: number,
+      r: number,
+      skip: { x: number; y: number } | null = null,
+      keep = true
+    ) => {
       const q = T.pose(d);
       const base = outer / 2 + 0.3 * D + r;
       const need = outer / 2 + 0.2 * D + r;
       // Room at a spot: the smaller of the road's clearance and the nearest mark's, as a margin.
       const room = (x: number, y: number) => {
         let m = roadDist(x, y, need + 2 * D) - need;
-        for (const o of placed) if (o !== skip) m = Math.min(m, Math.hypot(o.x - x, o.y - y) - r - o.r - 0.15 * D);
+        for (const o of placed)
+          if (o !== skip) m = Math.min(m, Math.hypot(o.x - x, o.y - y) - r - o.r - 0.15 * D);
         return m;
       };
       let best = { x: q.x + q.nx * side * base, y: q.y + q.ny * side * base, m: -Infinity };
@@ -410,7 +456,11 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
       if (keep) placed.push({ x: best.x, y: best.y, r });
       return best;
     };
-    const out = { corners: [] as typeof empty.corners, straights: [] as typeof empty.straights, labels: [] as typeof empty.labels };
+    const out = {
+      corners: [] as typeof empty.corners,
+      straights: [] as typeof empty.straights,
+      labels: [] as typeof empty.labels,
+    };
     if (corners)
       for (const c of T.corners) {
         const q = T.pose(c.d);
@@ -453,8 +503,15 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   // outward with a leader line. Never over the line.
   useLayoutEffect(() => {
     if (!T || !roadDist) return;
-    const present = new Set(tags.map(t => t.id));
-    for (const [id,tr] of travel.current) if (!present.has(id)) { tr.tw.kill(); travel.current.delete(id); const el=tagEls.current.get(id); el?.classList.remove("is-travel"); if(el) el.style.transition=""; }
+    const present = new Set(tags.map((t) => t.id));
+    for (const [id, tr] of travel.current)
+      if (!present.has(id)) {
+        tr.tw.kill();
+        travel.current.delete(id);
+        const el = tagEls.current.get(id);
+        el?.classList.remove('is-travel');
+        if (el) el.style.transition = '';
+      }
     for (const id of lastD.current.keys()) if (!present.has(id)) lastD.current.delete(id);
     const sorted = [...tags].sort((a, b) => wrap(a.d, T.lap) - wrap(b.d, T.lap));
     const ring = 2;
@@ -464,13 +521,15 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
       const q = T.pose(t.d);
       return { x: q.x - rDot, y: q.y - rDot, w: 2 * rDot, h: 2 * rDot };
     });
-    if (corners) for (const c of cornerPos) boxes.push({ x: c.x - ringR, y: c.y - ringR, w: 2 * ringR, h: 2 * ringR });
-    for (const c of marks.straights) boxes.push({ x: c.x - sChipW / 2, y: c.y - sChipH / 2, w: sChipW, h: sChipH });
+    if (corners)
+      for (const c of cornerPos) boxes.push({ x: c.x - ringR, y: c.y - ringR, w: 2 * ringR, h: 2 * ringR });
+    for (const c of marks.straights)
+      boxes.push({ x: c.x - sChipW / 2, y: c.y - sChipH / 2, w: sChipW, h: sChipH });
     // The HTML labels (pins, stretch names, start/finish) are obstacles too.
-    const host = tagEls.current.values().next().value?.closest(".tmap");
+    const host = tagEls.current.values().next().value?.closest('.tmap');
     if (host) {
       const o = host.getBoundingClientRect();
-      host.querySelectorAll(".tmap__pinlabel, .tmap__label, .tmap__sf-label").forEach((n) => {
+      host.querySelectorAll('.tmap__pinlabel, .tmap__label, .tmap__sf-label').forEach((n) => {
         const r = n.getBoundingClientRect();
         boxes.push({ x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height });
       });
@@ -481,28 +540,30 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     const roadClear = outer / 2 + 1;
     const onRoad = (b: Box) => {
       for (const fx of [0, 0.5, 1])
-        for (const fy of [0, 0.5, 1]) if (roadDist(b.x + fx * b.w, b.y + fy * b.h, roadClear + 1) < roadClear) return true;
+        for (const fy of [0, 0.5, 1])
+          if (roadDist(b.x + fx * b.w, b.y + fy * b.h, roadClear + 1) < roadClear) return true;
       return false;
     };
-    const rot = (x: number, y: number, a: number) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)] as const;
+    const rot = (x: number, y: number, a: number) =>
+      [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)] as const;
     for (const [i, t] of sorted.entries()) {
       const q = T.pose(t.d);
       const el = tagEls.current.get(t.id);
       if (t.compact) {
-        placeTag(t.id,t.d);
-        el?.style.setProperty("--tx","0px");
-        el?.style.setProperty("--ty",`${-dot-15}px`);
-        el?.style.setProperty("--lead","0px");
+        placeTag(t.id, t.d);
+        el?.style.setProperty('--tx', '0px');
+        el?.style.setProperty('--ty', `${-dot - 15}px`);
+        el?.style.setProperty('--lead', '0px');
         continue;
       }
-      const chip = el?.querySelector<HTMLElement>(".tmap__tag-chip");
-      const code = chip?.querySelector<HTMLElement>(".tmap__tag-code");
-      const h=Math.max(0.95*M,chip?.offsetHeight??0);
+      const chip = el?.querySelector<HTMLElement>('.tmap__tag-chip');
+      const code = chip?.querySelector<HTMLElement>('.tmap__tag-code');
+      const h = Math.max(0.95 * M, chip?.offsetHeight ?? 0);
       // A chip with a note sizes itself (CSS padding); clear any size from an earlier render.
       if (chip && code && t.note) {
-        chip.style.width = "";
-        chip.style.padding = "";
-        code.style.transform = "";
+        chip.style.width = '';
+        chip.style.padding = '';
+        code.style.transform = '';
       }
       let w = chip?.offsetWidth || 1.7 * M;
       if (chip && code && !t.note) {
@@ -519,7 +580,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
           // ink's centre onto the chip's (italic type overhangs to the right).
           const cx = ink.adv / 2 - (ink.right - ink.left) / 2;
           chip.style.width = `${w}px`;
-          chip.style.padding = "0";
+          chip.style.padding = '0';
           code.style.transform = `translate(${cx.toFixed(2)}px, ${cy.toFixed(2)}px)`;
         }
       }
@@ -531,14 +592,19 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
       };
       const spots: [number, number][] = [];
       for (const a of [0, Math.PI]) spots.push(at(...rot(out.x, out.y, a)));
-      for (const a of [0.6, -0.6, Math.PI + 0.6, Math.PI - 0.6, 1.2, -1.2]) spots.push(at(...rot(out.x, out.y, a)));
+      for (const a of [0.6, -0.6, Math.PI + 0.6, Math.PI - 0.6, 1.2, -1.2])
+        spots.push(at(...rot(out.x, out.y, a)));
       const near = spots.length;
-      for (let n = 1; n <= (t.onSelect?3:16); n++) for (const s of [1, -1]) spots.push(at(out.x * s, out.y * s, n * (h + 0.25 * M)));
+      for (let n = 1; n <= (t.onSelect ? 3 : 16); n++)
+        for (const s of [1, -1]) spots.push(at(out.x * s, out.y * s, n * (h + 0.25 * M)));
       let pick: [number, number] = spots[0];
       let pickI = 0;
       for (const [si, [sx, sy]] of spots.entries()) {
         const b = { x: q.x + sx - w / 2, y: q.y + sy - h / 2, w, h };
-        const hit = boxes.some((o, bi) => bi !== i && b.x < o.x + o.w + 2 && b.x + w + 2 > o.x && b.y < o.y + o.h + 2 && b.y + h + 2 > o.y);
+        const hit = boxes.some(
+          (o, bi) =>
+            bi !== i && b.x < o.x + o.w + 2 && b.x + w + 2 > o.x && b.y < o.y + o.h + 2 && b.y + h + 2 > o.y
+        );
         if (!hit && !onRoad(b) && b.x >= 6 && b.y >= 6 && b.x + b.w <= W - 6 && b.y + b.h <= H - 6) {
           pick = [sx, sy];
           pickI = si;
@@ -554,40 +620,44 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
         travel.current.get(t.id)?.tw.kill();
         const delta = wrap(t.d - start + T.lap / 2, T.lap) - T.lap / 2;
         const o = { d: start };
-        el?.classList.add("is-travel");
-        if (el) el.style.transition = "none";
+        el?.classList.add('is-travel');
+        if (el) el.style.transition = 'none';
         const tw = gsap.to(o, {
           d: start + delta,
           // The path can span half a lap. Give longer trips room to breathe instead of
           // launching every distance with the same strong ease-out. No overshoot.
-          duration: Math.min(0.85, Math.max(0.3, 0.3 + Math.abs(delta) / T.lap * 1.1)),
-          ease: "sine.inOut",
+          duration: Math.min(0.85, Math.max(0.3, 0.3 + (Math.abs(delta) / T.lap) * 1.1)),
+          ease: 'sine.inOut',
           onUpdate: () => placeTag(t.id, o.d),
           onComplete: () => {
             travel.current.delete(t.id);
-            el?.classList.remove("is-travel");
-            if (el) el.style.transition = "";
+            el?.classList.remove('is-travel');
+            if (el) el.style.transition = '';
           },
         });
         travel.current.set(t.id, { tw, o, to: t.d });
       };
-      const motionAllowed = !prefersReducedMotion() && document.documentElement.dataset.input !== "keyboard";
+      const motionAllowed = !prefersReducedMotion() && document.documentElement.dataset.input !== 'keyboard';
       if (!motionAllowed) {
         tr?.tw.kill();
         travel.current.delete(t.id);
-        el?.classList.remove("is-travel");
-        if (el) el.style.transition = "";
+        el?.classList.remove('is-travel');
+        if (el) el.style.transition = '';
         placeTag(t.id, t.d);
-      } else if (jump && from !== undefined && Math.abs(wrap(t.d - from + T.lap / 2, T.lap) - T.lap / 2) > 1) go(tr?.o.d ?? from);
+      } else if (jump && from !== undefined && Math.abs(wrap(t.d - from + T.lap / 2, T.lap) - T.lap / 2) > 1)
+        go(tr?.o.d ?? from);
       else if (tr && tr.to !== t.d) go(tr.o.d);
       else if (!tr) placeTag(t.id, t.d);
       lastD.current.set(t.id, t.d);
-      el?.style.setProperty("--tx", `${pick[0].toFixed(1)}px`);
-      el?.style.setProperty("--ty", `${pick[1].toFixed(1)}px`);
+      el?.style.setProperty('--tx', `${pick[0].toFixed(1)}px`);
+      el?.style.setProperty('--ty', `${pick[1].toFixed(1)}px`);
       // A leader from the dot to the chip when the chip is on the ladder.
       const dist = Math.hypot(pick[0], pick[1]);
-      el?.style.setProperty("--lead", pickI < near ? "0px" : `${(dist - h / 2).toFixed(1)}px`);
-      el?.style.setProperty("--lead-rot", `${((Math.atan2(pick[1], pick[0]) * 180) / Math.PI - 90).toFixed(1)}deg`);
+      el?.style.setProperty('--lead', pickI < near ? '0px' : `${(dist - h / 2).toFixed(1)}px`);
+      el?.style.setProperty(
+        '--lead-rot',
+        `${((Math.atan2(pick[1], pick[0]) * 180) / Math.PI - 90).toFixed(1)}deg`
+      );
     }
   });
 
@@ -601,7 +671,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     const o = { d: cursor.store.get() ?? 0 };
     const place = () => {
       const p = T.at(s.d0 + Math.max(0, Math.min(L, o.d)));
-      g.setAttribute("transform", `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`);
+      g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`);
     };
     place();
     let tw: gsap.core.Tween | null = null;
@@ -615,7 +685,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
         return;
       }
       // Follows the pointer: short and ease-out, so it never feels behind the hand.
-      tw = gsap.to(o, { d, duration: 0.2, ease: "expo.out", onUpdate: place });
+      tw = gsap.to(o, { d, duration: 0.2, ease: 'expo.out', onUpdate: place });
     });
     return () => {
       unsub();
@@ -625,7 +695,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
 
   // Pointer over the bound straight moves the cursor and reports a hover (fine pointers only).
   const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!T || e.pointerType !== "mouse") return;
+    if (!T || e.pointerType !== 'mouse') return;
     const r = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - r.left;
     const py = e.clientY - r.top;
@@ -646,66 +716,97 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     () =>
       T
         ? straights.map((st) => {
-              // The section fade, as a mask that follows the road. Each end is a stack of pieces
-              // that start one step further in and all run to the middle; their opacities are
-              // chosen so the stack composites to a smoothstep along lap distance. Every piece
-              // edge is a start, never a join, so no seam or overlap shows, and the fade bends
-              // with the track. Wide enough to carry both the fill and the glow.
-              const len = wrap(st.d1 - st.d0, T.lap) || st.len;
-              const fade = Math.min(0.25 * len, 4 * D * T.mpp);
-              const n = 32;
-              const half = len / 2;
-              const pieces: { a: number; b: number; o: number }[] = [];
-              const smooth = (t: number) => t * t * (3 - 2 * t);
-              for (const end of [0, 1] as const) {
-                let prev = 0;
-                for (let k = 0; k < n; k++) {
-                  const target = smooth((k + 1) / n);
-                  const o = k === n - 1 ? 1 : 1 - (1 - target) / (1 - prev);
-                  prev = target;
-                  const inset = (k * fade) / n;
-                  // Start pieces run up to just past the middle and end pieces from just before
-                  // it: both are opaque there, so the overlap cannot show.
-                  if (end === 0) pieces.push({ a: st.d0 + inset, b: st.d0 + half + T.mpp, o });
-                  else pieces.push({ a: st.d0 + half - T.mpp, b: st.d0 + len - inset, o });
-                }
+            // The section fade, as a mask that follows the road. Each end is a stack of pieces
+            // that start one step further in and all run to the middle; their opacities are
+            // chosen so the stack composites to a smoothstep along lap distance. Every piece
+            // edge is a start, never a join, so no seam or overlap shows, and the fade bends
+            // with the track. Wide enough to carry both the fill and the glow.
+            const len = wrap(st.d1 - st.d0, T.lap) || st.len;
+            const fade = Math.min(0.25 * len, 4 * D * T.mpp);
+            const n = 32;
+            const half = len / 2;
+            const pieces: { a: number; b: number; o: number }[] = [];
+            const smooth = (t: number) => t * t * (3 - 2 * t);
+            for (const end of [0, 1] as const) {
+              let prev = 0;
+              for (let k = 0; k < n; k++) {
+                const target = smooth((k + 1) / n);
+                const o = k === n - 1 ? 1 : 1 - (1 - target) / (1 - prev);
+                prev = target;
+                const inset = (k * fade) / n;
+                // Start pieces run up to just past the middle and end pieces from just before
+                // it: both are opaque there, so the overlap cannot show.
+                if (end === 0) pieces.push({ a: st.d0 + inset, b: st.d0 + half + T.mpp, o });
+                else pieces.push({ a: st.d0 + half - T.mpp, b: st.d0 + len - inset, o });
               }
-              // Filters work on the section's own box, not the whole map: far less to paint.
-              let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-              for (let k = 0; k <= 40; k++) {
-                const q = T.at(st.d0 + (k * len) / 40);
-                x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y);
-              }
-              const padB = outer + 1.5 * D;
-              const box = { x: x0 - padB, y: y0 - padB, width: x1 - x0 + 2 * padB, height: y1 - y0 + 2 * padB };
-              return (
-                <g key={st.straight_id}>
-                  <mask id={`${maskId}-sec-${st.straight_id}`} maskUnits="userSpaceOnUse" {...box}>
-                    {pieces.map((pc, i) => (
-                      <path key={i} d={T.sub(pc.a, pc.b)} fill="none" stroke="#fff" strokeOpacity={pc.o} strokeWidth={outer + 1.4 * D} strokeLinecap="butt" strokeLinejoin="round" />
-                    ))}
-                  </mask>
-                  {/* Grain for the fill: fine fractal noise inside the fill's own shape, no blur. */}
-                  <filter id={`${maskId}-grain-${st.straight_id}`} filterUnits="userSpaceOnUse" {...box} colorInterpolationFilters="sRGB">
-                    <feTurbulence type="fractalNoise" baseFrequency={(1.1 / D).toFixed(4)} numOctaves={2} seed={7} result="noise" />
-                    <feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.2 -0.45" result="grain" />
-                    <feComposite in="grain" in2="SourceGraphic" operator="in" result="tex" />
-                    <feComponentTransfer in="SourceGraphic" result="base">
-                      <feFuncA type="linear" slope={0.7} />
-                    </feComponentTransfer>
-                    <feMerge>
-                      <feMergeNode in="base" />
-                      <feMergeNode in="tex" />
-                    </feMerge>
-                  </filter>
-                  <filter id={`${maskId}-glow-${st.straight_id}`} filterUnits="userSpaceOnUse" {...box}>
-                    <feGaussianBlur stdDeviation={0.15 * D} />
-                  </filter>
-                </g>
-              );
+            }
+            // Filters work on the section's own box, not the whole map: far less to paint.
+            let x0 = Infinity,
+              y0 = Infinity,
+              x1 = -Infinity,
+              y1 = -Infinity;
+            for (let k = 0; k <= 40; k++) {
+              const q = T.at(st.d0 + (k * len) / 40);
+              x0 = Math.min(x0, q.x);
+              y0 = Math.min(y0, q.y);
+              x1 = Math.max(x1, q.x);
+              y1 = Math.max(y1, q.y);
+            }
+            const padB = outer + 1.5 * D;
+            const box = { x: x0 - padB, y: y0 - padB, width: x1 - x0 + 2 * padB, height: y1 - y0 + 2 * padB };
+            return (
+              <g key={st.straight_id}>
+                <mask id={`${maskId}-sec-${st.straight_id}`} maskUnits="userSpaceOnUse" {...box}>
+                  {pieces.map((pc, i) => (
+                    <path
+                      key={i}
+                      d={T.sub(pc.a, pc.b)}
+                      fill="none"
+                      stroke="#fff"
+                      strokeOpacity={pc.o}
+                      strokeWidth={outer + 1.4 * D}
+                      strokeLinecap="butt"
+                      strokeLinejoin="round"
+                    />
+                  ))}
+                </mask>
+                {/* Grain for the fill: fine fractal noise inside the fill's own shape, no blur. */}
+                <filter
+                  id={`${maskId}-grain-${st.straight_id}`}
+                  filterUnits="userSpaceOnUse"
+                  {...box}
+                  colorInterpolationFilters="sRGB"
+                >
+                  <feTurbulence
+                    type="fractalNoise"
+                    baseFrequency={(1.1 / D).toFixed(4)}
+                    numOctaves={2}
+                    seed={7}
+                    result="noise"
+                  />
+                  <feColorMatrix
+                    in="noise"
+                    type="matrix"
+                    values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.2 -0.45"
+                    result="grain"
+                  />
+                  <feComposite in="grain" in2="SourceGraphic" operator="in" result="tex" />
+                  <feComponentTransfer in="SourceGraphic" result="base">
+                    <feFuncA type="linear" slope={0.7} />
+                  </feComponentTransfer>
+                  <feMerge>
+                    <feMergeNode in="base" />
+                    <feMergeNode in="tex" />
+                  </feMerge>
+                </filter>
+                <filter id={`${maskId}-glow-${st.straight_id}`} filterUnits="userSpaceOnUse" {...box}>
+                  <feGaussianBlur stdDeviation={0.15 * D} />
+                </filter>
+              </g>
+            );
           })
         : null,
-    [T, straights, D, outer, maskId],
+    [T, straights, D, outer, maskId]
   );
 
   const sfPose = T ? T.pose(0) : null;
@@ -714,13 +815,53 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   // Drawn runs (nothing transparent), and the blends where two runs of different colour meet
   // end to end on the same offset: a stretch of 1.6 D centred on the join, never longer than
   // the shorter neighbour.
-  const lines = useMemo(() => (T ? (straights.length?smoothRuns(runs.filter((r) => r.colour !== "transparent"), T.lap):runs.filter(r=>r.colour!=="transparent")) : []), [runs, T, straights.length]);
-  const sfLabelPos = sfPose ? (Math.abs(sfPose.nx) > Math.abs(sfPose.ny) ? (sfPose.nx < 0 ? "right" : "left") : sfPose.ny < 0 ? "below" : "above") : "below";
+  const lines = useMemo(
+    () =>
+      T
+        ? straights.length
+          ? smoothRuns(
+              runs.filter((r) => r.colour !== 'transparent'),
+              T.lap
+            )
+          : runs.filter((r) => r.colour !== 'transparent')
+        : [],
+    [runs, T, straights.length]
+  );
+  const sfLabelPos = sfPose
+    ? Math.abs(sfPose.nx) > Math.abs(sfPose.ny)
+      ? sfPose.nx < 0
+        ? 'right'
+        : 'left'
+      : sfPose.ny < 0
+        ? 'below'
+        : 'above'
+    : 'below';
 
   return (
-    <div ref={boxRef} className={`tmap ${className}`} data-jump={jump ? "1" : undefined} data-hires={T?.hires ? "1" : "0"} style={{ ["--k" as string]: k.toFixed(3), ["--D" as string]: `${D.toFixed(2)}px`, ["--dot" as string]: `${dot.toFixed(2)}px`, ["--M" as string]: `${M.toFixed(2)}px`, height: autoH ?? undefined }}>
+    <div
+      ref={boxRef}
+      className={`tmap ${className}`}
+      data-jump={jump ? '1' : undefined}
+      data-hires={T?.hires ? '1' : '0'}
+      style={{
+        ['--k' as string]: k.toFixed(3),
+        ['--D' as string]: `${D.toFixed(2)}px`,
+        ['--dot' as string]: `${dot.toFixed(2)}px`,
+        ['--M' as string]: `${M.toFixed(2)}px`,
+        height: autoH ?? undefined,
+      }}
+    >
       {T && (
-        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="tmap__svg" role="group" aria-label={label} onPointerMove={onMove} onPointerLeave={onLeave}>
+        <svg
+          width={W}
+          height={H}
+          viewBox={`0 0 ${W} ${H}`}
+          className="tmap__svg"
+          role="group"
+          aria-label={label}
+          onPointerMove={onMove}
+          onPointerLeave={onLeave}
+        >
           <defs>
             {/* The cut: white keeps, black removes. One hole per driver, 0.1 D wider than the disc. */}
             <mask id={maskId} maskUnits="userSpaceOnUse" x={0} y={0} width={W} height={H}>
@@ -732,7 +873,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
                     if (el) cutEls.current.set(t.id, el);
                     else cutEls.current.delete(t.id);
                   }}
-                  r={t.compact?8:0.5 * dot + 0.1 * D}
+                  r={t.compact ? 8 : 0.5 * dot + 0.1 * D}
                   fill="#000"
                 />
               ))}
@@ -746,127 +887,222 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
           </defs>
 
           <g mask={tags.length ? `url(#${maskId})` : undefined}>
-          {/* The road: two thin light lines, the ground between them. */}
-          {/* Layer 1, behind the road: the picked section's outer glow, very faint and a little
+            {/* The road: two thin light lines, the ground between them. */}
+            {/* Layer 1, behind the road: the picked section's outer glow, very faint and a little
               blurred, faded by the same mask; the rails drawn over it stay crisp. */}
-          {straights.map((st) => (
-            <path key={`glow-${st.straight_id}`} d={T.sub(st.d0, st.d1)} className={`tmap__glow ${st.straight_id === selected ? "is-on" : ""}`} strokeWidth={outer + 0.6 * D} filter={`url(#${maskId}-glow-${st.straight_id})`} mask={`url(#${maskId}-sec-${st.straight_id})`} />
-          ))}
-          <path d={T.pathD} className="tmap__edge" strokeWidth={outer} />
-          <path d={T.pathD} className="tmap__ground" strokeWidth={gap} />
+            {straights.map((st) => (
+              <path
+                key={`glow-${st.straight_id}`}
+                d={T.sub(st.d0, st.d1)}
+                className={`tmap__glow ${st.straight_id === selected ? 'is-on' : ''}`}
+                strokeWidth={outer + 0.6 * D}
+                filter={`url(#${maskId}-glow-${st.straight_id})`}
+                mask={`url(#${maskId}-sec-${st.straight_id})`}
+              />
+            ))}
+            <path d={T.pathD} className="tmap__edge" strokeWidth={outer} />
+            <path d={T.pathD} className="tmap__ground" strokeWidth={gap} />
 
-          {/* Straights: pickable; the selected one brightens its edges. */}
-          {straights.length > 0 && (
-            <g className="tmap__straights">
-              {straights.map((s) => {
-                const on = s.straight_id === selected;
-                const d = T.sub(s.d0, s.d1);
-                return (
-                  <g
-                    key={s.straight_id}
-                    className={`tmap__straight ${on ? "is-on" : ""} ${onSelect ? "is-pick" : ""}`}
-                    role={onSelect ? "button" : undefined}
-                    tabIndex={onSelect ? 0 : undefined}
-                    aria-pressed={onSelect ? on : undefined}
-                    aria-label={`S${s.straight_id} ${s.label ?? ""}`.trim()}
-                    onClick={onSelect ? () => onSelect(s.straight_id) : undefined}
-                    onKeyDown={
-                      onSelect
-                        ? (e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              onSelect(s.straight_id);
+            {/* Straights: pickable; the selected one brightens its edges. */}
+            {straights.length > 0 && (
+              <g className="tmap__straights">
+                {straights.map((s) => {
+                  const on = s.straight_id === selected;
+                  const d = T.sub(s.d0, s.d1);
+                  return (
+                    <g
+                      key={s.straight_id}
+                      className={`tmap__straight ${on ? 'is-on' : ''} ${onSelect ? 'is-pick' : ''}`}
+                      role={onSelect ? 'button' : undefined}
+                      tabIndex={onSelect ? 0 : undefined}
+                      aria-pressed={onSelect ? on : undefined}
+                      aria-label={`S${s.straight_id} ${s.label ?? ''}`.trim()}
+                      onClick={onSelect ? () => onSelect(s.straight_id) : undefined}
+                      onKeyDown={
+                        onSelect
+                          ? (e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                onSelect(s.straight_id);
+                              }
                             }
-                          }
-                        : undefined
-                    }
-                  >
-                    <path d={d} className="tmap__hit" strokeWidth={outer + 12} />
-                    <path d={d} className="tmap__lit" strokeWidth={outer} />
-                    {/* The ground runs 1 px past the lit edges, so no anti-aliased seam crosses the road at the ends. */}
-                    <path d={T.sub(s.d0 - T.mpp, s.d1 + T.mpp)} className="tmap__lit-ground" strokeWidth={gap} />
-                    {/* Layer 2, between the rails: the picked section's fill, exactly the road's inner
+                          : undefined
+                      }
+                    >
+                      <path d={d} className="tmap__hit" strokeWidth={outer + 12} />
+                      <path d={d} className="tmap__lit" strokeWidth={outer} />
+                      {/* The ground runs 1 px past the lit edges, so no anti-aliased seam crosses the road at the ends. */}
+                      <path
+                        d={T.sub(s.d0 - T.mpp, s.d1 + T.mpp)}
+                        className="tmap__lit-ground"
+                        strokeWidth={gap}
+                      />
+                      {/* Layer 2, between the rails: the picked section's fill, exactly the road's inner
                         width (so it never covers a rail), faded along the road by the section mask,
                         under the telemetry line, arrows and markers. */}
-                    <g mask={`url(#${maskId}-sec-${s.straight_id})`}>
-                      <path d={d} className="tmap__hover" strokeWidth={gap} />
-                      <path d={d} className="tmap__fill" strokeWidth={gap} filter={`url(#${maskId}-grain-${s.straight_id})`} />
+                      <g mask={`url(#${maskId}-sec-${s.straight_id})`}>
+                        <path d={d} className="tmap__hover" strokeWidth={gap} />
+                        <path
+                          d={d}
+                          className="tmap__fill"
+                          strokeWidth={gap}
+                          filter={`url(#${maskId}-grain-${s.straight_id})`}
+                        />
+                      </g>
                     </g>
+                  );
+                })}
+              </g>
+            )}
+
+            {/* Keep guide layers mounted so quick selections retarget CSS opacity instead
+              of restarting keyframes or accumulating outgoing copies. Identity colours
+              apply to each straight; the faded mask makes only the selection visible. */}
+            {/* Full-lap review preserves each recorded bin; section comparisons keep their masked guides. */}
+            {!straights.length && (
+              <g fill="none" strokeLinecap="butt" strokeLinejoin="round" pointerEvents="none">
+                {lines.map((r, i) => (
+                  <path
+                    key={i}
+                    d={T.sub(r.d0, r.d1, r.offset ?? 0)}
+                    stroke={r.colour}
+                    strokeWidth={lineW}
+                    className="tmap__line"
+                  />
+                ))}
+              </g>
+            )}
+            {straights.map((st) => (
+              <g
+                key={`guides-${st.straight_id}`}
+                mask={`url(#${maskId}-sec-${st.straight_id})`}
+                className={`tmap__guides ${st.straight_id === selected ? 'is-on' : ''}`}
+                fill="none"
+                strokeLinecap="butt"
+                strokeLinejoin="round"
+                pointerEvents="none"
+              >
+                {lines.map((r, i) => (
+                  <path
+                    key={i}
+                    d={T.sub(st.d0, Math.min(st.d1, T.lap - 0.01), r.offset ?? 0)}
+                    stroke={r.colour}
+                    strokeWidth={lineW}
+                    className="tmap__line"
+                  />
+                ))}
+              </g>
+            ))}
+            {arrows && (
+              <g
+                className="tmap__chevrons"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={Math.max(0.8, 0.05 * D)}
+              >
+                {lines
+                  .filter((r) => r.kind !== 'band')
+                  .flatMap((r, i) =>
+                    chevrons(T, r, 8 * D).map((c, j) => (
+                      <path
+                        key={`${i}-${j}`}
+                        d={`M${(-chev).toFixed(1)},${(-chev).toFixed(1)}L${(chev * 0.4).toFixed(1)},0L${(-chev).toFixed(1)},${chev.toFixed(1)}`}
+                        stroke={r.colour}
+                        transform={`translate(${c.x.toFixed(1)},${c.y.toFixed(1)}) rotate(${c.deg.toFixed(1)})`}
+                      />
+                    ))
+                  )}
+              </g>
+            )}
+
+            {/* Ticks: a thin line across the road per driver, in team colour; the bracket (if any) outside. */}
+            <g className="tmap__ticks" pointerEvents="none" key={`ticks-${selected ?? ''}`}>
+              {ticks.map((t) => {
+                const side = t.side ?? 1;
+                const half = outer / 2 + 0.08 * D;
+                const far = side === 1 ? outer / 2 + 0.42 * D : -(outer / 2 + 0.42 * D);
+                const tw = Math.max(1, 0.055 * D);
+                return (
+                  <g
+                    key={t.id}
+                    stroke={t.colour}
+                    fill="none"
+                    className={t.on ? 'is-on' : ''}
+                    opacity={t.on ? 1 : 0.85}
+                  >
+                    {t.lo !== null && t.lo !== undefined && t.hi !== null && t.hi !== undefined && (
+                      <path
+                        d={bracket(
+                          T,
+                          t.lo,
+                          t.hi,
+                          far - (side === 1 ? 0.12 * D : -0.12 * D),
+                          side === 1 ? 0.12 * D : -0.12 * D
+                        )}
+                        strokeWidth={tw * 0.8}
+                        opacity={0.8}
+                      />
+                    )}
+                    <line {...tickLine(T, t.d, -half, half)} strokeWidth={tw} strokeLinecap="round" />
                   </g>
                 );
               })}
             </g>
-          )}
-
-          {/* Keep guide layers mounted so quick selections retarget CSS opacity instead
-              of restarting keyframes or accumulating outgoing copies. Identity colours
-              apply to each straight; the faded mask makes only the selection visible. */}
-          {/* Full-lap review preserves each recorded bin; section comparisons keep their masked guides. */}
-          {!straights.length&&<g fill="none" strokeLinecap="butt" strokeLinejoin="round" pointerEvents="none">{lines.map((r,i)=><path key={i} d={T.sub(r.d0,r.d1,r.offset??0)} stroke={r.colour} strokeWidth={lineW} className="tmap__line"/>)}</g>}
-          {straights.map(st => <g key={`guides-${st.straight_id}`} mask={`url(#${maskId}-sec-${st.straight_id})`} className={`tmap__guides ${st.straight_id === selected ? 'is-on' : ''}`} fill="none" strokeLinecap="butt" strokeLinejoin="round" pointerEvents="none">
-            {lines.map((r,i)=><path key={i} d={T.sub(st.d0,Math.min(st.d1,T.lap-.01),r.offset??0)} stroke={r.colour} strokeWidth={lineW} className="tmap__line"/>)}
-          </g>)}
-          {arrows && (
-            <g className="tmap__chevrons" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={Math.max(0.8, 0.05 * D)}>
-              {lines
-                .filter((r) => r.kind !== "band")
-                .flatMap((r, i) =>
-                  chevrons(T, r, 8 * D).map((c, j) => (
-                    <path
-                      key={`${i}-${j}`}
-                      d={`M${(-chev).toFixed(1)},${(-chev).toFixed(1)}L${(chev * 0.4).toFixed(1)},0L${(-chev).toFixed(1)},${chev.toFixed(1)}`}
-                      stroke={r.colour}
-                      transform={`translate(${c.x.toFixed(1)},${c.y.toFixed(1)}) rotate(${c.deg.toFixed(1)})`}
-                    />
-                  )),
-                )}
-            </g>
-          )}
-
-          {/* Ticks: a thin line across the road per driver, in team colour; the bracket (if any) outside. */}
-          <g className="tmap__ticks" pointerEvents="none" key={`ticks-${selected ?? ""}`}>
-            {ticks.map((t) => {
-              const side = t.side ?? 1;
-              const half = outer / 2 + 0.08 * D;
-              const far = side === 1 ? outer / 2 + 0.42 * D : -(outer / 2 + 0.42 * D);
-              const tw = Math.max(1, 0.055 * D);
-              return (
-                <g key={t.id} stroke={t.colour} fill="none" className={t.on ? "is-on" : ""} opacity={t.on ? 1 : 0.85}>
-                  {t.lo !== null && t.lo !== undefined && t.hi !== null && t.hi !== undefined && (
-                    <path d={bracket(T, t.lo, t.hi, far - (side === 1 ? 0.12 * D : -0.12 * D), side === 1 ? 0.12 * D : -0.12 * D)} strokeWidth={tw * 0.8} opacity={0.8} />
-                  )}
-                  <line {...tickLine(T, t.d, -half, half)} strokeWidth={tw} strokeLinecap="round" />
-                </g>
-              );
-            })}
-          </g>
           </g>
 
           {/* Pins: a thin grey line across the road; the label is HTML below. */}
           <g className="tmap__pins" pointerEvents="none">
             {pins.map((pn) => (
-              <line key={pn.id} {...tickLine(T, pn.d, -(outer / 2 + 0.25 * D), outer / 2 + 0.25 * D)} stroke="#8a8a93" strokeWidth={Math.max(1, 0.06 * D)} />
+              <line
+                key={pn.id}
+                {...tickLine(T, pn.d, -(outer / 2 + 0.25 * D), outer / 2 + 0.25 * D)}
+                stroke="#8a8a93"
+                strokeWidth={Math.max(1, 0.06 * D)}
+              />
             ))}
           </g>
 
           {/* Start/finish: the chequer across the road. */}
           {sf && sfPose && (
-            <g className="tmap__sf" transform={`translate(${sfPose.x.toFixed(1)},${sfPose.y.toFixed(1)}) rotate(${sfPose.deg.toFixed(1)})`} pointerEvents="none">
-              <rect x={-0.14 * D} y={-(gap / 2 + 0.07 * D)} width={0.28 * D} height={gap + 0.14 * D} fill="url(#tmap-chequer)" />
+            <g
+              className="tmap__sf"
+              transform={`translate(${sfPose.x.toFixed(1)},${sfPose.y.toFixed(1)}) rotate(${sfPose.deg.toFixed(1)})`}
+              pointerEvents="none"
+            >
+              <rect
+                x={-0.14 * D}
+                y={-(gap / 2 + 0.07 * D)}
+                width={0.28 * D}
+                height={gap + 0.14 * D}
+                fill="url(#tmap-chequer)"
+              />
             </g>
           )}
           {/* Race direction: a small arrow on the middle line just before the flag, pointing
               the way the cars cross it (lap distance grows in the direction of travel). */}
-          {sf && sfPose && (() => {
-            const q = T.pose(-0.9 * D * T.mpp);
-            const a = 0.42 * D;
-            return (
-              <g className="tmap__dir" transform={`translate(${q.x.toFixed(1)},${q.y.toFixed(1)}) rotate(${q.deg.toFixed(1)})`} pointerEvents="none">
-                <path d={`M${(-a * 1.1).toFixed(2)},0H${(a * 0.4).toFixed(2)}`} strokeWidth={Math.max(1, 0.08 * D)} />
-                <path d={`M${(a * 0.65).toFixed(2)},0L${(-a * 0.15).toFixed(2)},${(-a * 0.5).toFixed(2)}L${(-a * 0.15).toFixed(2)},${(a * 0.5).toFixed(2)}Z`} className="tmap__dir-head" />
-              </g>
-            );
-          })()}
+          {sf &&
+            sfPose &&
+            (() => {
+              const q = T.pose(-0.9 * D * T.mpp);
+              const a = 0.42 * D;
+              return (
+                <g
+                  className="tmap__dir"
+                  transform={`translate(${q.x.toFixed(1)},${q.y.toFixed(1)}) rotate(${q.deg.toFixed(1)})`}
+                  pointerEvents="none"
+                >
+                  <path
+                    d={`M${(-a * 1.1).toFixed(2)},0H${(a * 0.4).toFixed(2)}`}
+                    strokeWidth={Math.max(1, 0.08 * D)}
+                  />
+                  <path
+                    d={`M${(a * 0.65).toFixed(2)},0L${(-a * 0.15).toFixed(2)},${(-a * 0.5).toFixed(2)}L${(-a * 0.15).toFixed(2)},${(a * 0.5).toFixed(2)}Z`}
+                    className="tmap__dir-head"
+                  />
+                </g>
+              );
+            })()}
 
           {/* Corner numbers: outlined circles outside the bend. */}
           {corners && T.corners.length > 0 && (
@@ -876,7 +1112,13 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
                   <circle r={ringR} className="tmap__corner" strokeWidth={Math.max(0.8, 0.05 * D)} />
                   {/* Centred on the ring: middle anchor, central baseline, and a nudge left for
                       the italic lean so the digits sit in the middle by eye. */}
-                  <text x={-0.03 * D} textAnchor="middle" dominantBaseline="central" className="tmap__corner-n" fontSize={0.42 * D}>
+                  <text
+                    x={-0.03 * D}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    className="tmap__corner-n"
+                    fontSize={0.42 * D}
+                  >
                     {c.n}
                   </text>
                 </g>
@@ -891,13 +1133,22 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
               {marks.straights.map((c) => (
                 <g
                   key={c.id}
-                  className={`tmap__schip ${c.id === selected ? "is-on" : ""} ${onSelect ? "is-pick" : ""} ${straightsWithData && !straightsWithData.has(c.id) ? "is-empty" : ""}`}
+                  className={`tmap__schip ${c.id === selected ? 'is-on' : ''} ${onSelect ? 'is-pick' : ''} ${straightsWithData && !straightsWithData.has(c.id) ? 'is-empty' : ''}`}
                   transform={`translate(${c.x.toFixed(1)},${c.y.toFixed(1)})`}
                   onClick={onSelect ? () => onSelect(c.id) : undefined}
                   aria-hidden="true"
                 >
-                  {straightsWithData && !straightsWithData.has(c.id) && <title>No cut-offs on this straight in this session</title>}
-                  <rect x={-sChipW / 2} y={-sChipH / 2} width={sChipW} height={sChipH} rx={sChipH / 2} strokeWidth={Math.max(0.8, 0.05 * D)} />
+                  {straightsWithData && !straightsWithData.has(c.id) && (
+                    <title>No cut-offs on this straight in this session</title>
+                  )}
+                  <rect
+                    x={-sChipW / 2}
+                    y={-sChipH / 2}
+                    width={sChipW}
+                    height={sChipH}
+                    rx={sChipH / 2}
+                    strokeWidth={Math.max(0.8, 0.05 * D)}
+                  />
                   <text x={-0.03 * D} textAnchor="middle" dominantBaseline="central" fontSize={0.42 * D}>
                     S{c.id}
                   </text>
@@ -917,7 +1168,10 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
 
       {/* Drivers: the dot on the line and the tag above, in HTML so the type stays crisp. */}
       {T && renderedTags.length > 0 && (
-        <div className={`tmap__tags ${tags.length ? "" : "is-empty"}`} aria-hidden={renderedTags.some(t=>t.onSelect)?undefined:true}>
+        <div
+          className={`tmap__tags ${tags.length ? '' : 'is-empty'}`}
+          aria-hidden={renderedTags.some((t) => t.onSelect) ? undefined : true}
+        >
           {renderedTags.map((t) => (
             <div
               key={t.id}
@@ -925,13 +1179,21 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
                 if (el) tagEls.current.set(t.id, el);
                 else tagEls.current.delete(t.id);
               }}
-              className={`tmap__tag ${t.compact?'is-compact':''} ${t.onSelect?'is-interactive':''} ${t.on ? "is-on" : ""} ${t.dim ? "is-dim" : ""} ${isLight(t.colour) ? "is-light" : ""}`}
-              style={{ ["--team" as string]: t.colour }}
+              className={`tmap__tag ${t.compact ? 'is-compact' : ''} ${t.onSelect ? 'is-interactive' : ''} ${t.on ? 'is-on' : ''} ${t.dim ? 'is-dim' : ''} ${isLight(t.colour) ? 'is-light' : ''}`}
+              style={{ ['--team' as string]: t.colour }}
             >
-              {t.onSelect&&<button type="button" className="tmap__tag-hit" aria-label={`Select ${t.name??t.code}`} aria-pressed={!!t.on} onClick={t.onSelect}/>}
+              {t.onSelect && (
+                <button
+                  type="button"
+                  className="tmap__tag-hit"
+                  aria-label={`Select ${t.name ?? t.code}`}
+                  aria-pressed={!!t.on}
+                  onClick={t.onSelect}
+                />
+              )}
               <i className="tmap__tag-lead" />
               <i className="tmap__tag-dot" />
-              <span className={`tmap__tag-chip ${t.note ? "has-note" : ""}`}>
+              <span className={`tmap__tag-chip ${t.note ? 'has-note' : ''}`}>
                 <b className="tmap__tag-code">{t.code}</b>
                 {t.note && <small>{t.note}</small>}
               </span>
@@ -947,7 +1209,20 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             // Inside the loop, past the pin's end (chips take the outside).
             const off = outer / 2 + 1.1 * D;
             return (
-              <span key={pn.id} className="tmap__pinlabel" style={{ left: q.x + q.nx * off, top: q.y + q.ny * off }} data-pos={Math.abs(q.nx) > Math.abs(q.ny) ? (q.nx > 0 ? "right" : "left") : q.ny > 0 ? "below" : "above"}>
+              <span
+                key={pn.id}
+                className="tmap__pinlabel"
+                style={{ left: q.x + q.nx * off, top: q.y + q.ny * off }}
+                data-pos={
+                  Math.abs(q.nx) > Math.abs(q.ny)
+                    ? q.nx > 0
+                      ? 'right'
+                      : 'left'
+                    : q.ny > 0
+                      ? 'below'
+                      : 'above'
+                }
+              >
                 {pn.text}
               </span>
             );
@@ -960,7 +1235,20 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             const q = T.pose(lb.d);
             const off = outer / 2 + 0.6 * D;
             return (
-              <span key={lb.id} className="tmap__label" style={{ left: q.x + q.nx * off, top: q.y + q.ny * off }} data-pos={Math.abs(q.nx) > Math.abs(q.ny) ? (q.nx > 0 ? "right" : "left") : q.ny > 0 ? "below" : "above"}>
+              <span
+                key={lb.id}
+                className="tmap__label"
+                style={{ left: q.x + q.nx * off, top: q.y + q.ny * off }}
+                data-pos={
+                  Math.abs(q.nx) > Math.abs(q.ny)
+                    ? q.nx > 0
+                      ? 'right'
+                      : 'left'
+                    : q.ny > 0
+                      ? 'below'
+                      : 'above'
+                }
+              >
                 {lb.text}
               </span>
             );
@@ -970,7 +1258,10 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
       {sf && sfPose && T && (
         <span
           className="tmap__sf-label"
-          style={{ left: sfPose.x - sfPose.nx * (outer / 2 + 0.55 * D), top: sfPose.y - sfPose.ny * (outer / 2 + 0.55 * D) }}
+          style={{
+            left: sfPose.x - sfPose.nx * (outer / 2 + 0.55 * D),
+            top: sfPose.y - sfPose.ny * (outer / 2 + 0.55 * D),
+          }}
           data-pos={sfLabelPos}
           aria-hidden="true"
         >

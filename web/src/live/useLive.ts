@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { url } from "../lib/api";
-import type { RegimeLabel } from "../lib/types";
+import { useEffect, useRef, useState } from 'react';
+import { url } from '../lib/api';
+import type { RegimeLabel } from '../lib/types';
 
-export type LiveRegime = RegimeLabel | "other";
+export type LiveRegime = RegimeLabel | 'other';
 
 export interface LiveState {
   driver_number: number;
@@ -11,7 +11,7 @@ export interface LiveState {
   lap_distance_est: number;
 }
 
-export type LiveStatus = "connecting" | "connected" | "no-data" | "disabled" | "no-topic" | "error";
+export type LiveStatus = 'connecting' | 'connected' | 'no-data' | 'disabled' | 'no-topic' | 'error';
 
 export interface Live {
   status: LiveStatus;
@@ -31,14 +31,14 @@ export interface Live {
  * time moved over the last ten seconds of wall time.
  */
 export function useLive(sessionKey: number | null): Live {
-  const [status, setStatus] = useState<LiveStatus>("connecting");
+  const [status, setStatus] = useState<LiveStatus>('connecting');
   const [states, setStates] = useState<Record<number, LiveState>>({});
   const [speed, setSpeed] = useState<number | null>(null);
   const pending = useRef<Record<number, LiveState>>({});
 
   useEffect(() => {
     if (sessionKey === null) return;
-    setStatus("connecting");
+    setStatus('connecting');
     setStates({});
     setSpeed(null);
     pending.current = {};
@@ -63,23 +63,23 @@ export function useLive(sessionKey: number | null): Live {
         if (now - w0 > 1500) setSpeed((newest - t0) / (now - w0));
       }
       setStates((s) => ({ ...s, ...batch }));
-      setStatus((st) => (st === "no-data" || st === "connecting" ? "connected" : st));
+      setStatus((st) => (st === 'no-data' || st === 'connecting' ? 'connected' : st));
     }, 100);
 
     const open = () => {
       es = new EventSource(target);
-      es.addEventListener("status", (e) => {
+      es.addEventListener('status', (e) => {
         try {
           const s = JSON.parse((e as MessageEvent).data) as { state: string };
-          if (s.state === "no-topic") {
-            setStatus("no-topic");
+          if (s.state === 'no-topic') {
+            setStatus('no-topic');
             es?.close();
-          } else setStatus("no-data");
+          } else setStatus('no-data');
         } catch {
           /* ignore malformed status */
         }
       });
-      es.addEventListener("state", (e) => {
+      es.addEventListener('state', (e) => {
         try {
           const s = JSON.parse((e as MessageEvent).data) as LiveState;
           pending.current[s.driver_number] = s;
@@ -90,28 +90,28 @@ export function useLive(sessionKey: number | null): Live {
       es.onerror = () => {
         es?.close();
         if (closed) return;
-        fetch(target, { headers: { Accept: "application/json" } })
+        fetch(target, { headers: { Accept: 'application/json' } })
           .then(async (res) => {
             res.body?.cancel().catch(() => undefined);
-            if (res.status === 404) setStatus("disabled");
+            if (res.status === 404) setStatus('disabled');
             else {
-              setStatus("error");
+              setStatus('error');
               retry = window.setTimeout(() => !closed && open(), 3000);
             }
           })
           .catch(() => {
-            setStatus("error");
+            setStatus('error');
             retry = window.setTimeout(() => !closed && open(), 3000);
           });
       };
     };
     // Probe first: a server with replay disabled answers 404, and an EventSource would only log
     // a failed stream and retry. Anything else opens the stream.
-    fetch(target, { headers: { Accept: "application/json" } })
+    fetch(target, { headers: { Accept: 'application/json' } })
       .then((res) => {
         res.body?.cancel().catch(() => undefined);
         if (closed) return;
-        if (res.status === 404) setStatus("disabled");
+        if (res.status === 404) setStatus('disabled');
         else open();
       })
       .catch(() => !closed && open());

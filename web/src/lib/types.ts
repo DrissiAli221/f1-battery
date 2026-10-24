@@ -62,7 +62,7 @@ export interface Outline {
   points: OutlinePoint[];
 }
 
-export type RegimeLabel = "deploy" | "plateau" | "lift" | "brake";
+export type RegimeLabel = 'deploy' | 'plateau' | 'lift' | 'brake';
 
 export interface RegimeBin {
   bin: number;
@@ -115,7 +115,7 @@ export interface Compare {
 
 /** Display name for a straight; `label` holds the resolved name when the straight went through `nameStraights`. */
 export function straightName(s: { straight_id: number; label?: string | null }): string {
-  const l = (s.label ?? "").trim();
+  const l = (s.label ?? '').trim();
   return l && !/^(straight|derived)$/i.test(l) ? l : `Straight ${s.straight_id}`;
 }
 

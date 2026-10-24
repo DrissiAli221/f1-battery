@@ -114,29 +114,41 @@
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 150ms var(--ease-out), visibility 0s linear 150ms;
+  transition:
+    opacity 150ms var(--ease-out),
+    visibility 0s linear 150ms;
 }
 .tmap__straight.is-on .tmap__fill {
   opacity: 0.22;
   visibility: visible;
-  transition: opacity 260ms var(--ease-out), visibility 0s;
+  transition:
+    opacity 260ms var(--ease-out),
+    visibility 0s;
 }
 .tmap__glow.is-on {
   opacity: 0.03;
   visibility: visible;
-  transition: opacity 260ms var(--ease-out), visibility 0s;
+  transition:
+    opacity 260ms var(--ease-out),
+    visibility 0s;
 }
 .tmap__sec {
   opacity: 0;
   visibility: hidden;
   translate: 0 3px;
-  transition: opacity 120ms var(--ease-out), translate 120ms var(--ease-out), visibility 0s linear 120ms;
+  transition:
+    opacity 120ms var(--ease-out),
+    translate 120ms var(--ease-out),
+    visibility 0s linear 120ms;
 }
 .tmap__sec.is-on {
   opacity: 1;
   visibility: visible;
   translate: 0 0;
-  transition: opacity 220ms var(--ease-out) 60ms, translate 220ms var(--ease-out) 60ms, visibility 0s;
+  transition:
+    opacity 220ms var(--ease-out) 60ms,
+    translate 220ms var(--ease-out) 60ms,
+    visibility 0s;
 }
 .tmap__sec .tmap__sec-lead {
   stroke: #6e6e77;
@@ -164,13 +176,17 @@
    and show on arrival. The field marks fade in. */
 .tmap__tag-chip,
 .tmap__tag-lead {
-  transition: opacity 200ms var(--ease-out), scale 200ms var(--ease-out);
+  transition:
+    opacity 200ms var(--ease-out),
+    scale 200ms var(--ease-out);
 }
 .tmap__tag.is-travel .tmap__tag-chip,
 .tmap__tag.is-travel .tmap__tag-lead {
   opacity: 0;
   scale: 0.94;
-  transition: opacity 100ms var(--ease-out), scale 100ms var(--ease-out);
+  transition:
+    opacity 100ms var(--ease-out),
+    scale 100ms var(--ease-out);
 }
 .tmap[data-jump] .tmap__tag {
   transition: none !important;
@@ -254,16 +270,16 @@
   pointer-events: none;
   transform: translate(-50%, -50%);
 }
-.tmap__sf-label[data-pos="left"] {
+.tmap__sf-label[data-pos='left'] {
   transform: translate(-100%, -50%);
 }
-.tmap__sf-label[data-pos="right"] {
+.tmap__sf-label[data-pos='right'] {
   transform: translate(0, -50%);
 }
-.tmap__sf-label[data-pos="above"] {
+.tmap__sf-label[data-pos='above'] {
   transform: translate(-50%, -100%);
 }
-.tmap__sf-label[data-pos="below"] {
+.tmap__sf-label[data-pos='below'] {
   transform: translate(-50%, 0);
 }
 
@@ -351,7 +367,7 @@
   transform: translate(calc(-50% + var(--tx, 0px)), calc(-50% + var(--ty, 0px)));
 }
 .tmap__tag-chip::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -393,7 +409,7 @@
 }
 .tmap__tag-chip.has-note .tmap__tag-code::before,
 .tmap__tag-chip.has-note small::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -466,20 +482,20 @@
   color: #d8d8de;
   text-transform: uppercase;
 }
-.tmap__pinlabel[data-pos="left"],
-.tmap__label[data-pos="left"] {
+.tmap__pinlabel[data-pos='left'],
+.tmap__label[data-pos='left'] {
   transform: translate(-100%, -50%);
 }
-.tmap__pinlabel[data-pos="right"],
-.tmap__label[data-pos="right"] {
+.tmap__pinlabel[data-pos='right'],
+.tmap__label[data-pos='right'] {
   transform: translate(0, -50%);
 }
-.tmap__pinlabel[data-pos="above"],
-.tmap__label[data-pos="above"] {
+.tmap__pinlabel[data-pos='above'],
+.tmap__label[data-pos='above'] {
   transform: translate(-50%, -100%);
 }
-.tmap__pinlabel[data-pos="below"],
-.tmap__label[data-pos="below"] {
+.tmap__pinlabel[data-pos='below'],
+.tmap__label[data-pos='below'] {
   transform: translate(-50%, 0);
 }
 
@@ -489,14 +505,20 @@
 .tmap__schip {
   transform-box: fill-box;
   transform-origin: center;
-  transition: opacity 200ms var(--ease-out), scale 160ms var(--ease-out), visibility 0s;
+  transition:
+    opacity 200ms var(--ease-out),
+    scale 160ms var(--ease-out),
+    visibility 0s;
 }
 .tmap__schip.is-on {
   opacity: 0;
   scale: 0.92;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 120ms var(--ease-out), scale 120ms var(--ease-out), visibility 0s linear 120ms;
+  transition:
+    opacity 120ms var(--ease-out),
+    scale 120ms var(--ease-out),
+    visibility 0s linear 120ms;
 }
 .tmap__schip.is-pick:active {
   scale: 0.96;

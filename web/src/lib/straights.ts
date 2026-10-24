@@ -1,7 +1,7 @@
-import names from "../content/straight-names.json";
-import { getAll, getJson, url } from "./api";
-import { along, lapLength, trackStraights, type TrackStraight } from "./track";
-import type { Outline, Straight } from "./types";
+import names from '../content/straight-names.json';
+import { getAll, getJson, url } from './api';
+import { along, lapLength, trackStraights, type TrackStraight } from './track';
+import type { Outline, Straight } from './types';
 
 const CURATED = names as Record<string, Record<string, string>>;
 
@@ -15,13 +15,17 @@ export function lapLengthM(outline: Outline | null): number | null {
  * Resolves a display name for every straight: a curated name for the circuit when one exists,
  * otherwise "Straight N · a–b km" from the start/end fractions and the outline length.
  */
-export function nameStraights(straights: Straight[], circuitKey: number | null, outline: Outline | null): Straight[] {
+export function nameStraights(
+  straights: Straight[],
+  circuitKey: number | null,
+  outline: Outline | null
+): Straight[] {
   const length = lapLengthM(outline);
-  const km = (pct: number) => ((pct / 100) * (length as number) / 1000).toFixed(1);
+  const km = (pct: number) => (((pct / 100) * (length as number)) / 1000).toFixed(1);
   return straights.map((s) => {
     const curated = circuitKey !== null ? CURATED[String(circuitKey)]?.[String(s.straight_id)] : undefined;
     if (curated) return { ...s, label: curated };
-    const range = length ? ` · ${km(s.start_pct)}–${km(s.end_pct)} km` : "";
+    const range = length ? ` · ${km(s.start_pct)}–${km(s.end_pct)} km` : '';
     return { ...s, label: `Straight ${s.straight_id}${range}` };
   });
 }
@@ -44,7 +48,11 @@ export interface StraightFrame {
 }
 
 /** The frame for one straight from the circuit's straights and outline, or null if either is missing. */
-export function straightFrame(straights: Straight[], outline: Outline | null, straightId: number): StraightFrame | null {
+export function straightFrame(
+  straights: Straight[],
+  outline: Outline | null,
+  straightId: number
+): StraightFrame | null {
   if (!outline || outline.points.length < 2) return null;
   const lap = lapLength(outline);
   const s = trackStraights(straights, lap).find((t) => t.straight_id === straightId);
@@ -62,7 +70,10 @@ export function intoStraight(frame: StraightFrame, lapM: number | null | undefin
 }
 
 /** Fetches (cached, the explorer's URLs) the circuit's straights and outline and builds the frame. */
-export async function getStraightFrame(circuitKey: number, straightId: number): Promise<StraightFrame | null> {
+export async function getStraightFrame(
+  circuitKey: number,
+  straightId: number
+): Promise<StraightFrame | null> {
   const [straights, outline] = await Promise.all([
     getAll<Straight>(`/circuits/${circuitKey}/straights`),
     getJson<Outline>(url(`/circuits/${circuitKey}/outline`)),

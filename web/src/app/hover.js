@@ -18,7 +18,12 @@ function node(className, text) {
 
 export function createPixelButton(element, { interactive = true } = {}) {
   if (controllers.has(element)) return controllers.get(element);
-  const label = element.dataset.pixelLabel || [...element.childNodes].filter(n => n.nodeType === Node.TEXT_NODE).map(n => n.textContent.trim()).join(' ');
+  const label =
+    element.dataset.pixelLabel ||
+    [...element.childNodes]
+      .filter((n) => n.nodeType === Node.TEXT_NODE)
+      .map((n) => n.textContent.trim())
+      .join(' ');
   element.classList.add('pixel-button');
   element.setAttribute('aria-label', label);
   const window = node('pixel-window');
@@ -33,10 +38,16 @@ export function createPixelButton(element, { interactive = true } = {}) {
   const iconBottom = node('pixel-icon-bottom', '→');
   icon.append(iconTop, iconBottom);
   element.replaceChildren(window, words, icon);
-  const rest = '#e10600', active = '#f4f4ef';
-  const restInk = '#ffffff', activeInk = '#030303';
-  let animations = [], phase = 'rest', inside = false, revision = 0;
-  let inspectionPhase = null, transitionKind = null;
+  const rest = '#e10600',
+    active = '#f4f4ef';
+  const restInk = '#ffffff',
+    activeInk = '#030303';
+  let animations = [],
+    phase = 'rest',
+    inside = false,
+    revision = 0;
+  let inspectionPhase = null,
+    transitionKind = null;
 
   function dimensions() {
     const { width, height } = element.getBoundingClientRect();
@@ -50,7 +61,7 @@ export function createPixelButton(element, { interactive = true } = {}) {
 
   function cancel() {
     revision++;
-    animations.forEach(a => a.cancel());
+    animations.forEach((a) => a.cancel());
     animations = [];
   }
   function settle(entered) {
@@ -81,15 +92,21 @@ export function createPixelButton(element, { interactive = true } = {}) {
     strip.style.opacity = '1';
     // The static sprite is moved as a composited layer. Its mask position
     // never animates, so there is no per-frame canvas or DOM paint loop.
-    const mask = animate(strip, [
-      { transform: 'translate(0%,-50%)' },
-      { transform: 'translate(-95%,-50%)' }
-    ], MASK_DURATION, 'steps(19,end)');
+    const mask = animate(
+      strip,
+      [{ transform: 'translate(0%,-50%)' }, { transform: 'translate(-95%,-50%)' }],
+      MASK_DURATION,
+      'steps(19,end)'
+    );
     if (nextPhase === 'enter') {
       animate(top, [{ transform: 'translateY(0%)' }, { transform: 'translateY(-100%)' }], ROLL_DURATION);
       animate(bottom, [{ transform: 'translateY(100%)' }, { transform: 'translateY(0%)' }], ROLL_DURATION);
       animate(iconTop, [{ transform: 'translateX(0%)' }, { transform: 'translateX(100%)' }], ROLL_DURATION);
-      animate(iconBottom, [{ transform: 'translateX(-100%)' }, { transform: 'translateX(0%)' }], ROLL_DURATION);
+      animate(
+        iconBottom,
+        [{ transform: 'translateX(-100%)' }, { transform: 'translateX(0%)' }],
+        ROLL_DURATION
+      );
     }
     // Leave the visible duplicate in place on exit. Replacing it at the
     // start caused a text-layer snap even though both strings were equal.
@@ -99,7 +116,8 @@ export function createPixelButton(element, { interactive = true } = {}) {
     // Source colour transition: 150 ms, circ.in. Explicit samples preserve
     // the circular curve without installing GSAP for this small study.
     const colors = Array.from({ length: 21 }, (_, i) => {
-      const t = i / 20, p = 1 - Math.sqrt(1 - t * t);
+      const t = i / 20,
+        p = 1 - Math.sqrt(1 - t * t);
       return { offset: t, color: `rgb(${start.map((v, c) => Math.round(v + (end[c] - v) * p)).join(',')})` };
     });
     animate(element, colors, 150, 'linear');
@@ -116,13 +134,15 @@ export function createPixelButton(element, { interactive = true } = {}) {
     element.dataset.hoverPhase = phase;
     const id = ++revision;
     const mask = animations[0];
-    animations.forEach(animation => {
+    animations.forEach((animation) => {
       animation.playbackRate = direction;
       animation.play();
     });
-    mask.finished.then(() => {
-      if (revision === id) settle(entered);
-    }).catch(() => {});
+    mask.finished
+      .then(() => {
+        if (revision === id) settle(entered);
+      })
+      .catch(() => {});
   }
   const controller = {
     enter() {
@@ -145,20 +165,35 @@ export function createPixelButton(element, { interactive = true } = {}) {
       }
       if (inspectionPhase !== nextPhase) prepare(nextPhase);
       inspectionPhase = nextPhase;
-      animations.forEach(a => { a.currentTime = Math.max(0, Math.min(elapsed, a.effect.getTiming().duration)); });
-    }
+      animations.forEach((a) => {
+        a.currentTime = Math.max(0, Math.min(elapsed, a.effect.getTiming().duration));
+      });
+    },
   };
   if (interactive) {
-    element.addEventListener('pointerenter', event => { if (event.pointerType !== 'touch' && finePointer.matches) controller.enter(); });
-    element.addEventListener('pointerleave', event => { if (event.pointerType !== 'touch' && finePointer.matches) controller.leave(); });
-    element.addEventListener('focus', () => { if (element.matches(':focus-visible')) settle(true); });
-    element.addEventListener('blur', () => { if (!inside) settle(false); });
+    element.addEventListener('pointerenter', (event) => {
+      if (event.pointerType !== 'touch' && finePointer.matches) controller.enter();
+    });
+    element.addEventListener('pointerleave', (event) => {
+      if (event.pointerType !== 'touch' && finePointer.matches) controller.leave();
+    });
+    element.addEventListener('focus', () => {
+      if (element.matches(':focus-visible')) settle(true);
+    });
+    element.addEventListener('blur', () => {
+      if (!inside) settle(false);
+    });
     reduced.addEventListener('change', () => settle(inside));
-    finePointer.addEventListener('change', () => { inside = false; settle(false); });
+    finePointer.addEventListener('change', () => {
+      inside = false;
+      settle(false);
+    });
   }
   settle(false);
   controllers.set(element, controller);
   return controller;
 }
 
-document.querySelectorAll('a.button-light,button.button-light').forEach(button => createPixelButton(button));
+document
+  .querySelectorAll('a.button-light,button.button-light')
+  .forEach((button) => createPixelButton(button));

@@ -1,4 +1,4 @@
-import type { Outline, Straight } from "./types";
+import type { Outline, Straight } from './types';
 
 /*
  * Track geometry shared by the map and the distance strip.
@@ -49,7 +49,7 @@ export function trackStraights(straights: Straight[], lap: number): TrackStraigh
     const d0 = (s.start_pct / 100) * lap;
     const d1 = (s.end_pct / 100) * lap;
     const len = wrap(d1 - d0, lap);
-    const m = /→\s*(.+)$/.exec(s.label ?? "");
+    const m = /→\s*(.+)$/.exec(s.label ?? '');
     return { ...s, d0, d1, len, mid: wrap(d0 + len / 2, lap), into: m ? m[1].trim() : null };
   });
 }
@@ -72,10 +72,12 @@ export function beforeEnd(s: TrackStraight, d: number, lap: number): number | nu
 }
 
 export function straightAt(straights: TrackStraight[], d: number, lap: number): TrackStraight | null {
-  return straights.find((s) => {
-    const a = along(s, d, lap);
-    return a >= 0 && a <= s.len;
-  }) ?? null;
+  return (
+    straights.find((s) => {
+      const a = along(s, d, lap);
+      return a >= 0 && a <= s.len;
+    }) ?? null
+  );
 }
 
 /**
@@ -213,7 +215,13 @@ export interface Projection {
  * it does on TV; otherwise the rotation (15 degree steps) that fills the box best.
  */
 /** The map's orientation in radians: the broadcast one, turned a quarter when `landscape` asks for a wide shape. */
-function orientation(ring: Pt[], ref: CircuitRef | null | undefined, landscape: boolean, iw: number, ih: number): number | null {
+function orientation(
+  ring: Pt[],
+  ref: CircuitRef | null | undefined,
+  landscape: boolean,
+  iw: number,
+  ih: number
+): number | null {
   if (ref?.rotation === null || ref?.rotation === undefined) return null;
   // The frame is x east, y north (flipped to screen). The reference's rotation is the
   // broadcast orientation in that frame's own convention; on screen it is a clockwise turn
@@ -236,7 +244,14 @@ export function trackAspect(outline: Outline, ref: CircuitRef | null | undefined
   return b.h / b.w;
 }
 
-export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: CircuitRef | null, landscape = true): Projection {
+export function project(
+  outline: Outline,
+  W: number,
+  H: number,
+  pad: Pad,
+  ref?: CircuitRef | null,
+  landscape = true
+): Projection {
   const lap = lapLength(outline);
   const dense = densify(outline, lap);
   const iw = Math.max(10, W - pad.l - pad.r);
@@ -275,7 +290,8 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
   const R = ring.map((p) => ({ ...toPx(p), d: p.d }));
   if (hires) R.push({ ...R[0], d: 0 });
   const cum = [0];
-  for (let i = 1; i < R.length; i++) cum.push(cum[i - 1] + Math.hypot(R[i].x - R[i - 1].x, R[i].y - R[i - 1].y));
+  for (let i = 1; i < R.length; i++)
+    cum.push(cum[i - 1] + Math.hypot(R[i].x - R[i - 1].x, R[i].y - R[i - 1].y));
   const total = cum[cum.length - 1] || 1;
 
   // Lap distance -> arc length on the drawn ring. From the API outline directly, or, with a
@@ -295,7 +311,10 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
       const vy = R[c].y - R[a].y;
       const L2 = vx * vx + vy * vy || 1;
       const t = Math.max(0, Math.min(1, ((p.x - R[a].x) * vx + (p.y - R[a].y) * vy) / L2));
-      return { q: (R[a].x + vx * t - p.x) ** 2 + (R[a].y + vy * t - p.y) ** 2, s: cum[a] + (cum[c] - cum[a]) * t };
+      return {
+        q: (R[a].x + vx * t - p.x) ** 2 + (R[a].y + vy * t - p.y) ** 2,
+        s: cum[a] + (cum[c] - cum[a]) * t,
+      };
     };
     for (const p of D) {
       // Nearest ring vertex: a global search for the first point, then only a forward window
@@ -342,7 +361,8 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
       if (sOf[i] < sOf[i - 1] - 600 * s) ok = false;
       else if (sOf[i] < sOf[i - 1]) sOf[i] = sOf[i - 1];
     }
-    if (import.meta.env.DEV && !ok) console.debug("track: centreline rejected", { end: sOf[sOf.length - 1] / total, p90, worstM });
+    if (import.meta.env.DEV && !ok)
+      console.debug('track: centreline rejected', { end: sOf[sOf.length - 1] / total, p90, worstM });
     if (!ok) return project(outline, W, H, pad, ref ? { ...ref, outline: null } : null, landscape);
   } else {
     sOf = cum.slice(0, D.length);
@@ -357,7 +377,7 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
       else hi = m;
     }
     const t = (dd - D[lo].d) / (D[lo + 1].d - D[lo].d || 1);
-    return ((sOf[lo] + (sOf[lo + 1] - sOf[lo]) * t) % total + total) % total;
+    return (((sOf[lo] + (sOf[lo + 1] - sOf[lo]) * t) % total) + total) % total;
   };
   const dAt = (sv: number): number => {
     const ss = ((sv % total) + total) % total;
@@ -394,7 +414,13 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
     const a = at(d - 14);
     const c = at(d + 14);
     const ang = Math.atan2(c.y - a.y, c.x - a.x);
-    return { x: p.x, y: p.y, deg: (ang * 180) / Math.PI, nx: -Math.sin(ang) * inner, ny: Math.cos(ang) * inner };
+    return {
+      x: p.x,
+      y: p.y,
+      deg: (ang * 180) / Math.PI,
+      nx: -Math.sin(ang) * inner,
+      ny: Math.cos(ang) * inner,
+    };
   };
   const frac = (d: number) => sAt(d) / total;
   const sub = (d0: number, d1: number, off = 0) => {
@@ -419,9 +445,9 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
       }
     }
     push(ptAtS(sb), d1);
-    return "M" + list.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("L");
+    return 'M' + list.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join('L');
   };
-  const pathD = "M" + R.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("L") + "Z";
+  const pathD = 'M' + R.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join('L') + 'Z';
   const nearest = (x: number, y: number) => {
     let bestQ = Infinity;
     let bs = 0;
@@ -442,7 +468,10 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
     const n = nearest(p.x, p.y);
     const q = at(n.d);
     const a = c.angle ?? 0;
-    const l = toPx({ x: c.x + 540 * Math.cos((a * Math.PI) / 180), y: -(c.y + 540 * Math.sin((a * Math.PI) / 180)) });
+    const l = toPx({
+      x: c.x + 540 * Math.cos((a * Math.PI) / 180),
+      y: -(c.y + 540 * Math.sin((a * Math.PI) / 180)),
+    });
     // Keep the label at a readable distance from the road at any map size: 54 m scaled, but
     // never under 18 px nor over 30 px.
     const vx = l.x - q.x;
@@ -452,14 +481,15 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
     return { n: c.n, x: q.x, y: q.y, lx: q.x + (vx / len) * off, ly: q.y + (vy / len) * off, d: n.d };
   });
 
-  const north = ref?.rotation !== null && ref?.rotation !== undefined
-    ? (() => {
-        // Frame north (0, +1) is screen (0, -1) before rotation.
-        const c = Math.cos(angle);
-        const sn = Math.sin(angle);
-        return { x: -(-sn), y: -c };
-      })()
-    : null;
+  const north =
+    ref?.rotation !== null && ref?.rotation !== undefined
+      ? (() => {
+          // Frame north (0, +1) is screen (0, -1) before rotation.
+          const c = Math.cos(angle);
+          const sn = Math.sin(angle);
+          return { x: -(-sn), y: -c };
+        })()
+      : null;
 
   const pts = hires ? R.map((p, i) => ({ x: p.x, y: p.y, d: dAt(cum[i]) })) : D;
   return { lap, pts, scale: s, pathD, at, pose, frac, sub, nearest, mpp: lap / total, corners, north, hires };
@@ -467,18 +497,22 @@ export function project(outline: Outline, W: number, H: number, pad: Pad, ref?: 
 
 /** Regime runs: consecutive 50 m bins with the same label merged, "other" where unlabelled. */
 export interface RegimeRun {
-  label: "deploy" | "plateau" | "lift" | "brake" | "other";
+  label: 'deploy' | 'plateau' | 'lift' | 'brake' | 'other';
   d0: number;
   d1: number;
 }
 
-export function regimeRuns(bins: { d_start_m: number; label: RegimeRun["label"] }[], lap: number, binM = 50): RegimeRun[] {
+export function regimeRuns(
+  bins: { d_start_m: number; label: RegimeRun['label'] }[],
+  lap: number,
+  binM = 50
+): RegimeRun[] {
   if (!bins.length) return [];
   const byStart = new Map(bins.map((b) => [Math.round(b.d_start_m), b.label]));
   const runs: RegimeRun[] = [];
   let cur: RegimeRun | null = null;
   for (let d0 = 0; d0 < lap; d0 += binM) {
-    const label = byStart.get(d0) ?? "other";
+    const label = byStart.get(d0) ?? 'other';
     const d1 = Math.min(d0 + binM, lap);
     if (cur && cur.label === label) cur.d1 = d1;
     else {
@@ -489,8 +523,8 @@ export function regimeRuns(bins: { d_start_m: number; label: RegimeRun["label"] 
   return runs;
 }
 
-export function regimeAt(runs: RegimeRun[], d: number): RegimeRun["label"] | null {
+export function regimeAt(runs: RegimeRun[], d: number): RegimeRun['label'] | null {
   if (!runs.length) return null;
   for (const r of runs) if (d >= r.d0 && d < r.d1) return r.label;
-  return "other";
+  return 'other';
 }
