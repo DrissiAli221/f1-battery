@@ -782,7 +782,15 @@ function App() {
                           label={`${place} track with estimated deployment cut-off markers`}
                         />
                       ) : (
-                        <p className="quiet-note">Track geometry could not be loaded.</p>
+                        <p className="quiet-note">
+                          {data.outlineError
+                            ? (data.outlineError as { status?: number }).status === 404
+                              ? 'No track outline is recorded for this circuit yet.'
+                              : 'Track geometry could not be loaded.'
+                            : data.outline && data.outline.points.length < 2
+                              ? 'No track outline is recorded for this circuit yet.'
+                              : 'Track geometry could not be loaded.'}
+                        </p>
                       )}
                       <p className="map-status" role="status">
                         {noEstimates
