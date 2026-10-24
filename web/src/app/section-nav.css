@@ -1,26 +1,20 @@
-/* In-page section row: pinned under the 64px header on desktop, static on phone. */
-body .session-preview .page-sections a[aria-current] {
-  color: #f4f4ef;
-}
-body .session-preview .page-sections a:focus-visible {
-  outline: 2px solid #f4f4ef;
-  outline-offset: 2px;
-}
-#evidence,
-#checks,
-#limitations,
-#provenance,
-#process,
-#estimator,
-#method-record {
-  scroll-margin-top: 120px;
-}
-@media (min-width: 951px) {
-  body .session-preview .section-rail {
-    position: sticky;
-    top: 64px;
-    z-index: 15;
-    background: #030303;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+@layer tokens, base, components, pages, overrides;
+@layer components {
+  /* In-page section row: pinned under the 64px header on desktop, static on phone. */
+  .page-sections a[aria-current] {
+    color: #f4f4ef;
+  }
+  .page-sections a:focus-visible {
+    outline: 2px solid #f4f4ef;
+    outline-offset: 2px;
+  }
+  @media (min-width: 1000px) {
+    .section-rail {
+      position: sticky;
+      top: var(--header-h);
+      z-index: 15;
+      background: #030303;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
   }
 }

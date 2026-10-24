@@ -15,6 +15,7 @@ import { teamLogo, headshotHd, headshot, driverName } from '../lib/teams';
 import { createPixelButton } from './hover.js';
 import { paintScreen } from './session-halftone.js';
 import { SessionSelect, type SelectItem } from './session-select';
+import { cssPx } from './css-tokens';
 import './session.css';
 import './refinement.css';
 
@@ -496,11 +497,13 @@ function App() {
   useEffect(() => {
     if (!data.ready) return;
     let pending = false;
+    // A section is current once its top passes this line: the pinned header plus a 116px reading gap (180 on desktop).
+    const line = cssPx('--sticky-stack', 64) + 116;
     const check = () => {
       pending = false;
       let active = 'track';
       for (const id of ['track', 'lap-chart', 'method'])
-        if ((document.getElementById(id)?.getBoundingClientRect().top ?? Infinity) < 180) active = id;
+        if ((document.getElementById(id)?.getBoundingClientRect().top ?? Infinity) < line) active = id;
       setActiveNav(active);
     };
     const onScroll = () => {

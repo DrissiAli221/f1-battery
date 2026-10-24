@@ -1,0 +1,93 @@
+/* Design tokens: the single source for colour, type, easing and layout measures.
+
+   Cascade layers (lowest to highest): tokens, base, components, pages, overrides.
+   Every stylesheet repeats this declaration so the order holds whichever file the
+   browser reads first. A rule's layer decides precedence, not selector weight, so no
+   file raises specificity or uses !important to win. The only !important left are the
+   deliberate global overrides (reduced motion, keyboard-instant, [hidden], skeletons,
+   and values that must beat inline GSAP styles).
+
+   Breakpoints. Media queries cannot read custom properties, so the four points are
+   written literally in each query and documented here:
+     --bp-sm  480   phone portrait: (max-width: 480px)
+     --bp-md  720   phone / tablet: (max-width: 720px); the tablet band is (min-width: 721px)
+     --bp-lg  1000  layout switches (single column, stacked map, unpinned rail) happen
+                    below it: (max-width: 999px) narrow, (min-width: 1000px) wide.
+                    Density tweaks (type, gaps) use (max-width: 1000px), inclusive.
+     --bp-xl  1200  compact / full desktop: (max-width: 1199px) below it
+   The 1600px content cap (--wrap-max) is a width limit, not a layout breakpoint. */
+@layer tokens, base, components, pages, overrides;
+
+@layer tokens {
+  :root {
+    /* Colour */
+    --ground: #060606;
+    --surface: #111111;
+    --surface-1: #0b0b0a;
+    --surface-2: #111110;
+    --surface-3: #161615;
+    --band: rgb(255 255 248/0.03);
+    --band-line: #ffffff14;
+    --ink: #f4f4ef;
+    --muted: #aaa99f;
+    --line: #2c2c2b;
+    --line-strong: #50504b;
+    --red: #e10600;
+    --accent: #f4f4ef;
+    --page-bg: #030303;
+    --text: #f4f4ef;
+    --text-muted: #c0c0b7;
+    --text-dim: var(--muted);
+    --faint: var(--muted);
+    --radius: 0px;
+    --radius-chip: 0px;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 2.2 0 0 0 -.9'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+
+    /* Type roles: labels, controls, data values, section headings */
+    --utility: KHF1;
+    --font-display: KHF1, monospace;
+    --font-body: Geist, Arial, sans-serif;
+    --font-mono: GeistMono, monospace;
+    --type-label: 12px;
+    --type-body: 13px;
+    --type-value: 16px;
+    --type-heading: 26px;
+    /* Display sizes, one per page h1 (F1 Black, uppercase) */
+    --display-base: clamp(54px, 7.8vw, 125px);
+    --display-home: clamp(64px, 7.7vw, 118px);
+    --display-session: clamp(68px, 8vw, 122px);
+    --display-replay: clamp(56px, 7.5vw, 110px);
+    --display-finding: clamp(70px, 8vw, 118px);
+    --display-method: clamp(64px, 8vw, 118px);
+
+    /* Easing and durations */
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-out: var(--ease);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --dur-ui: 160ms;
+    --dur-enter: 0ms;
+
+    /* Layout. --sticky-stack is how much of the viewport top the pinned chrome covers:
+       the header, plus the section rail on the pages where the rail pins (set below). */
+    --gutter: clamp(22px, 4.5vw, 80px);
+    --wrap-max: 1600px;
+    --header-h: 64px;
+    --rail-h: 0px;
+    --sticky-stack: calc(var(--header-h) + var(--rail-h));
+
+    color-scheme: dark;
+  }
+
+  @media (max-width: 720px) {
+    :root {
+      --header-h: 60px;
+    }
+  }
+
+  /* Findings and Method pin their section rail under the header from the wide layout up. */
+  @media (min-width: 1000px) {
+    :root:has(.findings-preview, .method-preview) {
+      --rail-h: 68px;
+    }
+  }
+}
