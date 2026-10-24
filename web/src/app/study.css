@@ -150,3 +150,13 @@ html[data-input=keyboard] *,html[data-input=keyboard] *::before,html[data-input=
 .notice-close:active{background:#ffffff1a}.restore-message{justify-self:start;color:var(--ink)}[hidden]{display:none!important}
 @media(hover:hover) and (pointer:fine){.notice-close:hover{background:#ffffff12}}
 @media(max-width:720px){.message-specimens{margin-top:32px;gap:12px}.message-specimens h3{font-size:19px}.notice{grid-template-columns:24px minmax(0,1fr) auto;gap:12px;padding:16px 12px 16px 16px;align-items:start}.notice-icon{width:24px;height:24px;margin-top:1px}.notice-content h4{font-size:14px}.notice-content p{font-size:11px;margin-top:7px}.notice-close{margin-top:-10px;margin-right:-6px}.notice-caution{grid-template-columns:24px minmax(0,1fr)}}
+/* Loading skeletons: same boxes as the loaded layout, pulsing. Shared by every page. */
+.skel{position:relative;overflow:hidden;background:#141413;color:transparent!important;border-color:transparent!important;pointer-events:none;user-select:none}
+.skel::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.045) 50%,transparent 80%);transform:translateX(-100%);animation:skel-sweep 1.6s ease-in-out infinite}
+.skel-text{display:inline-block;height:1em;min-width:6ch;vertical-align:-.15em}
+.skel-rule{height:2px;background:#1f1f1d;overflow:hidden;position:relative}
+.skel-rule::after{content:'';position:absolute;inset:0;width:40%;background:#f4f4ef;opacity:.55;animation:skel-rule 1.1s ease-in-out infinite}
+.is-loading{opacity:.55;transition:opacity 160ms}
+@keyframes skel-sweep{to{transform:translateX(100%)}}
+@keyframes skel-rule{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+@media(prefers-reduced-motion:reduce){.skel::after,.skel-rule::after{animation:none}}
