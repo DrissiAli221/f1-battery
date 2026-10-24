@@ -31,11 +31,56 @@ export function url(path: string, params: Params = {}): string {
  */
 const cache = new Map<string, Promise<unknown>>();
 
-async function fetchJson<T>(href: string): Promise<T> {
+/*
+ * The API rate-limits per client address (60 requests a minute, refilled one token a second)
+ * and a page load is around nine requests, so a burst of reloads empties the bucket. A 429 is
+ * not a failure: the API's Retry-After names the time to the next token, so limited requests
+ * queue through one shared slot, one per Retry-After, and go again. The skeleton stays up
+ * meanwhile. Only after a long run of refusals does the error reach the page.
+ */
+const RETRY_BUDGET_MS = 45000;
+const RETRY_CAP_MS = 8000;
+let nextSlot = 0;
+/** True while limited requests are queued; pages show a note next to their loading line. */
+let limitedUntil = 0;
+const limitListeners = new Set<() => void>();
+function markLimited(ms: number) {
+  limitedUntil = Date.now() + ms;
+  limitListeners.forEach((l) => l());
+  setTimeout(() => limitListeners.forEach((l) => l()), ms + 50);
+}
+/** Whether the client is currently waiting on the API's rate limit. */
+export function useRateLimited(): boolean {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const l = () => tick((n) => n + 1);
+    limitListeners.add(l);
+    return () => {
+      limitListeners.delete(l);
+    };
+  }, []);
+  return Date.now() < limitedUntil;
+}
+
+function queueSlot(afterMs: number): number {
+  const now = Date.now();
+  nextSlot = Math.max(now, nextSlot) + afterMs;
+  return nextSlot - now;
+}
+
+async function fetchJson<T>(href: string, started = Date.now()): Promise<T> {
   const res = await fetch(href, { headers: { Accept: "application/json" } });
   if (res.status === 429) {
-    const wait = res.headers.get("Retry-After");
-    throw new ApiError(429, `Rate limited by the API. Try again in ${wait ?? "a few"} seconds.`);
+    const header = res.headers.get("Retry-After");
+    const seconds = Number(header);
+    const after = Math.min(RETRY_CAP_MS, Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 1500);
+    if (Date.now() - started < RETRY_BUDGET_MS) {
+      const wait = queueSlot(after) + Math.random() * 150;
+      markLimited(wait);
+      await new Promise((r) => setTimeout(r, wait));
+      return fetchJson<T>(href, started);
+    }
+    throw new ApiError(429, `Rate limited by the API. Try again in ${header ?? "a few"} seconds.`);
   }
   if (!res.ok) throw new ApiError(res.status, `The API answered ${res.status} for ${new URL(href, window.location.origin).pathname}.`);
   return (await res.json()) as T;

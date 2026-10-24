@@ -1,4 +1,5 @@
 import { useInitialAnchor } from './preview-navigation';
+import { useRateLimited } from '../lib/api';
 import { useEffect, useMemo, useRef, useState, useId } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
@@ -68,6 +69,7 @@ function DriverEstimate({d,value,lo,hi,samples,domain,lap,other,busy=false}:{d:D
   </article>;
 }
 function App(){
+  const limited=useRateLimited();
   const initialStraight=useRef(false);
   const data=useSessionData(sessionKey);
   useInitialAnchor(data.ready||!!data.sessionsError||!!data.loadError||(data.sessionsLoaded&&!data.session));
@@ -140,7 +142,7 @@ function App(){
       {data.ready&&<nav className="wrap page-sections session-sections" aria-label="Session sections"><div>{[['track','Track'],['lap-chart','Laps'],['method','Reading guide']].map(([id,label])=><a key={id} href={`#${id}`} aria-current={activeNav===id?'location':undefined}>{label}</a>)}</div><a href={`/replay.html?session=${sessionKey}&driver=${driver}&mode=review`}>Review a lap <span aria-hidden="true">↗</span></a></nav>}
       {data.sessionsLoaded&&!data.session?<section className="wrap load-state" role="alert"><h2>Session not found.</h2><p>This recorded session is not in the archive. Choose another race to continue.</p><a className="button button-secondary" href="/#races">Choose a race <span aria-hidden="true">↗</span></a></section>:data.sessionsError||data.loadError?<section className="wrap load-state" role="alert"><h2>Session couldn’t be loaded.</h2><p>The recorded data is unavailable right now. Retry, or choose another race.</p><div className="recovery-actions"><button className="button button-secondary" onClick={()=>location.reload()}>Try again</button><a className="inline-link" href="/#races">Choose another race ↗</a></div></section>:!data.ready?<>
       <section className="wrap track-section session-skeleton" id="track" aria-label={`${place} track and selected estimates, loading`} aria-busy="true">
-        <p className="skeleton-status" role="status">Loading {place}’s recorded estimates…</p>
+        <p className="skeleton-status" role="status">Loading {place}’s recorded estimates…{limited&&' The API is rate limited; retrying automatically.'}</p>
         <div className="session-controls">{['Driver','Compare','Straight'].map(l=><div className="session-select" key={l}><span className="select-label">{l}</span><div className="skel select-skel"/></div>)}</div>
         <div className="map-stage"><div className="map-surface skel map-skel"/><aside className="estimate-stack" data-count="2" aria-hidden="true"><article className="driver-estimate driver-poster skel"/><article className="driver-estimate driver-poster compare-estimate skel"/><div className="estimate-actions"><span className="text-toggle" style={{visibility:'hidden'}}>Use session median</span><div className="button skel"/></div></aside></div>
       </section>
