@@ -1204,4 +1204,3 @@ function App() {
   );
 }
 createRoot(document.getElementById('session-root')!).render(<App />);
-export { Info };
