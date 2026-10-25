@@ -254,6 +254,7 @@ function DriverEstimate({
         </div>
         {ranged ? (
           <div className="rng" aria-label={`95% interval ${fmt(lo)} to ${fmt(hi)} metres`}>
+            <p className="rng-cap">95% interval</p>
             <div className="rng-track">
               <i style={{ left: `${at(lo)}%`, width: `${Math.max(0.5, at(hi) - at(lo))}%` }} />
               <b style={{ left: `${at(value)}%` }} />

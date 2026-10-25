@@ -1489,7 +1489,7 @@
     grid-template-rows: 170px minmax(0, 1fr);
     background: #111110;
     overflow: hidden;
-    min-height: 372px;
+    min-height: 412px;
     container-type: inline-size;
   }
   .driver-poster-art {
@@ -1584,7 +1584,7 @@
   }
   .driver-poster-data {
     padding: 0 18px 4px;
-    margin-top: -14px;
+    margin-top: 4px;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -1595,7 +1595,15 @@
   }
   .rng {
     margin: 6px 0 6px;
-    height: 35px;
+    height: 51px;
+  }
+  .rng-cap {
+    margin: 0 0 7px;
+    font:
+      400 11px/1 var(--utility),
+      monospace;
+    text-transform: uppercase;
+    color: var(--muted);
   }
   .rng-track {
     position: relative;
@@ -1738,7 +1746,7 @@
       grid-template-columns: minmax(0, 1fr) 320px;
     }
     .estimate-stack {
-      grid-template-rows: repeat(2, minmax(372px, 1fr)) auto;
+      grid-template-rows: repeat(2, minmax(412px, 1fr)) auto;
     }
   }
   @media (min-width: 1000px) and (max-width: 1199px) {
@@ -1752,7 +1760,7 @@
   @media (max-width: 999px) {
     .driver-estimate.driver-poster {
       grid-template-rows: 170px minmax(0, 1fr);
-      min-height: 372px;
+      min-height: 412px;
     }
   }
   @media (max-width: 720px) {
@@ -2316,7 +2324,7 @@
     }
   }
   .session-skeleton .driver-poster {
-    min-height: 372px;
+    min-height: 412px;
   }
   .analysis-layout .tower-rows:has(> .skel) {
     max-height: none;
@@ -2331,7 +2339,7 @@
       min-height: 399px;
     }
     .session-skeleton .driver-poster {
-      min-height: 372px;
+      min-height: 412px;
     }
     .analysis-layout .tower-rows:has(> .skel) {
       height: 448px;
