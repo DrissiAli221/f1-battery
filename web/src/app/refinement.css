@@ -1366,7 +1366,13 @@
     }
     .home-preview .race-chips .button-chip,
     .home-preview .race-chips .race-chip-off {
-      gap: 3px;
+      gap: 2px;
+      padding: 0 2px 0 4px;
+      font-size: 9px;
+    }
+    .home-preview .race-chips .button-chip::before,
+    .home-preview .race-chips .race-chip-off::before {
+      margin-left: -1px;
     }
   }
   .home-preview .race-single-label {
