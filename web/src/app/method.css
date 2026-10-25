@@ -142,12 +142,18 @@
     align-self: stretch;
     justify-content: center;
     padding: 32px;
-    background-color: #41413f;
-    background-image: linear-gradient(120deg, #fff1, transparent 60%, #0002), url('/assets/black-felt.png');
+    background-color: #6a6a65;
+    background-image:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 55%, rgba(0, 0, 0, 0.12)),
+      url('/assets/felt-grey.jpg');
     background-size:
       100% 100%,
-      cover;
-    background-repeat: no-repeat;
+      480px;
+    background-repeat: no-repeat, repeat;
+    background-blend-mode: normal, multiply;
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.1),
+      inset -1px -1px 0 rgba(0, 0, 0, 0.45);
     border-color: #ffffff16;
     gap: 30px;
   }
@@ -158,7 +164,7 @@
       sans-serif;
     text-transform: uppercase;
     letter-spacing: -0.015em;
-    color: #090909;
+    color: rgba(9, 9, 9, 0.92);
     text-shadow:
       0 1px 0.65px #fff3,
       0 -1px 0.8px #000b;
@@ -168,12 +174,12 @@
     inset: 0;
     pointer-events: none;
     color: transparent;
-    background: url('/assets/black-felt.png') 0 0 / cover no-repeat;
+    background: url('/assets/felt-grey.jpg') 0 0/480px 480px;
     background-clip: text;
     -webkit-background-clip: text;
     text-shadow: none;
-    filter: brightness(1.8);
-    opacity: 0.45;
+    filter: grayscale(1) brightness(0.9);
+    opacity: 0.28;
   }
   .method-plate > p {
     font:

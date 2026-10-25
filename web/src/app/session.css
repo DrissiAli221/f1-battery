@@ -1504,7 +1504,7 @@
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: url('/assets/black-felt.png') center/240px;
+    background: url('/assets/felt-grey.jpg') center/480px;
     mix-blend-mode: multiply;
     opacity: 0.12;
     pointer-events: none;

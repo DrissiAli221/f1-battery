@@ -1239,17 +1239,22 @@
   /* Real short-fibre grain replaces uniform procedural noise. The second
    text layer adds fibre to solid dark ink without erasing its pressed edge. */
   .session-card {
-    background-color: #494949;
+    background-color: #6a6a65;
     background-image:
-      linear-gradient(115deg, rgba(255, 255, 255, 0.025), transparent 55%, rgba(0, 0, 0, 0.08)),
-      url('/assets/black-felt.png');
+      linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 55%, rgba(0, 0, 0, 0.12)),
+      url('/assets/felt-grey.jpg');
     background-size:
       100% 100%,
-      531px 337px;
+      480px;
+    background-repeat: no-repeat, repeat;
+    background-blend-mode: normal, multiply;
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.1),
+      inset -1px -1px 0 rgba(0, 0, 0, 0.45);
   }
   .session-card h3 {
     position: relative;
-    color: #0c0c0c;
+    color: rgba(9, 9, 9, 0.92);
     text-shadow:
       0 1px 0.65px rgba(255, 255, 255, 0.21),
       0 -1px 0.8px rgba(0, 0, 0, 0.85);
@@ -1259,12 +1264,12 @@
     inset: 0;
     pointer-events: none;
     color: transparent;
-    background: url('/assets/black-felt.png') 0 0/531px 337px;
+    background: url('/assets/felt-grey.jpg') 0 0/480px 480px;
     -webkit-background-clip: text;
     background-clip: text;
     text-shadow: none;
-    filter: brightness(1.8);
-    opacity: 0.45;
+    filter: grayscale(1) brightness(0.9);
+    opacity: 0.28;
   }
   .hover-lab {
     padding-block: 60px;
@@ -2199,7 +2204,7 @@
     }
   }
   .session-card {
-    background-color: #414141;
+    background-color: #6a6a65;
     background-image:
       radial-gradient(
         ellipse 125% 140% at 5% -20%,
@@ -2207,13 +2212,19 @@
         rgba(255, 255, 255, 0.055) 46%,
         rgba(255, 255, 255, 0) 92%
       ),
-      linear-gradient(135deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1)), url('/assets/black-felt.png');
+      linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 55%, rgba(0, 0, 0, 0.12)),
+      url('/assets/felt-grey.jpg');
     background-size:
       100% 100%,
       100% 100%,
-      531px 337px;
+      480px;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-blend-mode: normal, normal, multiply;
     border-color: transparent;
-    box-shadow: 0 12px 36px #0005;
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.1),
+      inset -1px -1px 0 rgba(0, 0, 0, 0.45),
+      0 12px 36px #0005;
   }
   .swatch-red {
     background: radial-gradient(ellipse 150% 180% at 0% -30%, #f62c20 0%, #e10600 60%, #bd0500 100%);
