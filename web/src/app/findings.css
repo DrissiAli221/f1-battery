@@ -138,8 +138,7 @@
       monospace;
     text-transform: uppercase;
   }
-  .finding-disclosure summary::-webkit-details-marker,
-  .spot-check summary::-webkit-details-marker {
+  .finding-disclosure summary::-webkit-details-marker {
     display: none;
   }
   .finding-disclosure summary > span:last-child {
@@ -147,8 +146,7 @@
       400 20px Geist,
       sans-serif;
   }
-  .finding-disclosure[open] summary > span:last-child,
-  .spot-check[open] .check-toggle {
+  .finding-disclosure[open] summary > span:last-child {
     transform: rotate(45deg);
   }
   .finding-disclosure p {
@@ -207,72 +205,6 @@
   }
   .permutation-chart {
     min-width: 0;
-  }
-  .check-list {
-    border-top: 1px solid #ffffff26;
-  }
-  .spot-check {
-    --check-colour: #e85c52;
-    border-bottom: 1px solid #ffffff1c;
-  }
-  .check-pass {
-    --check-colour: #5cce87;
-  }
-  .check-not-testable {
-    --check-colour: #aaa99f;
-  }
-  .spot-check summary {
-    display: grid;
-    grid-template-columns: 32px 1fr 120px 20px;
-    align-items: center;
-    gap: 24px;
-    min-height: 78px;
-    list-style: none;
-    cursor: pointer;
-    padding-block: 16px;
-  }
-  .check-number {
-    font:
-      400 16px GeistMono,
-      monospace;
-    color: #88887e;
-  }
-  .check-moment {
-    font:
-      400 15px/1.4 KHF1,
-      monospace;
-    text-transform: uppercase;
-  }
-  .check-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font:
-      400 11px/1.4 KHF1,
-      monospace;
-    text-transform: uppercase;
-    color: var(--check-colour);
-  }
-  .check-status::before {
-    content: '';
-    width: 4px;
-    height: 17px;
-    background: var(--check-colour);
-    flex-shrink: 0;
-  }
-  .check-toggle {
-    font:
-      400 20px Geist,
-      sans-serif;
-    color: var(--muted);
-  }
-  .spot-check > p {
-    font:
-      400 14px/1.7 Geist,
-      sans-serif;
-    color: #bcbcb2;
-    margin: 0 140px 24px 56px;
-    max-width: 760px;
   }
   .finding-more > .finding-disclosure:last-child {
     border-bottom: 1px solid #ffffff26;
@@ -373,8 +305,7 @@
     position: static;
   }
   @media (hover: hover) and (pointer: fine) {
-    .finding-disclosure summary:hover,
-    .spot-check summary:hover {
+    .finding-disclosure summary:hover {
       color: #fff;
       background: #ffffff04;
     }
@@ -455,36 +386,6 @@
     }
     .permutation-p strong {
       font-size: 28px;
-    }
-    .spot-check summary {
-      grid-template-columns: 22px minmax(0, 1fr) 14px;
-      gap: 9px 12px;
-      padding-block: 18px;
-    }
-    .check-number {
-      font-size: 12px;
-      grid-row: 1/3;
-      align-self: start;
-    }
-    .check-moment {
-      font-size: 13px;
-    }
-    .check-status {
-      grid-column: 2;
-      grid-row: 2;
-      font-size: 11px;
-    }
-    .check-status::before {
-      height: 12px;
-      width: 3px;
-    }
-    .check-toggle {
-      grid-column: 3;
-      grid-row: 1/3;
-      align-self: center;
-    }
-    .spot-check > p {
-      margin: 0 0 20px 34px;
     }
     .finding-limits dl {
       grid-template-columns: 1fr;
@@ -852,54 +753,6 @@
   }
 
   /* Spot checks as state pills; full model and makers as range bars. */
-  .check-pills {
-    list-style: none;
-    margin: 0 0 28px;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .check-pill {
-    --pill-dot: var(--red-text);
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    padding: 8px 12px;
-    background: #0b0b0a;
-    border: 1px solid var(--line);
-    border-radius: 99px;
-    color: var(--ink);
-    font:
-      400 11px/1.4 KHF1,
-      monospace;
-    letter-spacing: 0.05em;
-    text-align: left;
-    cursor: pointer;
-    transition:
-      border-color 200ms var(--ease),
-      background-color 200ms var(--ease);
-  }
-  .check-pill.check-pass {
-    --pill-dot: #3ddc97;
-  }
-  .check-pill.check-not-testable {
-    --pill-dot: var(--muted);
-  }
-  .check-pill i {
-    flex-shrink: 0;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--pill-dot);
-  }
-  .check-pill span:not(.sr-only) {
-    text-transform: uppercase;
-  }
-  .check-pill:focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: 2px;
-  }
   .range-bar {
     display: block;
     overflow: visible;
@@ -1026,15 +879,7 @@
     color: var(--muted);
     padding-bottom: 12px;
   }
-  @media (hover: hover) and (pointer: fine) {
-    .check-pill:hover {
-      border-color: var(--ink);
-    }
-  }
   @media (max-width: 720px) {
-    .check-pill {
-      font-size: 11px;
-    }
     .term-rows {
       padding: 4px 16px;
     }
@@ -1103,5 +948,182 @@
     text-transform: uppercase;
     color: var(--ink);
     white-space: nowrap;
+  }
+}
+@layer pages {
+  /* Spot checks as cards: one state pill, the expectation, the measured values drawn, the recorded result. */
+  .check-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+  .cc {
+    --pill: var(--red-text);
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 18px 18px 20px;
+    background: #0b0b0a;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .cc:nth-child(n + 4) {
+    grid-column: span 3;
+  }
+  .cc.check-pass {
+    --pill: #3ddc97;
+  }
+  .cc.check-not-testable {
+    --pill: var(--muted);
+  }
+  .cc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .cc-number {
+    font:
+      400 12px/1.4 KHF1,
+      monospace;
+    color: var(--muted);
+  }
+  .cc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border: 1px solid var(--pill);
+    border-radius: 99px;
+    color: var(--pill);
+    font:
+      400 11px/1.4 KHF1,
+      monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .cc-pill i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--pill);
+  }
+  .cc h3 {
+    margin: 0;
+    font:
+      500 15px/1.35 Geist,
+      sans-serif;
+    color: var(--ink);
+  }
+  .cc-expected,
+  .cc-result {
+    margin: 0;
+    font:
+      400 13px/1.55 Geist,
+      sans-serif;
+    color: var(--muted);
+  }
+  .cc-expected span {
+    font:
+      400 11px/1.4 KHF1,
+      monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-right: 4px;
+  }
+  .cc-expected {
+    flex: 0 0 auto;
+  }
+  .cc-visual {
+    height: 96px;
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    box-sizing: content-box;
+  }
+  .cc-visual svg {
+    display: block;
+    overflow: visible;
+  }
+  .cc-visual .cv-text {
+    font:
+      400 10.5px GeistMono,
+      monospace;
+    fill: var(--muted);
+    paint-order: stroke;
+    stroke: #0b0b0a;
+    stroke-width: 3px;
+  }
+  .cc-visual .cv-text.is-ink {
+    fill: var(--ink);
+  }
+  .cv-axis,
+  .cv-stem {
+    stroke: #ffffff33;
+    stroke-width: 1;
+  }
+  .cv-zero {
+    stroke: #ffffff66;
+    stroke-width: 1;
+  }
+  .cv-bar {
+    stroke: var(--muted);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+  }
+  .cv-dot {
+    fill: var(--ink);
+  }
+  .cv-dot.is-red {
+    fill: var(--red-text);
+  }
+  .cv-dot.is-pass {
+    fill: #3ddc97;
+  }
+  .cv-hatch {
+    stroke: #ffffff55;
+    stroke-width: 1;
+  }
+  .cv-noise {
+    stroke: #ffffff33;
+    stroke-width: 1;
+  }
+  .cv-overlap {
+    fill: #ffffff14;
+  }
+  .cv-flat {
+    stroke: #3ddc97;
+    stroke-width: 2;
+  }
+  .cv-col {
+    stroke: #ffffff44;
+    stroke-width: 1;
+    fill: none;
+  }
+  @media (max-width: 1000px) {
+    .check-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .cc,
+    .cc:nth-child(n + 4) {
+      grid-column: auto;
+    }
+    .cc:last-child {
+      grid-column: span 2;
+    }
+  }
+  @media (max-width: 720px) {
+    .check-cards {
+      grid-template-columns: 1fr;
+    }
+    .cc:last-child {
+      grid-column: auto;
+    }
   }
 }

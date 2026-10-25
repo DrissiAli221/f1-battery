@@ -239,7 +239,6 @@ const SD_UNIT: Record<string, string> = {
 };
 const fmtSd = (n: number) => (n >= 100 ? int(Math.round(n)) : String(Number(n.toPrecision(3))));
 const pText = (p: number) => (p < 0.001 ? '<0.001' : fmt(p, 3));
-const RESULT_LABEL: Record<string, string> = { fail: 'failed', pass: 'passed', 'not testable': 'untestable' };
 /** One range-bar row mark: a zero/null line, an interval (line or band) and a square marker, in true pixels. */
 function RangeBar({
   w,
@@ -393,13 +392,241 @@ function MakerRows() {
     </div>
   );
 }
-function openCheck(n: number) {
-  const d = document.getElementById(`check-${n}`) as HTMLDetailsElement | null;
-  if (!d) return;
-  d.open = true;
-  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  d.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' });
-  d.querySelector('summary')?.focus({ preventScroll: true });
+const TEAM_FERRARI = '#e8002d',
+  TEAM_REDBULL = '#3671c6',
+  TEAM_MERCEDES = '#27f4d2';
+type SpotCheck = (typeof notes.spot_checks)[number];
+const sgn = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
+function Hatch({ id }: { id: string }) {
+  return (
+    <pattern id={id} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" className="cv-hatch" />
+    </pattern>
+  );
+}
+/** Check 1: five lap offsets as a dot-and-stem strip around zero, with the 2 std bar. */
+function VisNorris({ w, c }: { w: number; c: SpotCheck }) {
+  const v = c.visual as { offsets_m: number[]; laps: number[]; std_m: number };
+  const R = 100,
+    x = (m: number) => 12 + ((m + R) / (2 * R)) * (w - 24),
+    cy = 44,
+    two = 2 * v.std_m;
+  return (
+    <>
+      <line x1={x(-R)} x2={x(R)} y1={cy} y2={cy} className="cv-axis" />
+      {[-two, two].map((m) => (
+        <line key={m} x1={x(m)} x2={x(m)} y1={cy - 24} y2={cy + 4} className="cv-bar" />
+      ))}
+      <text x={x(-two)} y={11} textAnchor="middle" className="cv-text">
+        −2 std
+      </text>
+      <text x={x(two)} y={11} textAnchor="middle" className="cv-text">
+        +2 std
+      </text>
+      <line x1={x(0)} x2={x(0)} y1={cy - 24} y2={cy + 24} className="cv-zero" />
+      {v.offsets_m.map((m, i) => {
+        const last = i === v.offsets_m.length - 1;
+        return (
+          <g key={i}>
+            <line x1={x(0)} x2={x(m)} y1={cy} y2={cy} className="cv-stem" />
+            <circle cx={x(m)} cy={cy} r={4} className={last ? 'cv-dot is-red' : 'cv-dot'} />
+          </g>
+        );
+      })}
+      <text x={x(-R)} y={92} className="cv-text">
+        −100 m · earlier
+      </text>
+      <text x={x(R)} y={92} textAnchor="end" className="cv-text">
+        +100 m
+      </text>
+      <text x={x(v.offsets_m[4])} y={cy + 22} textAnchor="start" className="cv-text is-ink">
+        lap 51 · {sgn(v.offsets_m[4])} m · 1.9 std
+      </text>
+    </>
+  );
+}
+/** Check 2: Hamilton and Verstappen on one metre axis; Verstappen sits in a hatched noise band. */
+function VisCanada({ w, c, id }: { w: number; c: SpotCheck; id: string }) {
+  const v = c.visual as { hamilton_m: number; verstappen_m: number; verstappen_std_m: number };
+  const R = 100,
+    x = (m: number) => 12 + ((m + R) / (2 * R)) * (w - 24);
+  const rows = [30, 66];
+  return (
+    <>
+      <defs>
+        <Hatch id={id} />
+      </defs>
+      <rect
+        x={x(-v.verstappen_std_m)}
+        y={4}
+        width={x(v.verstappen_std_m) - x(-v.verstappen_std_m)}
+        height={74}
+        fill={`url(#${id})`}
+        className="cv-noise"
+      />
+      <line x1={x(0)} x2={x(0)} y1={4} y2={78} className="cv-zero" />
+      <line x1={x(-R)} x2={x(R)} y1={rows[0]} y2={rows[0]} className="cv-axis" />
+      <line x1={x(-R)} x2={x(R)} y1={rows[1]} y2={rows[1]} className="cv-axis" />
+      <circle cx={x(v.hamilton_m)} cy={rows[0]} r={5} fill={TEAM_FERRARI} />
+      <text x={x(v.hamilton_m) + 10} y={rows[0] - 8} className="cv-text is-ink">
+        Hamilton {sgn(v.hamilton_m)} m
+      </text>
+      <circle cx={x(v.verstappen_m)} cy={rows[1]} r={5} fill={TEAM_REDBULL} />
+      <text x={x(v.verstappen_std_m) + 8} y={rows[1] - 8} className="cv-text is-ink">
+        Verstappen
+      </text>
+      <text x={x(v.verstappen_std_m) + 8} y={rows[1] + 14} className="cv-text">
+        within noise
+      </text>
+      <text x={x(-R)} y={92} className="cv-text">
+        −100 m · earlier
+      </text>
+      <text x={x(R)} y={92} textAnchor="end" className="cv-text">
+        +100 m
+      </text>
+    </>
+  );
+}
+/** Check 3: interval bars per straight, from the bootstrap bounds recorded in docs/spot-checks.md. */
+function VisMonza({ w, c }: { w: number; c: SpotCheck }) {
+  const v = c.visual as {
+    straights: { n: number; hamilton: number[]; antonelli: number[] }[];
+  };
+  const labelW = 76;
+  return (
+    <>
+      {v.straights.map((s, i) => {
+        const lo = Math.min(s.hamilton[1], s.antonelli[1]) - 6,
+          hi = Math.max(s.hamilton[2], s.antonelli[2]) + 6,
+          x = (m: number) => labelW + ((m - lo) / (hi - lo)) * (w - labelW - 8),
+          y0 = 4 + i * 38;
+        const olo = Math.max(s.hamilton[1], s.antonelli[1]),
+          ohi = Math.min(s.hamilton[2], s.antonelli[2]),
+          ov = ohi - olo;
+        return (
+          <g key={s.n}>
+            <text x={0} y={y0 + 10} className="cv-text is-ink">
+              Straight {s.n}
+            </text>
+            {ov > 0 && (
+              <rect
+                x={x(olo)}
+                y={y0 - 2}
+                width={Math.max(2, x(ohi) - x(olo))}
+                height={30}
+                className="cv-overlap"
+              />
+            )}
+            {[
+              ['Ferrari', s.hamilton, TEAM_FERRARI, y0 + 5],
+              ['Mercedes', s.antonelli, TEAM_MERCEDES, y0 + 21],
+            ].map(([name, b, col, y]) => {
+              const [m, l, h] = b as number[];
+              return (
+                <g key={name as string}>
+                  <line
+                    x1={x(l)}
+                    x2={x(h)}
+                    y1={y as number}
+                    y2={y as number}
+                    stroke={col as string}
+                    strokeWidth={4}
+                  />
+                  <circle cx={x(m)} cy={y as number} r={3.5} fill={col as string} />
+                </g>
+              );
+            })}
+            <text x={0} y={y0 + 24} className="cv-text">
+              {ov > 0 ? `${ov} m overlap` : 'no overlap'}
+            </text>
+          </g>
+        );
+      })}
+      <text x={0} y={92} className="cv-text">
+        <tspan fill={TEAM_FERRARI}>●</tspan> Hamilton <tspan fill={TEAM_MERCEDES}>●</tspan> Antonelli ·
+        bootstrap intervals
+      </text>
+    </>
+  );
+}
+/** Check 4: a flat line, no stated magnitude. */
+function VisSingapore({ w }: { w: number }) {
+  return (
+    <>
+      <line x1={12} x2={w - 12} y1={48} y2={48} className="cv-flat" />
+      <circle cx={w - 12} cy={48} r={4} className="cv-dot is-pass" />
+      <text x={12} y={34} className="cv-text is-ink">
+        no derate step
+      </text>
+      <text x={12} y={72} className="cv-text">
+        Singapore 11388 · any straight, any car
+      </text>
+    </>
+  );
+}
+/** Check 5: Monza vs Baku; Baku hatched because the proxy stores no harvest regime. */
+function VisPiastri({ w, c, id }: { w: number; c: SpotCheck; id: string }) {
+  const v = c.visual as { monza_limit_mj: string; baku_limit_mj: number };
+  const gap = 12,
+    cw = (w - gap) / 2;
+  return (
+    <>
+      <defs>
+        <Hatch id={id} />
+      </defs>
+      <rect x={0.5} y={6.5} width={cw - 1} height={56} className="cv-col" />
+      <rect x={cw + gap + 0.5} y={6.5} width={cw - 1} height={56} fill={`url(#${id})`} className="cv-col" />
+      <text x={cw / 2} y={30} textAnchor="middle" className="cv-text is-ink">
+        Monza
+      </text>
+      <text x={cw / 2} y={46} textAnchor="middle" className="cv-text">
+        {v.monza_limit_mj} MJ limits
+      </text>
+      <text x={cw + gap + cw / 2} y={30} textAnchor="middle" className="cv-text is-ink">
+        Baku
+      </text>
+      <text x={cw + gap + cw / 2} y={46} textAnchor="middle" className="cv-text">
+        {v.baku_limit_mj} MJ
+      </text>
+      <text x={w / 2} y={86} textAnchor="middle" className="cv-text is-ink">
+        no harvest-under-throttle regime stored
+      </text>
+    </>
+  );
+}
+function CheckVisual({ c }: { c: SpotCheck }) {
+  const [ref, w] = useWidth<HTMLDivElement>(300);
+  const id = `hatch-${c.n}`;
+  return (
+    <div className="cc-visual" ref={ref}>
+      <svg width={w} height={96} aria-hidden="true">
+        {c.n === 1 && <VisNorris w={w} c={c} />}
+        {c.n === 2 && <VisCanada w={w} c={c} id={id} />}
+        {c.n === 3 && <VisMonza w={w} c={c} />}
+        {c.n === 4 && <VisSingapore w={w} />}
+        {c.n === 5 && <VisPiastri w={w} c={c} id={id} />}
+      </svg>
+    </div>
+  );
+}
+function CheckCard({ c }: { c: SpotCheck }) {
+  return (
+    <li className={`cc check-${c.result.replace(' ', '-')}`} id={`check-${c.n}`}>
+      <div className="cc-top">
+        <span className="cc-number">{String(c.n).padStart(2, '0')}</span>
+        <span className="cc-pill">
+          <i aria-hidden="true" />
+          {c.result}
+        </span>
+      </div>
+      <h3>{c.moment}</h3>
+      <p className="cc-expected">
+        <span>Expected</span> {c.expected}
+      </p>
+      <CheckVisual c={c} />
+      <p className="cc-result">{c.detail}</p>
+    </li>
+  );
 }
 function App() {
   useInitialAnchor();
@@ -632,41 +859,11 @@ function App() {
                   be tested. The expected signs were kept.
                 </p>
               </div>
-              <ul className="check-pills" aria-label="Spot-check results">
+              <ul className="check-cards" aria-label="Spot-check results">
                 {notes.spot_checks.map((c) => (
-                  <li key={c.n}>
-                    <button
-                      type="button"
-                      className={`check-pill check-${c.result.replace(' ', '-')}`}
-                      title={RESULT_LABEL[c.result]}
-                      onClick={() => openCheck(c.n)}
-                    >
-                      <i aria-hidden="true" />
-                      <span>{c.moment}</span>
-                      <span className="sr-only"> ({RESULT_LABEL[c.result]})</span>
-                    </button>
-                  </li>
+                  <CheckCard key={c.n} c={c} />
                 ))}
               </ul>
-              <div className="check-list">
-                {notes.spot_checks.map((c) => (
-                  <details
-                    key={c.n}
-                    id={`check-${c.n}`}
-                    className={`spot-check check-${c.result.replace(' ', '-')}`}
-                  >
-                    <summary>
-                      <span className="check-number">{String(c.n).padStart(2, '0')}</span>
-                      <span className="check-moment">{c.moment}</span>
-                      <span className="check-status">{c.result}</span>
-                      <span className="check-toggle" aria-hidden="true">
-                        +
-                      </span>
-                    </summary>
-                    <p>{c.detail}</p>
-                  </details>
-                ))}
-              </div>
             </div>
           </section>
           <section aria-labelledby="more-title">
