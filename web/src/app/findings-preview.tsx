@@ -797,10 +797,8 @@ function App() {
                   All three estimates sit below 1, opposite to the proposed direction. Two intervals include
                   1. None reaches the pre-registered effect threshold of 1.3.
                 </p>
-                <details className="finding-disclosure">
-                  <summary>
-                    How to read the odds ratio <span aria-hidden="true">+</span>
-                  </summary>
+                <div className="finding-block read-note">
+                  <h3 className="finding-block-title">How to read the odds ratio</h3>
                   <p>
                     An odds ratio above 1 means higher odds of being passed per one standard deviation earlier
                     cut-off; below 1 means lower odds. The horizontal line is the 95% confidence interval. The
@@ -811,7 +809,7 @@ function App() {
                     The pre-registered minimum sample is 150 events and 300 non-events; below that the result
                     would be reported as insufficient data.
                   </p>
-                </details>
+                </div>
               </div>
             </div>
           </section>
@@ -875,10 +873,8 @@ function App() {
                   do not measure energy capacity.
                 </p>
               </div>
-              <details className="finding-disclosure full-model">
-                <summary>
-                  Full model coefficients <span aria-hidden="true">+</span>
-                </summary>
+              <div className="finding-block full-model">
+                <h3 className="finding-block-title">Full model coefficients</h3>
                 <p>
                   Point-estimate fit. Continuous terms are per one standard deviation; binary terms compare 1
                   against 0. The cut-off deviation here is the fitted <strong>later-cut-off</strong>{' '}
@@ -894,11 +890,9 @@ function App() {
                   χ² {fmt(findings.energy_terms_lr.chi2)}, {findings.energy_terms_lr.df} degrees of freedom, p
                   = {fmt(findings.energy_terms_lr.p, 3)}. This comparison is a post-hoc sensitivity check.
                 </p>
-              </details>
-              <details className="finding-disclosure maker-details">
-                <summary>
-                  Power-unit makers across races <span aria-hidden="true">+</span>
-                </summary>
+              </div>
+              <div className="finding-block maker-details">
+                <h3 className="finding-block-title">Power-unit makers across races</h3>
                 <p>
                   Descriptive analysis outside the frozen test. Mean offset from all makers’ mean in each
                   race/straight cell with at least three makers. Bands show ±1 standard deviation across
@@ -910,7 +904,7 @@ function App() {
                   separated here. A difference in this proxy is not a difference in battery or energy
                   capacity.
                 </p>
-              </details>
+              </div>
             </div>
           </section>
           <section id="limitations" tabIndex={-1} aria-labelledby="limits-title" className="band band-solid">
@@ -960,25 +954,43 @@ function App() {
                   }).format(new Date(notes.frozen + 'T00:00:00Z'))}
                   . Model {findings.source.model_version}.
                 </p>
-                <details className="finding-disclosure">
-                  <summary>
-                    Source and sample accounting <span aria-hidden="true">+</span>
-                  </summary>
-                  <p>
-                    Script: <code>{findings.source.script}</code>
-                  </p>
-                  <p>
-                    Run: <code>{findings.source.run_id}</code>
-                  </p>
-                  <p>
-                    {int(findings.sample.events_extracted)} passes and{' '}
-                    {int(findings.sample.non_events_extracted)} close-following non-passes were extracted.
-                    Complete-case selection and removal of single-class sessions leave{' '}
-                    {int(findings.sample.events_tested)} passes and {int(findings.sample.non_events_tested)}{' '}
-                    non-passes in {findings.sample.sessions_in_model} sessions. The largest drop is missing
-                    previous-lap cut-offs on the approach straight.
-                  </p>
-                </details>
+                <div className="finding-block source-accounting">
+                  <h3 className="finding-block-title">Source and sample accounting</h3>
+                  <dl className="source-list">
+                    <div>
+                      <dt>Script</dt>
+                      <dd>
+                        <code>{findings.source.script}</code>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Run</dt>
+                      <dd>
+                        <code>{findings.source.run_id}</code>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Extracted</dt>
+                      <dd>
+                        {int(findings.sample.events_extracted)} passes and{' '}
+                        {int(findings.sample.non_events_extracted)} close-following non-passes were extracted.
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Selected</dt>
+                      <dd>
+                        Complete-case selection and removal of single-class sessions leave{' '}
+                        {int(findings.sample.events_tested)} passes and{' '}
+                        {int(findings.sample.non_events_tested)} non-passes in{' '}
+                        {findings.sample.sessions_in_model} sessions.
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Largest drop</dt>
+                      <dd>Missing previous-lap cut-offs on the approach straight.</dd>
+                    </div>
+                  </dl>
+                </div>
               </div>
               <div className="provenance-actions">
                 <a className="button button-light" href="/#races">

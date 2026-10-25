@@ -121,47 +121,83 @@
       sans-serif;
     color: #bcbcb2;
   }
-  .finding-disclosure {
+  .finding-block {
     min-width: 0;
+    padding-top: 22px;
     border-top: 1px solid #ffffff26;
+    margin-top: 40px;
   }
-  .finding-disclosure summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    min-height: 54px;
-    cursor: pointer;
-    list-style: none;
+  .finding-block-title {
     font:
       400 12px/1.4 KHF1,
       monospace;
     text-transform: uppercase;
+    margin-bottom: 18px;
   }
-  .finding-disclosure summary::-webkit-details-marker {
-    display: none;
-  }
-  .finding-disclosure summary > span:last-child {
-    font:
-      400 20px Geist,
-      sans-serif;
-  }
-  .finding-disclosure[open] summary > span:last-child {
-    transform: rotate(45deg);
-  }
-  .finding-disclosure p {
+  .finding-block p {
     font:
       400 14px/1.7 Geist,
       sans-serif;
     color: #bcbcb2;
     margin-bottom: 22px;
   }
-  .finding-disclosure code {
+  .finding-block code {
     font:
       400 12px/1.7 GeistMono,
       monospace;
     overflow-wrap: anywhere;
     color: #deded6;
+  }
+  .evidence-explanation > .read-note {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+  .read-note {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 1000px) {
+    .read-note {
+      grid-template-columns: 1fr 1fr;
+      column-gap: 70px;
+    }
+    .read-note .finding-block-title {
+      grid-column: 1 / -1;
+    }
+  }
+  .source-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 40px;
+    margin: 0;
+  }
+  .source-list > div {
+    display: grid;
+    gap: 6px;
+    padding: 14px 0;
+    border-top: 1px solid #ffffff1a;
+  }
+  .source-list > div:first-child {
+    grid-column: 1 / -1;
+  }
+  .source-list dt {
+    font:
+      400 11px/1.5 KHF1,
+      monospace;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .source-list dd {
+    margin: 0;
+    font:
+      400 14px/1.7 Geist,
+      sans-serif;
+    color: #bcbcb2;
+  }
+  @media (max-width: 700px) {
+    .source-list {
+      grid-template-columns: 1fr;
+    }
   }
   .finding-permutation {
     display: grid;
@@ -205,9 +241,6 @@
   }
   .permutation-chart {
     min-width: 0;
-  }
-  .finding-more > .finding-disclosure:last-child {
-    border-bottom: 1px solid #ffffff26;
   }
   .finding-limits dl {
     display: grid;
@@ -305,10 +338,6 @@
     position: static;
   }
   @media (hover: hover) and (pointer: fine) {
-    .finding-disclosure summary:hover {
-      color: #fff;
-      background: #ffffff04;
-    }
     .finding-download:hover {
       color: #fff;
     }

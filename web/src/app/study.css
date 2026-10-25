@@ -2666,9 +2666,8 @@
     flex-wrap: wrap;
     gap: 6px 18px;
     margin: 0 0 18px;
-    padding: 10px 14px;
-    border: 1px solid var(--band-line);
-    background: var(--surface-1);
+    padding: 0 0 10px;
+    box-shadow: 0 1px 0 var(--band-line);
     font-size: var(--type-label);
     color: var(--muted);
     min-height: 40px;
