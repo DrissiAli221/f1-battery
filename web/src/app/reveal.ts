@@ -4,7 +4,6 @@
 // so a revealed element carries no leftover transform, delay or stacking context.
 const PAGES: Record<string, string[]> = {
   'home-root': [
-    '.home-feature-card',
     '.race-grid>.race-choice',
     '.home-research>h2',
     '.home-research>.research-copy',

@@ -192,11 +192,23 @@ export function createPixelButton(element, { interactive = true } = {}) {
     element.addEventListener('blur', () => {
       if (!inside) settle(false);
     });
-    reduced.addEventListener('change', () => settle(inside));
-    finePointer.addEventListener('change', () => {
-      inside = false;
-      settle(false);
-    });
+    // The queries are module-level, so the listeners are released once the button leaves the document.
+    const lifetime = new AbortController();
+    const live = () => {
+      if (element.isConnected) return true;
+      lifetime.abort();
+      return false;
+    };
+    reduced.addEventListener('change', () => live() && settle(inside), { signal: lifetime.signal });
+    finePointer.addEventListener(
+      'change',
+      () => {
+        if (!live()) return;
+        inside = false;
+        settle(false);
+      },
+      { signal: lifetime.signal }
+    );
   }
   settle(false);
   controllers.set(element, controller);

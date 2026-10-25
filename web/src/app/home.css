@@ -203,9 +203,6 @@
     text-shadow: none;
     transition: color 160ms var(--ease);
   }
-  .race-choice {
-    transition: border-color 160ms var(--ease);
-  }
   .race-choice-bottom {
     margin-top: auto;
   }
@@ -216,9 +213,6 @@
     text-transform: uppercase;
     color: #c0c0b7;
     margin-bottom: 16px;
-  }
-  .race-session-links {
-    border-top: 1px solid #ffffff26;
   }
   .race-show {
     display: flex;
@@ -448,16 +442,7 @@
     background-repeat: no-repeat, repeat;
   }
 
-  .home-preview .card-grain {
-    background-size: 480px 480px;
-    background-repeat: repeat;
-  }
-
   @media (hover: hover) and (pointer: fine) {
-    .race-choice:hover,
-    .race-choice:focus-within {
-      border-color: rgba(255, 255, 255, 0.22);
-    }
     .race-choice:hover h3,
     .race-choice:focus-within h3 {
       color: #fff;
@@ -557,10 +542,6 @@
     padding: 0 10px;
   }
   @media (hover: hover) and (pointer: fine) {
-    .race-choice:not(.race-plate):hover,
-    .race-choice:not(.race-plate):focus-within {
-      border-color: #ffffff33;
-    }
     .race-choice:hover .race-photo,
     .race-choice:focus-within .race-photo {
       --fade: 35%;
@@ -610,10 +591,6 @@
     }
     .race-photo {
       width: 62%;
-    }
-    .race-plate-map {
-      width: 150px;
-      height: 96px;
     }
   }
 }

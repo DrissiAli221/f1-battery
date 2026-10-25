@@ -1400,4 +1400,20 @@
     pointer-events: none;
     filter: drop-shadow(0 1px 0 #fff3) drop-shadow(0 -1px 0 #000c);
   }
+  @media (max-width: 720px) {
+    /* On a phone the title runs most of the card width, so the outline sits under it, beside the second line. */
+    .race-plate-map {
+      width: 88px;
+      height: 56px;
+      top: auto;
+      bottom: -20px;
+      transform: none;
+    }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .home-preview .race-choice:not(.race-plate):hover,
+    .home-preview .race-choice:not(.race-plate):focus-within {
+      border-color: #ffffff33;
+    }
+  }
 }

@@ -32,6 +32,7 @@ function App() {
   const [search, setSearch] = useState('');
   const [all, setAll] = useState(false);
   const [switched, setSwitched] = useState(false);
+  const [brokenPhotos, setBrokenPhotos] = useState<ReadonlySet<number>>(new Set());
   const canvas = useRef<HTMLCanvasElement>(null);
   const sessions = useMemo(() => remote.data ?? [], [remote.data]);
   const meetings = useMemo(() => {
@@ -196,7 +197,9 @@ function App() {
                         const s = rows[0],
                           m = circuitMeta(s.circuit_key);
                         const title = m?.meeting_name ?? s.circuit_short_name ?? 'Session';
-                        const photo = circuitHero(s.circuit_key, 900);
+                        const photo = brokenPhotos.has(s.meeting_key)
+                          ? null
+                          : circuitHero(s.circuit_key, 900);
                         const single = filter !== 'All sessions';
                         const fold = (x: string) =>
                           x
@@ -231,7 +234,13 @@ function App() {
                           >
                             {photo && (
                               <div className="race-photo" aria-hidden="true">
-                                <img src={photo} alt="" loading="lazy" decoding="async" />
+                                <img
+                                  src={photo}
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                  onError={() => setBrokenPhotos((prev) => new Set(prev).add(s.meeting_key))}
+                                />
                               </div>
                             )}
                             <div className="card-meta utility">
@@ -260,6 +269,7 @@ function App() {
                                 <div className="race-single">
                                   <span className="race-single-label">{filter}</span>
                                   {slots[0]?.has_results ? (
+                                    // The anchor text must stay a constant string: hover.js owns its children.
                                     <a
                                       className="button button-grey"
                                       data-pixel-rest="#1b1b19"
@@ -283,6 +293,7 @@ function App() {
                                       {(row as { missing?: boolean }).missing ? (
                                         <span className="race-unavailable-note">Not held</span>
                                       ) : row.has_results ? (
+                                        // The anchor text must stay a constant string: hover.js owns its children.
                                         <a
                                           className="button button-grey button-compact"
                                           data-pixel-rest="#1b1b19"

@@ -70,26 +70,40 @@ function build(circuit: number): Mini | null {
 
 /** Fallback outlines from the recorded lap, for circuits with no stored silhouette. */
 const RECORDED = new Map<number, Mini | null>();
+const PENDING = new Map<number, Promise<void>>();
+
+function fetchRecorded(circuit: number): Promise<void> {
+  const open = PENDING.get(circuit);
+  if (open) return open;
+  const p = getJson<{ points: Array<{ x: number; y: number }> }>(url(`/circuits/${circuit}/outline`))
+    .then((r) => {
+      RECORDED.set(
+        circuit,
+        layout(
+          r.points.map((p) => [p.x, p.y]),
+          circuitMeta(circuit)?.rotation ?? 90
+        )
+      );
+    })
+    .catch((e: unknown) => {
+      // Only a 404 means there is no outline; anything else retries on the next mount.
+      if ((e as { status?: number } | null)?.status === 404) RECORDED.set(circuit, null);
+    })
+    .finally(() => {
+      PENDING.delete(circuit);
+    });
+  PENDING.set(circuit, p);
+  return p;
+}
 
 function useRecorded(circuit: number | null | undefined, enabled: boolean): Mini | null {
   const [, bump] = useState(0);
   useEffect(() => {
     if (!enabled || circuit === null || circuit === undefined || RECORDED.has(circuit)) return;
     let live = true;
-    getJson<{ points: Array<{ x: number; y: number }> }>(url(`/circuits/${circuit}/outline`))
-      .then((r) =>
-        RECORDED.set(
-          circuit,
-          layout(
-            r.points.map((p) => [p.x, p.y]),
-            0
-          )
-        )
-      )
-      .catch(() => RECORDED.set(circuit, null))
-      .finally(() => {
-        if (live) bump((n) => n + 1);
-      });
+    fetchRecorded(circuit).finally(() => {
+      if (live) bump((n) => n + 1);
+    });
     return () => {
       live = false;
     };

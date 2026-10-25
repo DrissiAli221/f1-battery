@@ -70,15 +70,18 @@ export function circuitHero(circuitKey: number | null | undefined, w = 2400): st
   const r = circuitKey === null || circuitKey === undefined ? undefined : RACE_PHOTO[circuitKey];
   return r
     ? `https://media.formula1.com/image/upload/c_fill,w_${w}/q_auto/v1740000001/${r}`
-    : circuitPhoto(circuitKey);
+    : circuitPhoto(circuitKey, w);
 }
 
 /** A photograph of the venue for hero use, or null. */
-export function circuitPhoto(circuitKey: number | null | undefined): string | null {
+export function circuitPhoto(circuitKey: number | null | undefined, w?: number): string | null {
   const n = circuitKey === null || circuitKey === undefined ? undefined : PHOTO[circuitKey];
-  return n
-    ? `https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Racehub%20header%20images%2016x9/${n}.webp`
-    : null;
+  if (!n) return null;
+  const path = `content/dam/fom-website/2018-redesign-assets/Racehub%20header%20images%2016x9/${n}.webp`;
+  // The media host resizes through the upload transform (checked 2026-10-25); no width keeps the original.
+  return w
+    ? `https://media.formula1.com/image/upload/c_fill,w_${w}/q_auto/${path}`
+    : `https://media.formula1.com/${path}`;
 }
 
 const FILES = import.meta.glob<{ default: CircuitRef }>('../content/circuits/*.json');
