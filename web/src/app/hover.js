@@ -16,6 +16,13 @@ function node(className, text) {
   return el;
 }
 
+function rgbOf(hex) {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = [...h].map((c) => c + c).join('');
+  const n = parseInt(h.slice(0, 6), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
 export function createPixelButton(element, { interactive = true } = {}) {
   if (controllers.has(element)) return controllers.get(element);
   const label =
@@ -38,10 +45,11 @@ export function createPixelButton(element, { interactive = true } = {}) {
   const iconBottom = node('pixel-icon-bottom', '→');
   icon.append(iconTop, iconBottom);
   element.replaceChildren(window, words, icon);
-  const rest = '#e10600',
-    active = '#f4f4ef';
-  const restInk = '#ffffff',
-    activeInk = '#030303';
+  // Optional per-element colours; the defaults are the original red button.
+  const rest = element.dataset.pixelRest || '#e10600',
+    active = element.dataset.pixelActive || '#f4f4ef';
+  const restInk = element.dataset.pixelRestText || '#ffffff',
+    activeInk = element.dataset.pixelActiveText || '#030303';
   let animations = [],
     phase = 'rest',
     inside = false,
@@ -111,8 +119,8 @@ export function createPixelButton(element, { interactive = true } = {}) {
     // Leave the visible duplicate in place on exit. Replacing it at the
     // start caused a text-layer snap even though both strings were equal.
 
-    const start = nextPhase === 'enter' ? [255, 255, 255] : [3, 3, 3];
-    const end = nextPhase === 'enter' ? [3, 3, 3] : [255, 255, 255];
+    const start = nextPhase === 'enter' ? rgbOf(restInk) : rgbOf(activeInk);
+    const end = nextPhase === 'enter' ? rgbOf(activeInk) : rgbOf(restInk);
     // Source colour transition: 150 ms, circ.in. Explicit samples preserve
     // the circular curve without installing GSAP for this small study.
     const colors = Array.from({ length: 21 }, (_, i) => {
@@ -195,5 +203,5 @@ export function createPixelButton(element, { interactive = true } = {}) {
 }
 
 document
-  .querySelectorAll('a.button-light,button.button-light')
+  .querySelectorAll('a.button-light,button.button-light,a.button-grey,button.button-grey')
   .forEach((button) => createPixelButton(button));

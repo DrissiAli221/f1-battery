@@ -210,7 +210,7 @@ function App() {
   }, []);
   useEffect(() => {
     document
-      .querySelectorAll<HTMLAnchorElement>('.findings-preview .button-light')
+      .querySelectorAll<HTMLAnchorElement>('.findings-preview .button-light, .findings-preview .button-grey')
       .forEach((el) => createPixelButton(el));
     const c = canvas.current;
     if (!c) return;

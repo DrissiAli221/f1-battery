@@ -417,7 +417,7 @@ function App() {
   }, [data.ready, data.straights, data.medians, pool, driver]);
   useEffect(() => {
     document
-      .querySelectorAll<HTMLAnchorElement>('.session-preview a.button-light')
+      .querySelectorAll<HTMLAnchorElement>('.session-preview a.button-light, .session-preview a.button-grey')
       .forEach((el) => createPixelButton(el));
   }, [data.ready]);
   useEffect(() => {

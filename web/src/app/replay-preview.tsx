@@ -180,7 +180,7 @@ function ReplaySession({
   useEffect(() => {
     if (data.ready)
       document
-        .querySelectorAll<HTMLAnchorElement>('.replay-field .button-light')
+        .querySelectorAll<HTMLAnchorElement>('.replay-field .button-light, .replay-field .button-grey')
         .forEach((el) => createPixelButton(el));
   }, [data.ready]);
   useEffect(() => {
@@ -649,7 +649,7 @@ function App() {
   }, [races, key]);
   useEffect(() => {
     document
-      .querySelectorAll<HTMLAnchorElement>('.replay-preview .button-light')
+      .querySelectorAll<HTMLAnchorElement>('.replay-preview .button-light, .replay-preview .button-grey')
       .forEach((el) => createPixelButton(el));
   }, [key, hasSession]);
   return (
