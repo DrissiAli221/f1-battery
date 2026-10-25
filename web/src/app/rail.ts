@@ -10,7 +10,8 @@ function watch(rail: HTMLElement) {
   sentinel.className = SENTINEL;
   sentinel.setAttribute('aria-hidden', 'true');
   rail.before(sentinel);
-  const headerH = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 64;
+  const headerH = () =>
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 64;
   const io = new IntersectionObserver(
     ([entry]) => {
       if (entry.isIntersecting || entry.boundingClientRect.top > headerH()) delete rail.dataset.stuck;
