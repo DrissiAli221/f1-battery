@@ -813,6 +813,8 @@
   }
   .replay-map-panel > .mode-top .field-display {
     margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
   }
   .replay-map-panel > .mode-top .feed-waiting {
     margin: 14px 8px 0;
@@ -820,8 +822,17 @@
   .replay-map-panel > .mode-top .feed-waiting > p {
     min-height: 0;
   }
+  /* The box is sized by the row, never by the circuit: the track fits inside it. */
   .replay-map-panel > .tmap {
-    flex: 1 1 auto;
+    flex: none;
+    height: auto;
+    aspect-ratio: 1.86;
+    min-height: 0;
+  }
+  @media (max-width: 720px) {
+    .replay-map-panel > .tmap {
+      aspect-ratio: 1.61;
+    }
   }
   .replay-map-panel .mode-stack {
     margin-top: auto;
@@ -835,5 +846,38 @@
   }
   .replay-context {
     align-items: stretch;
+    padding-bottom: calc(var(--section-pad) * 0.4);
+  }
+
+  /* The loading skeleton occupies the loaded panel's footprint, so a driver or lap change does not resize the row. */
+  .replay-map-panel.skel {
+    display: block;
+  }
+  .replay-skel-head {
+    height: 24px;
+    margin: 0 8px 14px;
+  }
+  .replay-skel-map {
+    aspect-ratio: 1.86;
+    max-height: none;
+  }
+  .replay-skel-foot {
+    height: 175px;
+    margin: 12px 8px 0;
+  }
+  .replay-skel-title {
+    height: 32px;
+    margin-bottom: 20px;
+  }
+  .replay-skeleton .replay-field-rows {
+    height: 380px;
+  }
+  @media (max-width: 720px) {
+    .replay-skel-map {
+      aspect-ratio: 1.61;
+    }
+    .replay-skel-foot {
+      height: 221px;
+    }
   }
 }

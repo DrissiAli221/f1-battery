@@ -399,7 +399,7 @@ function ReplaySession({
                   sf
                   rotation={data.session?.circuit_key === 39 ? 85 : (meta?.rotation ?? undefined)}
                   arrows={false}
-                  maxHeight={780}
+                  fill
                   markerScale={showAll ? 1 : 1.15}
                   className="replay-track"
                   label={
