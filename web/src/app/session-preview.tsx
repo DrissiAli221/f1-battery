@@ -12,7 +12,7 @@ import { TrackMap, type MapTag } from './session-track';
 import { circuitMeta, useCircuit } from '../track/circuits';
 import { SessionChart as CutoffChart } from './session-chart';
 import { along } from '../lib/track';
-import { teamLogo, headshotHd, headshot, driverName } from '../lib/teams';
+import { teamLogo, teamCar, driverName } from '../lib/teams';
 import { createPixelButton } from './hover.js';
 import { paintScreen } from './session-halftone';
 import { SessionSelect, type SelectItem } from './session-select';
@@ -199,8 +199,10 @@ function DriverEstimate({
   const surname = d.last_name ?? d.full_name?.split(' ').slice(-1)[0] ?? d.name_acronym ?? '';
   const first = d.first_name ?? d.full_name?.split(' ').slice(0, -1).join(' ') ?? '';
   const colour = d.team_colour ?? '#73736b';
-  const portrait = headshotHd(d, 960);
-  const fallbackPortrait = headshot(d.headshot_url, '2col-retina');
+  const car = teamCar(d.team_name, 262);
+  const span = domain[1] - domain[0];
+  const at = (v: number) => Math.min(100, Math.max(0, ((v - domain[0]) / (span || 1)) * 100));
+  const ranged = lap === null && value !== null && lo !== null && hi !== null;
   const rgb = colour
     .replace('#', '')
     .match(/.{2}/g)
@@ -216,7 +218,7 @@ function DriverEstimate({
       style={{ '--team': colour, '--poster-ink': ink } as CSSProperties}
       aria-label={`${d.full_name}, estimated cut-off`}
     >
-      <div className="driver-poster-art" data-has-portrait={portrait ? 'true' : 'false'}>
+      <div className="driver-poster-art">
         <span className="poster-screen" aria-hidden="true" />
         <span className="poster-number" aria-hidden="true">
           {d.driver_number}
@@ -229,41 +231,46 @@ function DriverEstimate({
           <span>{first}</span>
           <h3 style={{ '--surname-length': Math.max(1, surname.length) } as CSSProperties}>{surname}</h3>
         </div>
-        {portrait && (
+        {car && (
           <img
-            key={portrait}
-            className="poster-portrait"
-            src={portrait}
+            className="poster-car"
+            src={car}
+            loading="lazy"
+            decoding="async"
             alt=""
             onError={(e) => {
-              const img = e.currentTarget;
-              if (fallbackPortrait && img.dataset.fallback !== 'true') {
-                img.dataset.fallback = 'true';
-                img.src = fallbackPortrait;
-              } else {
-                img.style.display = 'none';
-                if (img.parentElement) img.parentElement.dataset.hasPortrait = 'false';
-              }
+              e.currentTarget.style.display = 'none';
             }}
           />
         )}
       </div>
       <div className={`driver-poster-data ${busy ? 'is-loading' : ''}`} aria-busy={busy || undefined}>
         <div className="poster-readout">
-          <div>
-            <p className="estimate-label">{lap !== null ? `Lap ${lap} cut-off` : 'Median cut-off'}</p>
-            <p className="estimate-number">
-              <Flow value={value} />
-              {value !== null && <span className="estimate-unit">m est.</span>}
-            </p>
+          <p className="estimate-label">{lap !== null ? `Lap ${lap} cut-off` : 'Median cut-off'}</p>
+          <p className="estimate-number">
+            <Flow value={value} />
+            {value !== null && <span className="estimate-unit">m est.</span>}
+          </p>
+        </div>
+        {ranged ? (
+          <div className="rng" aria-label={`95% interval ${fmt(lo)} to ${fmt(hi)} metres`}>
+            <div className="rng-track">
+              <i style={{ left: `${at(lo)}%`, width: `${Math.max(0.5, at(hi) - at(lo))}%` }} />
+              <b style={{ left: `${at(value)}%` }} />
+            </div>
+            <div className="rng-lab">
+              <span>{fmt(lo)}</span>
+              <span>{fmt(hi)}</span>
+            </div>
           </div>
-          <div className="poster-interval">
+        ) : (
+          <div className="rng rng-text">
             <span>{lap !== null ? 'Estimate' : value === null ? 'Session median' : '95% interval'}</span>
             <strong>
               {value === null ? 'Unavailable' : lap !== null ? 'Single lap' : `${fmt(lo)}–${fmt(hi)} m`}
             </strong>
           </div>
-        </div>
+        )}
         <LapDistribution samples={samples} value={value} lo={lo} hi={hi} domain={domain} selectedLap={lap} />
       </div>
     </article>

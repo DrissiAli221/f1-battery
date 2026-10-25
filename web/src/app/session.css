@@ -1486,10 +1486,10 @@
   .driver-estimate.driver-poster {
     padding: 0;
     display: grid;
-    grid-template-rows: 148px minmax(0, 1fr);
+    grid-template-rows: 170px minmax(0, 1fr);
     background: #111110;
     overflow: hidden;
-    min-height: 322px;
+    min-height: 372px;
     container-type: inline-size;
   }
   .driver-poster-art {
@@ -1497,7 +1497,7 @@
     isolation: isolate;
     overflow: hidden;
     color: var(--poster-ink);
-    background: linear-gradient(to bottom, var(--team) 0%, var(--team) 65%, #111110 100%);
+    background: linear-gradient(to bottom, var(--team) 0%, var(--team) 55%, #111110 100%);
   }
   .driver-poster-art::before {
     content: '';
@@ -1541,7 +1541,7 @@
     position: absolute;
     z-index: 3;
     left: 18px;
-    bottom: 49px;
+    top: 42px;
     width: 56%;
     text-transform: uppercase;
   }
@@ -1562,57 +1562,106 @@
   .poster-number {
     position: absolute;
     z-index: 0;
-    right: 2px;
-    top: 17px;
+    right: 10px;
+    top: 8px;
     font:
-      900 112px/1 F1Black,
+      900 120px/1 F1Black,
       sans-serif;
-    letter-spacing: -0.1em;
+    letter-spacing: -0.08em;
     color: var(--poster-ink);
-    opacity: 0.15;
+    opacity: 0.22;
   }
-  .poster-portrait {
+  .poster-car {
     position: absolute;
     z-index: 2;
-    right: -3px;
     bottom: 0;
-    width: 48%;
-    height: 145px;
-    object-fit: cover;
-    object-position: center top;
-    mask-image: linear-gradient(#000 0 72%, transparent 100%);
-  }
-  .driver-poster-art[data-has-portrait='false'] .poster-number {
-    right: 14px;
-    opacity: 0.3;
+    right: -46px;
+    height: 84px;
+    width: auto;
+    max-width: none;
+    mask-image: linear-gradient(#000 0 62%, transparent 100%);
+    pointer-events: none;
   }
   .driver-poster-data {
-    padding: 0 18px 16px;
+    padding: 0 18px 4px;
+    margin-top: -14px;
+    position: relative;
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
   .poster-readout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 14px;
-    align-items: end;
-    margin-bottom: 14px;
+    min-width: 0;
+  }
+  .rng {
+    margin: 6px 0 6px;
+    height: 35px;
+  }
+  .rng-track {
+    position: relative;
+    height: 2px;
+    background: #ffffff30;
+  }
+  .rng-track i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--team);
+  }
+  .rng-track b {
+    position: absolute;
+    top: -5px;
+    width: 2px;
+    height: 12px;
+    margin-left: -1px;
+    background: #f4f4ef;
+  }
+  .rng-lab {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 9px;
+    font:
+      400 12px/1 GeistMono,
+      monospace;
+    color: #e0e0d7;
+  }
+  .rng-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .rng-text span {
+    font:
+      400 var(--type-label)/1.2 KHF1,
+      monospace;
+    color: var(--muted);
+  }
+  .rng-text strong {
+    font:
+      400 14px/1.2 GeistMono,
+      monospace;
+    color: #e0e0d7;
   }
   .driver-poster .estimate-label {
     margin: 0;
     font-size: var(--type-label);
-    line-height: 1.4;
+    line-height: 1.2;
+    min-height: 15px;
     color: #bdbdb3;
   }
   .driver-poster .estimate-number {
     font:
-      900 40px/1.1 F1Black,
+      900 56px/0.92 F1Black,
       sans-serif;
     letter-spacing: -0.035em;
-    min-height: 45px;
-    margin: 8px 0 0;
-    gap: 8px;
+    min-height: 64px;
+    margin: 2px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
     font-variant-numeric: proportional-nums;
     font-feature-settings: 'pnum' 1;
     font-kerning: normal;
@@ -1630,29 +1679,6 @@
     letter-spacing: 0;
     color: #c0c0b6;
   }
-  .poster-interval {
-    display: flex;
-    flex-direction: column;
-    align-items: end;
-    gap: 5px;
-    padding-bottom: 4px;
-    white-space: nowrap;
-  }
-  .poster-interval > span {
-    font:
-      400 var(--type-label)/1.2 KHF1,
-      monospace;
-    color: var(--muted);
-  }
-  .poster-interval strong {
-    font:
-      400 14px/1.2 GeistMono,
-      monospace;
-    color: #e0e0d7;
-  }
-  .poster-interval > span:last-child:not(:first-child) {
-    font-size: var(--type-label);
-  }
   .lap-distribution {
     margin-top: auto;
     position: relative;
@@ -1666,7 +1692,7 @@
       400 var(--type-label)/1.4 KHF1,
       monospace;
     color: #b6b6ac;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
   }
   .lap-distribution svg {
     display: block;
@@ -1712,7 +1738,7 @@
       grid-template-columns: minmax(0, 1fr) 320px;
     }
     .estimate-stack {
-      grid-template-rows: repeat(2, minmax(322px, 1fr)) auto;
+      grid-template-rows: repeat(2, minmax(372px, 1fr)) auto;
     }
   }
   @media (min-width: 1000px) and (max-width: 1199px) {
@@ -1720,16 +1746,13 @@
       grid-template-columns: minmax(0, 1fr) 290px;
     }
     .driver-poster .estimate-number {
-      font-size: 36px;
-    }
-    .poster-readout {
-      gap: 10px;
+      font-size: 52px;
     }
   }
   @media (max-width: 999px) {
     .driver-estimate.driver-poster {
-      grid-template-rows: 148px minmax(0, 1fr);
-      min-height: 322px;
+      grid-template-rows: 170px minmax(0, 1fr);
+      min-height: 372px;
     }
   }
   @media (max-width: 720px) {
@@ -1741,13 +1764,7 @@
       left: 16px;
     }
     .driver-poster .estimate-number {
-      font-size: 38px;
-    }
-    .poster-readout {
-      gap: 10px;
-    }
-    .poster-interval strong {
-      font-size: 14px;
+      font-size: 52px;
     }
   }
 
@@ -2238,9 +2255,8 @@
   .estimate-label {
     min-height: 1.4em;
   }
-  .poster-interval strong {
-    min-width: 8ch;
-    text-align: right;
+  .driver-estimate.driver-poster .estimate-number {
+    min-height: 64px;
   }
   .estimate-number,
   .compare-estimate .estimate-number {
@@ -2300,7 +2316,7 @@
     }
   }
   .session-skeleton .driver-poster {
-    min-height: 330px;
+    min-height: 372px;
   }
   .analysis-layout .tower-rows:has(> .skel) {
     max-height: none;
@@ -2315,7 +2331,7 @@
       min-height: 399px;
     }
     .session-skeleton .driver-poster {
-      min-height: 337px;
+      min-height: 372px;
     }
     .analysis-layout .tower-rows:has(> .skel) {
       height: 448px;
