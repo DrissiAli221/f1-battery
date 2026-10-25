@@ -1498,7 +1498,15 @@
     isolation: isolate;
     overflow: hidden;
     color: var(--poster-ink);
-    background: linear-gradient(to bottom, var(--team) 0%, var(--team) 55%, #111110 100%);
+    background:
+      radial-gradient(120% 90% at 18% 0%, color-mix(in srgb, var(--team) 82%, #fff) 0%, transparent 55%),
+      linear-gradient(
+        165deg,
+        color-mix(in srgb, var(--team) 92%, #fff) 0%,
+        var(--team) 45%,
+        color-mix(in srgb, var(--team) 70%, #000) 78%,
+        #111110 100%
+      );
   }
   .driver-poster-art::before {
     content: '';
