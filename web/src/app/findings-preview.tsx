@@ -9,6 +9,7 @@ import findings from '../content/findings.json';
 import notes from '../content/findings-notes.json';
 import reportUrl from '../content/findings.json?url';
 import { createPixelButton } from './hover.js';
+import { ModelStrip } from './model-strip';
 import { paintScreen } from './session-halftone';
 import './session.css';
 import './findings.css';
@@ -212,6 +213,18 @@ function Permutation() {
     </figure>
   );
 }
+const runPass = Object.values(findings.per_run_pass).filter(Boolean).length;
+const runTotal = Object.keys(findings.per_run_pass).length;
+const verdictFlags = [
+  `Verdict: ${findings.verdict}`,
+  runPass === runTotal
+    ? 'All runs pass'
+    : runPass === 0
+      ? 'No run passes'
+      : `${runPass} of ${runTotal} runs pass`,
+  findings.min_sample_ok ? 'Minimum sample met' : 'Minimum sample not met',
+  findings.perm_ok ? 'Permutation control passed' : 'Permutation control failed',
+];
 const SD_UNIT: Record<string, string> = {
   cutoff_dev_defender: 'm',
   deploy_rel_diff: 'relative units',
@@ -464,6 +477,11 @@ function App() {
                   <span>odds ratio {fmt(findings.runs.point.or)}</span>
                   <span>{findings.sample.sessions_in_model} sessions</span>
                 </p>
+                <ul className="finding-flags" aria-label="Frozen test criteria" data-reveal>
+                  {verdictFlags.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
               </div>
               <div className="finding-answer">
                 <h2>An earlier cut-off didn’t predict the pass.</h2>
@@ -493,6 +511,7 @@ function App() {
           </nav>
           <section aria-label="Sample used in the frozen test">
             <div className="wrap finding-sample-wrap">
+              <ModelStrip frozen={findings.source.model_version} />
               <div className="finding-sample">
                 {[
                   [
@@ -550,6 +569,10 @@ function App() {
                     cut-off; below 1 means lower odds. The horizontal line is the 95% confidence interval. The
                     pre-registered result required an odds ratio of at least 1.3, an interval excluding 1 in
                     all three runs, and a passed permutation control.
+                  </p>
+                  <p>
+                    The pre-registered minimum sample is 150 events and 300 non-events; below that the result
+                    would be reported as insufficient data.
                   </p>
                 </details>
               </div>
@@ -701,9 +724,8 @@ function App() {
                   <div key={title}>
                     <dt>{title}</dt>
                     <dd>
-                      {title === 'Unknown limits'
-                        ? 'Per-event race energy limits are not public. The model uses assumptions flagged as unknown.'
-                        : detail}
+                      {detail}
+                      {title === 'Unknown limits' && ' The model uses assumptions flagged as unknown.'}
                     </dd>
                   </div>
                 ))}
