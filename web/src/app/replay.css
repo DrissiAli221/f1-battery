@@ -851,6 +851,15 @@
     height: 18px;
     min-height: 18px !important;
     padding: 0 0 1px;
+    border: 0;
+    font:
+      700 12px/1 Geist,
+      system-ui,
+      sans-serif;
+    text-transform: none;
+  }
+  .field-display .info button.info-dot::before {
+    content: none;
   }
   .field-display .info button.info-dot:not(:hover, :focus-visible, [aria-expanded='true']) {
     background: #2a2a28;
