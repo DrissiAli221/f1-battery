@@ -67,6 +67,12 @@
     color: #77776f;
     padding-inline: 12px;
   }
+  /* The reading guide keeps only a top hairline; the band tint is dropped on this page. */
+  .session-preview #method.band {
+    background: transparent;
+    border-block: 0;
+    box-shadow: 0 1px 0 var(--band-line) inset;
+  }
   .race-halftone {
     position: absolute;
     z-index: -1;
