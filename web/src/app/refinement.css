@@ -1339,11 +1339,40 @@
     -webkit-mask: var(--chip-icon) center / contain no-repeat;
     mask: var(--chip-icon) center / contain no-repeat;
   }
+  .home-preview .race-chips .button-chip::before {
+    position: static;
+    inset: auto;
+    align-self: center;
+    margin: 0;
+    transition: background-color 160ms ease-out;
+  }
+  .home-preview .race-chips .button-chip:hover::before,
+  .home-preview .race-chips .button-chip:focus-visible::before,
+  .home-preview .race-chips .button-chip[data-hover-phase='enter']::before,
+  .home-preview .race-chips .button-chip[data-hover-phase='entered']::before {
+    background-color: #030303;
+  }
+  .home-preview .race-chips .button-chip::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
   .home-preview .race-chips .button-chip {
-    box-shadow: inset 2px 0 0 var(--chip-c);
+    gap: 7px;
+    box-shadow:
+      inset 0 1px #ffffff08,
+      0 3px 12px #0003;
+  }
+  .home-preview .race-chips .race-chip-off {
+    gap: 7px;
+    border: 0;
+    border-radius: var(--radius);
+    background: #0c0c0b;
+    color: #5f5f59;
+    cursor: default;
   }
   .home-preview .race-chips .race-chip-off::before {
-    opacity: 0.4;
+    opacity: 0.35;
   }
   .home-preview .race-chips [data-kind='Race'] {
     --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M5%2021V3M5%204h14v8H5M9.67%204v8M14.33%204v8M5%208h14%27/%3E%3C/svg%3E');
@@ -1369,17 +1398,33 @@
   .home-preview .race-chips .button-chip[data-kind='Sprint Qualifying'] {
     --chip-c: #f0b429;
   }
+  @media (min-width: 381px) and (max-width: 520px) {
+    .home-preview .race-chips {
+      gap: 3px;
+    }
+    .home-preview .race-chips .button-chip,
+    .home-preview .race-chips .race-chip-off {
+      gap: 3px;
+      padding: 0 4px;
+      font-size: 9px;
+    }
+    .home-preview .race-chips .button-chip::before,
+    .home-preview .race-chips .race-chip-off::before {
+      width: 11px;
+      height: 11px;
+    }
+  }
   @media (max-width: 380px) {
     .home-preview .race-chips .button-chip::before,
     .home-preview .race-chips .race-chip-off::before {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
     }
     .home-preview .race-chips .button-chip,
     .home-preview .race-chips .race-chip-off {
       gap: 2px;
-      padding: 0 2px 0 4px;
-      font-size: 9px;
+      padding: 0 2px 0 3px;
+      font-size: 8px;
     }
     .home-preview .race-chips .button-chip::before,
     .home-preview .race-chips .race-chip-off::before {
