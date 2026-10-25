@@ -286,30 +286,34 @@ function App() {
                                   )}
                                 </div>
                               ) : (
-                                <div className="race-session-links">
-                                  {slots.map((row) => (
-                                    <div className="race-row" key={row.session_name}>
-                                      <span>{row.session_name}</span>
-                                      {(row as { missing?: boolean }).missing ? (
-                                        <span className="race-unavailable-note">Not held</span>
-                                      ) : row.has_results ? (
-                                        // The anchor text must stay a constant string: hover.js owns its children.
-                                        <a
-                                          className="button button-grey button-compact"
-                                          data-pixel-rest="#1b1b19"
-                                          data-pixel-rest-text="#f4f4ef"
-                                          data-pixel-active="#f4f4ef"
-                                          data-pixel-active-text="#030303"
-                                          href={href(row)}
-                                          aria-label={`View estimates, ${title} ${row.session_name}`}
-                                        >
-                                          View estimates
-                                        </a>
-                                      ) : (
-                                        <span className="race-unavailable-note">No results</span>
-                                      )}
-                                    </div>
-                                  ))}
+                                <div className="race-chips">
+                                  {slots.map((row) =>
+                                    !(row as { missing?: boolean }).missing && row.has_results ? (
+                                      // The anchor text must stay a constant string: hover.js owns its children.
+                                      <a
+                                        key={row.session_name}
+                                        className="button button-grey button-chip"
+                                        data-pixel-rest="#1b1b19"
+                                        data-pixel-rest-text="#f4f4ef"
+                                        data-pixel-active="#f4f4ef"
+                                        data-pixel-active-text="#030303"
+                                        data-pixel-icon="none"
+                                        data-pixel-label={row.session_name}
+                                        href={href(row)}
+                                        aria-label={`View estimates, ${title} ${row.session_name}`}
+                                      >
+                                        {row.session_name}
+                                      </a>
+                                    ) : (
+                                      <span
+                                        key={row.session_name}
+                                        className="race-chip-off"
+                                        aria-disabled="true"
+                                      >
+                                        {row.session_name}
+                                      </span>
+                                    )
+                                  )}
                                 </div>
                               )}
                             </div>

@@ -1419,3 +1419,53 @@
     }
   }
 }
+
+@layer overrides {
+  .home-preview .race-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+  .home-preview .race-chips .button-chip,
+  .home-preview .race-chips .race-chip-off {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 10px;
+    font:
+      400 11px/1 KHF1,
+      monospace;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .home-preview .race-chips .race-chip-off {
+    border: 1px solid #ffffff14;
+    border-radius: var(--radius);
+    color: #6f6f68;
+    background: none;
+  }
+  @media (max-width: 720px) {
+    .home-preview .race-chips {
+      gap: 6px;
+    }
+    .home-preview .race-chips .button-chip,
+    .home-preview .race-chips .race-chip-off {
+      padding: 0 7px;
+      font-size: 10px;
+    }
+  }
+}
+@layer overrides {
+  @media (max-width: 380px) {
+    .home-preview .race-chips {
+      gap: 4px;
+    }
+    .home-preview .race-chips .button-chip,
+    .home-preview .race-chips .race-chip-off {
+      padding: 0 5px;
+    }
+  }
+}

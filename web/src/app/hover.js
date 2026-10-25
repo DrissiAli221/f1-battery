@@ -45,7 +45,9 @@ export function createPixelButton(element, { interactive = true } = {}) {
   const iconTop = node('pixel-icon-top', '→');
   const iconBottom = node('pixel-icon-bottom', '→');
   icon.append(iconTop, iconBottom);
-  element.replaceChildren(window, words, icon);
+  // data-pixel-icon="none" keeps the label roll but leaves the arrow out of the button.
+  if (element.dataset.pixelIcon === 'none') element.replaceChildren(window, words);
+  else element.replaceChildren(window, words, icon);
   // Optional per-element colours; the defaults are the original red button.
   const rest = element.dataset.pixelRest || '#e10600',
     active = element.dataset.pixelActive || '#f4f4ef';
