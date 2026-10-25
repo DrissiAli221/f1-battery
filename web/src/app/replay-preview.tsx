@@ -339,6 +339,14 @@ function ReplaySession({
             <div
               className={`replay-map-panel${dim ? ' is-loading' : ''}`}
               aria-busy={regimes.loading || undefined}
+              style={
+                {
+                  '--fog':
+                    (mode === 'review' || !showAll) && selected?.team_colour
+                      ? selected.team_colour
+                      : 'transparent',
+                } as CSSProperties
+              }
             >
               <div className="replay-map-head">
                 <h2>{meta?.name ?? data.session?.circuit_short_name}</h2>

@@ -1136,4 +1136,35 @@
       }
     }
   }
+
+  /* Map panel fog: the selected driver's colour from the top-left; --fog is a registered colour so the change crossfades. */
+  @layer pages {
+    .replay-map-panel {
+      isolation: isolate;
+      transition: --fog 360ms ease;
+    }
+    .replay-map-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse 80% 90% at 0% 0%,
+        color-mix(in srgb, var(--fog) 8%, transparent),
+        transparent 80%
+      );
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .replay-map-panel {
+        transition: none;
+      }
+    }
+  }
+}
+
+@property --fog {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
 }
