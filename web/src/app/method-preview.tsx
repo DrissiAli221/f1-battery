@@ -76,6 +76,14 @@ const outcomes: Record<string, { label: string; pill: string; tone: string; grou
       short:
         'Three checks failed, one passed and one was not testable. Their expected signs were not changed.',
     },
+    'model-rerun-proxy-0-2': {
+      label: 'Published',
+      pill: 'published',
+      tone: 'ink',
+      group: 'Estimator',
+      short:
+        'The model was re-run in full as proxy-0.2 so the main straight in qualifying is analysed. The frozen findings run was not overwritten.',
+    },
     'frozen-hypothesis-test': {
       label: 'No effect',
       pill: 'no effect',
