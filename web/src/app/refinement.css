@@ -1281,3 +1281,116 @@
     }
   }
 }
+
+/* Method page rhythm: the same gaps, hairlines, inset rows and press states as the Findings page. */
+@layer overrides {
+  .method-hero,
+  .method-estimator,
+  .method-section-heading,
+  .method-boundaries {
+    gap: 64px;
+  }
+  .method-section-heading {
+    margin-bottom: 36px;
+  }
+  .method-estimator {
+    align-items: start;
+  }
+  .estimator-copy h3 {
+    margin-top: 0;
+  }
+  .method-hero-copy {
+    position: relative;
+    z-index: 1;
+  }
+  @media (min-width: 1000px) {
+    .method-hero-copy {
+      padding-right: 0;
+      max-width: 390px;
+    }
+  }
+  @media (min-width: 721px) and (max-width: 1100px) {
+    .method-screen {
+      width: 220px;
+      opacity: 0.3;
+    }
+  }
+  /* One divider between the filters and the list: the filter row's own hairline. */
+  .method-entries {
+    --status-col: 150px;
+    --icon-col: 30px;
+    --col-gap: 24px;
+    --toggle-col: 20px;
+    --row-inset: 14px;
+    border-top: 0;
+    margin-inline: calc(var(--row-inset) * -1);
+  }
+  .method-explainer {
+    margin-inline: -14px;
+  }
+  .method-entry summary,
+  .method-explainer summary {
+    padding-inline: 14px;
+  }
+  .method-entry summary {
+    grid-template-columns: var(--icon-col) minmax(0, 1fr) var(--status-col) var(--toggle-col);
+    gap: var(--col-gap);
+  }
+  .entry-detail {
+    padding: 0 calc(var(--row-inset) + var(--toggle-col) + var(--col-gap) + var(--status-col)) 30px
+      calc(var(--row-inset) + var(--icon-col) + var(--col-gap));
+  }
+  .entry-detail dl > div:first-child {
+    border-top: 0;
+  }
+  .method-footer {
+    border-top: 1px solid var(--line);
+  }
+  /* Match Findings: rows lift to white on hover and dim on press. */
+  @media (hover: hover) and (pointer: fine) {
+    .method-entry summary:hover,
+    .method-explainer summary:hover {
+      color: #fff;
+    }
+  }
+  .method-entry summary:active,
+  .method-explainer summary:active {
+    background: #ffffff08;
+  }
+  .record-filters button:active,
+  .method-download:active {
+    color: #fff;
+  }
+  @media (max-width: 1000px) {
+    .method-hero,
+    .method-estimator,
+    .method-section-heading,
+    .method-boundaries {
+      gap: 36px;
+    }
+    .method-process li:nth-child(2n) .process-arrow {
+      display: none;
+    }
+  }
+  @media (max-width: 720px) {
+    .method-hero,
+    .method-estimator,
+    .method-section-heading,
+    .method-boundaries {
+      gap: 18px;
+    }
+    .method-section-heading {
+      margin-bottom: 36px;
+    }
+    .method-entries {
+      --icon-col: 22px;
+      --col-gap: 12px;
+    }
+    .method-entry summary {
+      grid-template-columns: var(--icon-col) minmax(0, 1fr) 16px;
+    }
+    .entry-detail {
+      padding: 0 var(--row-inset) 22px calc(var(--row-inset) + var(--icon-col) + var(--col-gap));
+    }
+  }
+}
