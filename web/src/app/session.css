@@ -2340,6 +2340,7 @@
   .hero-band {
     position: relative;
     isolation: isolate;
+    overflow: hidden;
     overflow: clip;
   }
   .hero-band::before {

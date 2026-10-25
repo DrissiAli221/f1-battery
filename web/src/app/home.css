@@ -623,5 +623,6 @@
   body .session-preview .home-feature-card.skel {
     background-image: none;
     background-color: #141413;
+    box-shadow: none;
   }
 }

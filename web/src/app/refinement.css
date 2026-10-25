@@ -1331,14 +1331,17 @@
     border-top: 0;
     background: linear-gradient(#ffffff26, #ffffff26) 14px 0 / calc(100% - 28px) 1px no-repeat;
   }
+  /* The hairline is a background, not ::after: a pseudo-element on a closed <details> is not reliable in WebKit. */
   .method-entry {
     border-bottom: 0;
+    background: linear-gradient(#ffffff26, #ffffff26) var(--row-inset) 100% /
+      calc(100% - 2 * var(--row-inset)) 1px no-repeat;
   }
-  .method-entry::after {
-    content: '';
-    display: block;
-    margin-inline: var(--row-inset);
-    border-bottom: 1px solid #ffffff26;
+  .method-entry[open] {
+    background:
+      linear-gradient(110deg, #ffffff04, transparent 80%),
+      linear-gradient(#ffffff26, #ffffff26) var(--row-inset) 100% / calc(100% - 2 * var(--row-inset)) 1px
+        no-repeat;
   }
   .method-entry summary,
   .method-explainer summary {
@@ -1381,12 +1384,16 @@
     .method-boundaries {
       gap: 36px;
     }
+    /* The status column stacks under the title here, so the detail text no longer reserves its width. */
+    .entry-detail {
+      padding-right: calc(var(--row-inset) + var(--toggle-col) + var(--col-gap));
+    }
     .method-process li:nth-child(2n) .process-arrow {
       display: none;
     }
   }
   @media (max-width: 720px) {
-    .method-hero,
+    /* The hero keeps the 22px phone gap it shares with the findings hero. */
     .method-estimator,
     .method-section-heading,
     .method-boundaries {
