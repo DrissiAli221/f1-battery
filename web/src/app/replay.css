@@ -832,14 +832,6 @@
     padding-inline: 0;
     margin-top: 0;
   }
-  .field-display .info-dot {
-    min-height: 16px;
-    padding: 0;
-    border: 1px solid #ffffff2e;
-    background: transparent;
-    color: var(--muted);
-    font-size: 10px;
-  }
   .replay-ctl .field-display {
     margin: 0;
     padding: 0;
@@ -850,13 +842,19 @@
     align-self: center;
     flex: none;
   }
+  /* The session's info-dot look applies; this only stops the flex stretch and the 44px control min-height. */
   .replay-ctl .info button.info-dot,
   .field-display .info button.info-dot {
     flex: none;
-    width: 16px;
-    height: 16px !important;
-    min-height: 0 !important;
-    aspect-ratio: 1;
+    align-self: center;
+    width: 18px;
+    height: 18px;
+    min-height: 18px !important;
+    padding: 0 0 1px;
+  }
+  .field-display .info button.info-dot:not(:hover, :focus-visible, [aria-expanded='true']) {
+    background: #2a2a28;
+    color: #f4f4ef;
   }
   .regime-legend {
     margin: 0 0 14px;
@@ -1070,95 +1068,99 @@
   }
 
   /* Driver rows: a soft team fog replaces the left bar; the right-hand cell carries the race number. */
-  @layer pages {
+  .replay-field-rows button {
+    grid-template-columns: 0 22px minmax(0, 1fr) 54px;
+    padding-left: 2px;
+    background:
+      radial-gradient(
+        ellipse 60% 120% at 0% 50%,
+        color-mix(in srgb, var(--team) 16%, transparent),
+        transparent 70%
+      ),
+      #171714;
+  }
+  .replay-field-rows button > i {
+    width: 0;
+    overflow: hidden;
+    background: none;
+  }
+  .replay-field-rows button.is-selected {
+    background:
+      radial-gradient(
+        ellipse 60% 120% at 0% 50%,
+        color-mix(in srgb, var(--team) 30%, transparent),
+        transparent 70%
+      ),
+      #171714;
+    box-shadow: inset 0 -1px var(--team);
+  }
+  .replay-field-rows .field-code {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    line-height: 1;
+  }
+  .replay-field-rows .field-code > b {
+    font:
+      900 26px/1 F1Black,
+      sans-serif;
+    color: var(--team);
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+  }
+  .replay-field-rows .field-code > small {
+    font:
+      400 10px/1.2 KHF1,
+      monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  @media (max-width: 1000px) {
     .replay-field-rows button {
       grid-template-columns: 0 22px minmax(0, 1fr) 54px;
-      padding-left: 2px;
+    }
+  }
+  .replay-field-rows button:focus-visible {
+    background:
+      radial-gradient(
+        ellipse 60% 120% at 0% 50%,
+        color-mix(in srgb, var(--team) 24%, transparent),
+        transparent 70%
+      ),
+      #1f1f1c;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .replay-field-rows button:hover {
       background:
         radial-gradient(
           ellipse 60% 120% at 0% 50%,
-          color-mix(in srgb, var(--team) 16%, transparent),
+          color-mix(in srgb, var(--team) 24%, transparent),
           transparent 70%
         ),
-        #171714;
-    }
-    .replay-field-rows button > i {
-      width: 0;
-      overflow: hidden;
-      background: none;
-    }
-    .replay-field-rows button.is-selected {
-      background:
-        radial-gradient(
-          ellipse 60% 120% at 0% 50%,
-          color-mix(in srgb, var(--team) 30%, transparent),
-          transparent 70%
-        ),
-        #171714;
-      box-shadow: inset 0 -1px var(--team);
-    }
-    .replay-field-rows .field-code {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 1px;
-      line-height: 1;
-    }
-    .replay-field-rows .field-code > b {
-      font:
-        900 26px/1 F1Black,
-        sans-serif;
-      color: var(--team);
-      opacity: 0.85;
-      font-variant-numeric: tabular-nums;
-    }
-    .replay-field-rows .field-code > small {
-      font:
-        400 10px/1.2 KHF1,
-        monospace;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-    @media (max-width: 1000px) {
-      .replay-field-rows button {
-        grid-template-columns: 0 22px minmax(0, 1fr) 54px;
-      }
-    }
-    @media (hover: hover) and (pointer: fine) {
-      .replay-field-rows button:hover {
-        background:
-          radial-gradient(
-            ellipse 60% 120% at 0% 50%,
-            color-mix(in srgb, var(--team) 24%, transparent),
-            transparent 70%
-          ),
-          #292925;
-      }
+        #292925;
     }
   }
 
-  /* Map panel fog: the selected driver's colour from the top-left; --fog is a registered colour so the change crossfades. */
-  @layer pages {
+  /* Map panel fog: the selected driver's colour from the top-left; --stage-team is registered in session.css so the change crossfades. */
+  .replay-map-panel {
+    isolation: isolate;
+  }
+  .replay-map-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 80% 90% at 0% 0%,
+      color-mix(in srgb, var(--stage-team) 8%, transparent),
+      transparent 80%
+    );
+  }
+  @media (prefers-reduced-motion: no-preference) {
     .replay-map-panel {
-      isolation: isolate;
-      transition: --fog 360ms ease;
-    }
-    .replay-map-panel::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      pointer-events: none;
-      background: radial-gradient(
-        ellipse 80% 90% at 0% 0%,
-        color-mix(in srgb, var(--fog) 8%, transparent),
-        transparent 80%
-      );
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .replay-map-panel {
-        transition: none;
-      }
+      transition: --stage-team 360ms var(--ease);
     }
   }
 }
@@ -1176,10 +1178,4 @@
     line-height: 1;
     align-self: center;
   }
-}
-
-@property --fog {
-  syntax: '<color>';
-  inherits: true;
-  initial-value: transparent;
 }

@@ -109,12 +109,17 @@ function ReplaySession({
     [regimes.data, regimes.loading, lap]
   );
   const [dim, setDim] = useState(false);
-  // The inspect cursor can play along the lap on its own: one lap in ~24 s from elapsed time, never a timer tick count.
+  // The inspect cursor can play along the lap on its own: one lap in ~24 s from elapsed time. Per frame the dot,
+  // slider and readout are written imperatively; React state only changes when the 50 m bin does, because the
+  // tags (and the chip layout effect) are rebuilt on every render.
   const [playing, setPlaying] = useState(false);
   const cursorNow = useRef(cursor);
   cursorNow.current = cursor;
-  const lapSpan = Math.max(0, (data.lap ?? 50) - 1);
-  const canPlay = mode === 'review' && bins.length > 0 && lapSpan > 0;
+  const playPos = useRef(0);
+  const rangeEl = useRef<HTMLInputElement>(null);
+  const readoutEl = useRef<HTMLElement>(null);
+  const lapLen = data.lap ?? 50;
+  const canPlay = mode === 'review' && bins.length > 0 && !regimes.loading && lapLen > 50;
   useEffect(() => {
     if (!playing) return;
     if (!canPlay) {
@@ -122,40 +127,43 @@ function ReplaySession({
       return;
     }
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const t0 = performance.now();
+    const d0 = cursorNow.current;
     let raf = 0;
-    let last = performance.now();
-    let pos = cursorNow.current;
-    let held = 0;
+    let bin = Math.floor(d0 / 50);
+    playPos.current = d0;
     const tick = (now: number) => {
-      const dt = Math.min(now - last, 250);
-      last = now;
-      if (Math.abs(cursorNow.current - Math.round(pos)) > 1) pos = cursorNow.current;
-      if (reduced) {
-        // Reduced motion: hop in 50 m bins at a slower rate instead of sweeping.
-        held += dt;
-        if (held >= 600) {
-          held = 0;
-          pos = Math.floor(pos / 50 + 1) * 50;
-          if (pos > lapSpan) pos = 0;
-          setCursor(pos);
-        }
-      } else {
-        pos += (dt / 24000) * lapSpan;
-        if (pos > lapSpan) pos -= lapSpan;
-        setCursor(Math.round(pos));
+      const elapsed = now - t0;
+      // Reduced motion: hop in 50 m bins every 600 ms instead of sweeping.
+      const d = reduced
+        ? (Math.floor(d0 / 50) * 50 + 50 * Math.floor(elapsed / 600)) % lapLen
+        : (d0 + (elapsed / 24000) * lapLen) % lapLen;
+      playPos.current = d;
+      const shown = Math.min(Math.round(d), lapLen - 1);
+      map.current?.place('review-cursor', d);
+      if (rangeEl.current) rangeEl.current.value = String(shown);
+      const node = readoutEl.current?.firstChild;
+      if (node) node.nodeValue = `${nf.format(shown)} m`;
+      const nb = Math.floor(d / 50);
+      if (nb !== bin) {
+        bin = nb;
+        setCursor(shown);
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     const hide = () => {
-      if (document.hidden) setPlaying(false);
+      if (document.hidden) {
+        setCursor(Math.min(Math.round(playPos.current), lapLen - 1));
+        setPlaying(false);
+      }
     };
     document.addEventListener('visibilitychange', hide);
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener('visibilitychange', hide);
     };
-  }, [playing, canPlay, lapSpan]);
+  }, [playing, canPlay, lapLen]);
   useEffect(() => {
     if (!regimes.loading) {
       setDim(false);
@@ -289,6 +297,7 @@ function ReplaySession({
   const chooseDriver = (n: number) => {
     setDriver(n);
     setPickedLap(null);
+    setPlaying(false);
     setCursor(0);
   };
   const selectedRegime = mode === 'review' ? at?.label : state?.regime;
@@ -330,6 +339,7 @@ function ReplaySession({
                 disabled={!laps.length}
                 onChange={(e) => {
                   setPickedLap(Number(e.target.value));
+                  setPlaying(false);
                   setCursor(0);
                 }}
               >
@@ -388,7 +398,7 @@ function ReplaySession({
               aria-busy={regimes.loading || undefined}
               style={
                 {
-                  '--fog':
+                  '--stage-team':
                     (mode === 'review' || !showAll) && selected?.team_colour
                       ? selected.team_colour
                       : 'transparent',
@@ -427,7 +437,10 @@ function ReplaySession({
                           className="button button-secondary distance-play"
                           aria-pressed={playing}
                           disabled={!canPlay}
-                          onClick={() => setPlaying((p) => !p)}
+                          onClick={() => {
+                            if (playing) setCursor(Math.min(Math.round(playPos.current), lapLen - 1));
+                            setPlaying(!playing);
+                          }}
                         >
                           {playing ? 'Pause' : 'Play lap'}
                         </button>
@@ -438,11 +451,12 @@ function ReplaySession({
                           : selectedRegime
                             ? words[selectedRegime]
                             : 'No regime available'}{' '}
-                        <strong>{regimes.loading ? '—' : `${nf.format(cursor)} m`}</strong>
+                        <strong ref={readoutEl}>{regimes.loading ? '—' : `${nf.format(cursor)} m`}</strong>
                       </span>
                     </div>
                     <input
                       id="review-distance"
+                      ref={rangeEl}
                       aria-label="Inspect distance around lap"
                       type="range"
                       min="0"
@@ -451,6 +465,7 @@ function ReplaySession({
                       value={cursor}
                       disabled={!bins.length}
                       onPointerDown={() => setPlaying(false)}
+                      onKeyDown={() => setPlaying(false)}
                       onChange={(e) => {
                         setPlaying(false);
                         setCursor(Number(e.target.value));
