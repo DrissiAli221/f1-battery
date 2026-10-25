@@ -119,6 +119,18 @@ const date = (iso: string) =>
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(iso + 'T00:00:00Z'));
+const phaseOrder = ['Phases 1-2', 'Phase S', 'Phase 3', 'Phase 5', 'Phase 6'];
+// One column per phase in chronological order, derived from every entry so filters never remove a header.
+const phases = Array.from(new Set(log.entries.map((e) => e.phase)))
+  .sort((a, b) => (phaseOrder.indexOf(a) + 1 || 99) - (phaseOrder.indexOf(b) + 1 || 99))
+  .map((name) => {
+    const dates = log.entries
+      .filter((e) => e.phase === name)
+      .map((e) => e.date)
+      .sort();
+    return { name, from: dates[0], to: dates[dates.length - 1] };
+  });
+const range = (from: string, to: string) => (from === to ? date(from) : `${date(from)} – ${date(to)}`);
 function App() {
   useInitialAnchor();
   const [filter, setFilter] = useState('All entries');
@@ -358,71 +370,92 @@ function App() {
                 {entries.length} of {log.entries.length} recorded entries
               </p>
               <ol key={filter} className={`method-timeline${switched ? ' switch-in' : ''}`}>
-                {entries.map((e) => {
-                  const outcome = outcomes[e.id];
-                  const figure = 'figure' in e ? e.figure : null;
+                {phases.map((phase) => {
+                  const inPhase = entries.filter((e) => e.phase === phase.name);
                   return (
-                    <li className={`tl-entry tone-${outcome.tone}`} id={e.id} key={e.id}>
-                      <span className="tl-node" aria-hidden="true" />
-                      <div className="tl-when">
-                        <time dateTime={e.date}>{date(e.date)}</time>
-                        <span className="tl-chip">{e.phase}</span>
+                    <li className="phase-col" key={phase.name}>
+                      <div className="phase-head">
+                        <h3>{phase.name.replace('Phases 1-2', 'Phases 1–2')}</h3>
+                        <time dateTime={phase.from}>{range(phase.from, phase.to)}</time>
+                        <span className="phase-bar" aria-hidden="true">
+                          {inPhase.map((e) => (
+                            <i className={`tone-${outcomes[e.id].tone}`} key={e.id} />
+                          ))}
+                        </span>
                       </div>
-                      <div className="tl-what">
-                        <div className="tl-head">
-                          <h3>{e.title}</h3>
-                          <span className="tl-pill">{outcome.pill}</span>
-                        </div>
-                        <p className="tl-short">{outcome.short}</p>
-                        {figure && (
-                          <figure className="tl-figure">
-                            <img src={'/' + figure.src} width="320" alt={figure.alt} loading="lazy" />
-                            <figcaption>{figure.caption}</figcaption>
-                          </figure>
-                        )}
-                        <div className="tl-sources">
-                          <span>Source notes</span>
-                          <ul>
-                            {e.sources.map((source) => (
-                              <li key={source.path}>
-                                {'unpublished' in source && source.unpublished ? (
-                                  <code>{source.label}</code>
-                                ) : (
-                                  <a href={repoBlob + source.path} target="_blank" rel="noreferrer">
-                                    {source.label}
-                                  </a>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <details className="tl-details">
-                          <summary>
-                            Details <span aria-hidden="true">+</span>
-                          </summary>
-                          <dl>
-                            {[
-                              ['Recorded status', outcome.label],
-                              ['Tried', e.tried],
-                              ['Pre-set check', e.check],
-                              ['Found', e.found],
-                              ['Changed', e.consequence],
-                            ].map(([label, copy]) => (
-                              <div key={label}>
-                                <dt>{label}</dt>
-                                <dd>{copy}</dd>
+                      {inPhase.length === 0 && <p className="phase-empty">No entries in this view</p>}
+                      <ul className="phase-cards">
+                        {inPhase.map((e) => {
+                          const outcome = outcomes[e.id];
+                          const figure = 'figure' in e ? e.figure : null;
+                          return (
+                            <li
+                              className={`tl-entry tone-${outcome.tone}`}
+                              id={e.id}
+                              key={e.id}
+                              data-g={outcome.group}
+                            >
+                              <div className="tl-head">
+                                <h4>{e.title}</h4>
+                                <span className="tl-pill">{outcome.pill}</span>
                               </div>
-                            ))}
-                          </dl>
-                          {e.id === 'phase-s-taper' && (
-                            <p className="regulation-reference">
-                              Regulation reference: FIA Section C, Issue 20 (5 August 2026), Article C5.2.8,
-                              as recorded in docs/regulations.md. Per-event limits remain flagged where
-                              unknown.
-                            </p>
-                          )}
-                        </details>
-                      </div>
+                              <p className="tl-when">
+                                <time dateTime={e.date}>{date(e.date)}</time>
+                                <span className="tl-chip">{e.phase}</span>
+                              </p>
+                              <p className="tl-short">{outcome.short}</p>
+                              {figure && (
+                                <figure className="tl-figure">
+                                  <img src={'/' + figure.src} width="320" alt={figure.alt} loading="lazy" />
+                                  <figcaption>{figure.caption}</figcaption>
+                                </figure>
+                              )}
+                              <div className="tl-sources">
+                                <span>Source notes</span>
+                                <ul>
+                                  {e.sources.map((source) => (
+                                    <li key={source.path}>
+                                      {'unpublished' in source && source.unpublished ? (
+                                        <code>{source.label}</code>
+                                      ) : (
+                                        <a href={repoBlob + source.path} target="_blank" rel="noreferrer">
+                                          {source.label}
+                                        </a>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                              <details className="tl-details">
+                                <summary>
+                                  Details <span aria-hidden="true">+</span>
+                                </summary>
+                                <dl>
+                                  {[
+                                    ['Recorded status', outcome.label],
+                                    ['Tried', e.tried],
+                                    ['Pre-set check', e.check],
+                                    ['Found', e.found],
+                                    ['Changed', e.consequence],
+                                  ].map(([label, copy]) => (
+                                    <div key={label}>
+                                      <dt>{label}</dt>
+                                      <dd>{copy}</dd>
+                                    </div>
+                                  ))}
+                                </dl>
+                                {e.id === 'phase-s-taper' && (
+                                  <p className="regulation-reference">
+                                    Regulation reference: FIA Section C, Issue 20 (5 August 2026), Article
+                                    C5.2.8, as recorded in docs/regulations.md. Per-event limits remain
+                                    flagged where unknown.
+                                  </p>
+                                )}
+                              </details>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </li>
                   );
                 })}
