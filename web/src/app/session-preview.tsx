@@ -824,6 +824,11 @@ function App() {
                     <aside className="estimate-stack" data-count="2" aria-hidden="true">
                       <article className="driver-estimate driver-poster skel" />
                       <article className="driver-estimate driver-poster compare-estimate skel" />
+                      {!compared && (
+                        <div className="driver-estimate driver-poster is-empty" aria-hidden="true">
+                          <p>Pick a driver to compare</p>
+                        </div>
+                      )}
                       <div className="estimate-actions">
                         <span className="text-toggle" style={{ visibility: 'hidden' }}>
                           Use session median
@@ -1010,9 +1015,15 @@ function App() {
                           : ''}
                       </p>
                       <p className="map-footnote">
-                        Tags mark estimated cut-offs.
-                        {compare !== null ? ' Solid dot: driver. Ring: comparison.' : ''} Values are metres
-                        into the straight; intervals appear in the cards and chart.
+                        <span>
+                          Tags mark estimated cut-offs.
+                          {compare !== null ? ' Solid dot: driver. Ring: comparison.' : ''} Values are metres
+                          into the straight; intervals appear in the cards and chart.
+                        </span>
+                        <span aria-hidden="true">
+                          Tags mark estimated cut-offs. Solid dot: driver. Ring: comparison. Values are metres
+                          into the straight; intervals appear in the cards and chart.
+                        </span>
                       </p>
                     </div>
                     <aside

@@ -2694,3 +2694,47 @@
     vertical-align: middle;
   }
 }
+
+@layer pages {
+  /* One driver keeps the two-card stage: the second slot is reserved, so the map never resizes. */
+  .driver-estimate.driver-poster.is-empty {
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: 1px dashed #ffffff24;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .driver-estimate.driver-poster.is-empty p {
+    margin: 0;
+    font:
+      400 var(--type-label)/1.4 KHF1,
+      monospace;
+    color: var(--muted);
+    text-align: center;
+  }
+  @media (min-width: 1000px) {
+    .estimate-stack[data-count='1'] {
+      grid-template-rows: repeat(2, minmax(412px, 1fr)) auto;
+      align-self: stretch;
+    }
+  }
+  @media (max-width: 999px) {
+    .driver-estimate.driver-poster.is-empty {
+      display: none;
+    }
+  }
+}
+
+@layer pages {
+  /* The footnote always reserves its longest wording, so the map height never depends on the comparison. */
+  .map-footnote {
+    display: grid;
+  }
+  .map-footnote > span {
+    grid-area: 1 / 1;
+  }
+  .map-footnote > span + span {
+    visibility: hidden;
+  }
+}
