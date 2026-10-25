@@ -110,6 +110,66 @@ function Flow({ value }: { value: number | null }) {
     </span>
   );
 }
+function HelpDot() {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
+  const popId = useId();
+  useEffect(() => {
+    if (!open) return;
+    pop.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      btn.current?.focus();
+    };
+    const onDown = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [open]);
+  return (
+    <div className="help-wrap" ref={wrap}>
+      <button
+        ref={btn}
+        type="button"
+        className="help-dot"
+        aria-label="How to read this"
+        aria-expanded={open}
+        aria-controls={popId}
+        onClick={() => setOpen((o) => !o)}
+      >
+        ?
+      </button>
+      <div
+        ref={pop}
+        id={popId}
+        className="help-pop"
+        role="dialog"
+        aria-label="How to read this"
+        tabIndex={-1}
+        data-open={open ? 'true' : 'false'}
+        aria-hidden={!open}
+      >
+        <ol>
+          <li>Pick a driver and a straight above.</li>
+          <li>The tag on the track marks where the estimate says electrical deployment ends.</li>
+          <li>The card shows the session median and the 95% interval in metres into the straight.</li>
+          <li>Lap by lap shows every lap's estimate; pick one to compare.</li>
+        </ol>
+        <a href="#method" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)}>
+          Reading guide <span aria-hidden="true">↓</span>
+        </a>
+      </div>
+    </div>
+  );
+}
 type LapEstimate = { lap: number; m: number };
 function LapDistribution({
   samples,
@@ -781,9 +841,12 @@ function App() {
                     <div className="map-surface" data-no-estimates={noEstimates ? 'true' : undefined}>
                       <div className="map-heading">
                         <h2>{straight?.label}</h2>
-                        <span className="utility">
-                          S{sid} / {fmt(straight?.len)} m
-                        </span>
+                        <div className="map-heading-end">
+                          <span className="utility">
+                            S{sid} / {fmt(straight?.len)} m
+                          </span>
+                          <HelpDot />
+                        </div>
                       </div>
                       <Rule on={pBusy || cBusy} />
                       {data.outline && straight ? (
