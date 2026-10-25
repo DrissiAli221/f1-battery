@@ -1516,6 +1516,10 @@
     mask-image: linear-gradient(90deg, transparent 0 45%, #0003 45% 65%, #0008 65% 85%, #000 85%);
     opacity: 0.32;
   }
+  /* The car poster carries the number and the car; the dot screen stays off it. */
+  .driver-poster .poster-screen {
+    opacity: 0;
+  }
   .poster-team {
     position: absolute;
     z-index: 3;
@@ -1562,14 +1566,15 @@
   .poster-number {
     position: absolute;
     z-index: 0;
-    right: 10px;
-    top: 8px;
+    /* Sits above the car's roofline so the digits are never cut; one clean glyph, no screen behind it. */
+    right: 14px;
+    top: 6px;
     font:
-      900 120px/1 F1Black,
+      900 86px/1 F1Black,
       sans-serif;
-    letter-spacing: -0.08em;
+    letter-spacing: -0.06em;
     color: var(--poster-ink);
-    opacity: 0.22;
+    opacity: 0.26;
   }
   .poster-car {
     position: absolute;
@@ -1663,7 +1668,7 @@
     font:
       900 56px/0.92 F1Black,
       sans-serif;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.07em;
     min-height: 64px;
     margin: 2px 0 0;
     display: flex;
