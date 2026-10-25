@@ -164,7 +164,7 @@
       sans-serif;
     text-transform: uppercase;
     letter-spacing: -0.015em;
-    color: rgba(9, 9, 9, 0.92);
+    color: #090909;
     text-shadow:
       0 1px 0.65px #fff3,
       0 -1px 0.8px #000b;
@@ -179,7 +179,7 @@
     -webkit-background-clip: text;
     text-shadow: none;
     filter: grayscale(1) brightness(0.9);
-    opacity: 0.28;
+    opacity: 0.14;
   }
   .method-plate > p {
     font:
