@@ -212,6 +212,172 @@ function Permutation() {
     </figure>
   );
 }
+const SD_UNIT: Record<string, string> = {
+  cutoff_dev_defender: 'm',
+  deploy_rel_diff: 'relative units',
+  pace_delta: 's',
+  tyre_age_diff: 'laps',
+  lap_number: 'laps',
+};
+const fmtSd = (n: number) => (n >= 100 ? int(Math.round(n)) : String(Number(n.toPrecision(3))));
+const pText = (p: number) => (p < 0.001 ? '<0.001' : fmt(p, 3));
+const RESULT_LABEL: Record<string, string> = { fail: 'failed', pass: 'passed', 'not testable': 'untestable' };
+/** One range-bar row mark: a zero/null line, an interval (line or band) and a square marker, in true pixels. */
+function RangeBar({
+  w,
+  h,
+  x,
+  zero,
+  lo,
+  hi,
+  v,
+  ink,
+  band,
+}: {
+  w: number;
+  h: number;
+  x: (n: number) => number;
+  zero: number;
+  lo: number;
+  hi: number;
+  v: number;
+  ink: boolean;
+  band?: boolean;
+}) {
+  return (
+    <svg className="range-bar" width={w} height={h} aria-hidden="true">
+      <line x1={x(zero)} x2={x(zero)} y1={0} y2={h} className="range-zero" />
+      {band ? (
+        <rect x={x(lo)} y={h / 2 - 4} width={Math.max(1, x(hi) - x(lo))} height={8} className="range-band" />
+      ) : (
+        <line x1={x(lo)} x2={x(hi)} y1={h / 2} y2={h / 2} className={ink ? 'range-ci is-ink' : 'range-ci'} />
+      )}
+      <rect
+        x={x(v) - 3}
+        y={h / 2 - 3}
+        width={6}
+        height={6}
+        className={ink ? 'range-point is-ink' : 'range-point'}
+      />
+    </svg>
+  );
+}
+const TERM_W = 160,
+  TERM_MIN = 0.5,
+  TERM_MAX = 3.5,
+  TERM_TICKS = [0.5, 1, 2, 3];
+const termX = (v: number) =>
+  4 + ((Math.log(v) - Math.log(TERM_MIN)) / (Math.log(TERM_MAX) - Math.log(TERM_MIN))) * (TERM_W - 8);
+function TermRows() {
+  return (
+    <div className="term-rows" role="list" aria-label="Full model odds ratios">
+      <div className="term-row term-head" aria-hidden="true">
+        <span>Term</span>
+        <svg width={TERM_W} height={20}>
+          {TERM_TICKS.map((n) => (
+            <text
+              key={n}
+              x={termX(n)}
+              y={14}
+              textAnchor={n === TERM_MIN ? 'start' : 'middle'}
+              className="forest-tick"
+            >
+              {fmt(n, 1)}
+            </text>
+          ))}
+        </svg>
+        <span>Odds ratio / 95% interval / p</span>
+      </div>
+      {findings.terms.map((t) => {
+        const ink = t.lo > 1 || t.hi < 1;
+        return (
+          <div className="term-row" role="listitem" key={t.term}>
+            <span className="term-label">
+              {(notes.terms as Record<string, string>)[t.term]}
+              <em>
+                {t.unit}
+                {t.sd != null && ` · 1 SD = ${fmtSd(t.sd)} ${SD_UNIT[t.term] ?? ''}`.trimEnd()}
+              </em>
+            </span>
+            <RangeBar w={TERM_W} h={18} x={termX} zero={1} lo={t.lo} hi={t.hi} v={t.or} ink={ink} />
+            <span className="term-value">
+              <strong>{fmt(t.or, 3)}</strong>{' '}
+              <span>
+                [{fmt(t.lo, 3)}, {fmt(t.hi, 3)}]
+              </span>
+              <small>p {pText(t.p)}</small>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+const MAKER_MIN = -100,
+  MAKER_MAX = 100;
+function MakerRows() {
+  const [ref, w] = useWidth<HTMLDivElement>(300);
+  const x = (v: number) => 8 + ((v - MAKER_MIN) / (MAKER_MAX - MAKER_MIN)) * (w - 16);
+  return (
+    <div className="maker-rows">
+      <div className="maker-row maker-head" aria-hidden="true">
+        <span />
+        <div ref={ref}>
+          <svg width={w} height={20}>
+            {[
+              [MAKER_MIN, '−100 m'],
+              [0, '0'],
+              [MAKER_MAX, '+100 m'],
+            ].map(([n, label]) => (
+              <text
+                key={label}
+                x={x(Number(n))}
+                y={14}
+                textAnchor={n === MAKER_MIN ? 'start' : n === MAKER_MAX ? 'end' : 'middle'}
+                className="forest-tick"
+              >
+                {label}
+              </text>
+            ))}
+          </svg>
+        </div>
+        <span />
+      </div>
+      {findings.makers.map((m) => (
+        <div className="maker-row" key={m.maker}>
+          <span className="maker-name">{m.maker}</span>
+          <RangeBar
+            w={w}
+            h={34}
+            x={x}
+            zero={0}
+            lo={m.mean_offset_m - m.sd_offset_m}
+            hi={m.mean_offset_m + m.sd_offset_m}
+            v={m.mean_offset_m}
+            ink
+            band
+          />
+          <strong>
+            {m.mean_offset_m > 0 ? '+' : ''}
+            {fmt(m.mean_offset_m, 1)} m
+          </strong>
+          <span className="maker-detail">
+            ±{fmt(m.sd_offset_m, 1)} m SD · {m.cells} cells · earliest in {fmt(m.share_earliest * 100, 1)}% of
+            cells
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+function openCheck(n: number) {
+  const d = document.getElementById(`check-${n}`) as HTMLDetailsElement | null;
+  if (!d) return;
+  d.open = true;
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  d.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' });
+  d.querySelector('summary')?.focus({ preventScroll: true });
+}
 function App() {
   useInitialAnchor();
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -433,9 +599,29 @@ function App() {
                   be tested. The expected signs were kept.
                 </p>
               </div>
+              <ul className="check-pills" aria-label="Spot-check results">
+                {notes.spot_checks.map((c) => (
+                  <li key={c.n}>
+                    <button
+                      type="button"
+                      className={`check-pill check-${c.result.replace(' ', '-')}`}
+                      title={RESULT_LABEL[c.result]}
+                      onClick={() => openCheck(c.n)}
+                    >
+                      <i aria-hidden="true" />
+                      <span>{c.moment}</span>
+                      <span className="sr-only"> ({RESULT_LABEL[c.result]})</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
               <div className="check-list">
                 {notes.spot_checks.map((c) => (
-                  <details key={c.n} className={`spot-check check-${c.result.replace(' ', '-')}`}>
+                  <details
+                    key={c.n}
+                    id={`check-${c.n}`}
+                    className={`spot-check check-${c.result.replace(' ', '-')}`}
+                  >
                     <summary>
                       <span className="check-number">{String(c.n).padStart(2, '0')}</span>
                       <span className="check-moment">{c.moment}</span>
@@ -468,35 +654,11 @@ function App() {
                   against 0. The cut-off deviation here is the fitted <strong>later-cut-off</strong>{' '}
                   direction.
                 </p>
-                <div
-                  className="finding-table-scroll"
-                  role="region"
-                  aria-label="Full model odds ratios"
-                  tabIndex={0}
-                >
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Term</th>
-                        <th>Odds ratio</th>
-                        <th>95% interval</th>
-                        <th>p</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {findings.terms.map((t) => (
-                        <tr key={t.term}>
-                          <th scope="row">{(notes.terms as Record<string, string>)[t.term]}</th>
-                          <td data-label="Odds ratio">{fmt(t.or, 3)}</td>
-                          <td data-label="95% interval">
-                            {fmt(t.lo, 3)}–{fmt(t.hi, 3)}
-                          </td>
-                          <td data-label="p">{t.p < 0.001 ? '<0.001' : fmt(t.p, 3)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <TermRows />
+                <p className="finding-small term-note">
+                  Square is the odds ratio, line the 95% interval, on a log scale; the tick marks 1, no
+                  association. Terms whose interval excludes 1 are drawn in white.
+                </p>
                 <p>
                   The energy terms together add no detectable improvement over the controls: likelihood-ratio
                   χ² {fmt(findings.energy_terms_lr.chi2)}, {findings.energy_terms_lr.df} degrees of freedom, p
@@ -512,36 +674,7 @@ function App() {
                   race/straight cell with at least three makers. Bands show ±1 standard deviation across
                   cells, not confidence intervals.
                 </p>
-                <div className="maker-axis" aria-hidden="true">
-                  <span>−100 m</span>
-                  <span>0</span>
-                  <span>+100 m</span>
-                </div>
-                <div className="maker-rows">
-                  {findings.makers.map((m) => (
-                    <div className="maker-row" key={m.maker}>
-                      <span>{m.maker}</span>
-                      <div className="maker-plot" aria-hidden="true">
-                        <i className="maker-zero" />
-                        <i
-                          className="maker-spread"
-                          style={{
-                            left: `${50 + (m.mean_offset_m - m.sd_offset_m) / 2}%`,
-                            width: `${m.sd_offset_m}%`,
-                          }}
-                        />
-                        <i className="maker-mean" style={{ left: `${50 + m.mean_offset_m / 2}%` }} />
-                      </div>
-                      <strong>
-                        {m.mean_offset_m > 0 ? '+' : ''}
-                        {fmt(m.mean_offset_m, 1)} m
-                      </strong>
-                      <span className="maker-detail">
-                        ±{fmt(m.sd_offset_m, 1)} m SD · {m.cells} cells
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <MakerRows />
                 <p>
                   Honda represents two cars. Drag, mass assumptions and car-to-car differences cannot be
                   separated here. A difference in this proxy is not a difference in battery or energy

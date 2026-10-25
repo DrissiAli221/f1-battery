@@ -198,14 +198,6 @@
   .check-status {
     font-size: 12px;
   }
-  .finding-table-scroll {
-    overscroll-behavior-inline: contain;
-  }
-  .finding-table-scroll thead th {
-    position: sticky;
-    top: 0;
-    background: #111110;
-  }
   .spot-check summary {
     min-height: 84px;
   }
@@ -734,58 +726,6 @@
   .skip {
     z-index: 100;
   }
-  @media (max-width: 720px) {
-    .full-model .finding-table-scroll {
-      overflow: visible;
-    }
-    .full-model .finding-table-scroll table {
-      min-width: 0;
-      display: block;
-    }
-    .full-model .finding-table-scroll thead {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-    }
-    .full-model .finding-table-scroll tbody {
-      display: block;
-    }
-    .full-model .finding-table-scroll tbody tr {
-      display: grid;
-      grid-template-columns: 1fr 1.35fr 0.8fr;
-      gap: 14px 8px;
-      padding-block: 20px;
-      border-bottom: 1px solid #ffffff20;
-    }
-    .full-model .finding-table-scroll th {
-      grid-column: 1/-1;
-      padding: 0;
-      border: 0;
-      white-space: normal;
-      font-size: 12px;
-      line-height: 1.6;
-    }
-    .full-model .finding-table-scroll td {
-      display: block;
-      border: 0;
-      padding: 0;
-      text-align: left;
-      font-size: 12px;
-    }
-    .full-model .finding-table-scroll td::before {
-      content: attr(data-label);
-      display: block;
-      margin-bottom: 6px;
-      font:
-        400 10px/1.5 KHF1,
-        monospace;
-      text-transform: uppercase;
-      color: #aead9f;
-    }
-  }
 
   /* The skip link must sit above the sticky masthead, and phone maps avoid unreadable corner numbers. */
   @media (max-width: 480px) {
@@ -873,15 +813,6 @@
     }
     .method-hero h1 {
       font-size: clamp(54px, 7.4vw, 78px);
-    }
-    .full-model .finding-table-scroll table {
-      min-width: 0;
-    }
-    .full-model .finding-table-scroll th:first-child {
-      white-space: normal;
-      max-width: 280px;
-      width: 43%;
-      line-height: 1.6;
     }
   }
 
