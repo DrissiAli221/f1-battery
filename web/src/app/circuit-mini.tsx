@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { getJson, url } from '../lib/api';
 import { circuitMeta } from '../track/circuits';
 
 const SIZE = 200;
@@ -13,56 +15,89 @@ interface Mini {
 
 const CACHE = new Map<number, Mini | null>();
 
+type Pts = Array<[number, number]>;
+
 /** Closed outline path in the session map's orientation (y flipped, turned by rotation - 90 degrees). */
+function layout(sil: Pts, rotation: number): Mini | null {
+  if (sil.length <= 3) return null;
+  const turn = (a: number) => {
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    return sil.map(([x, y]) => ({ x: x * c + y * s, y: x * s - y * c }));
+  };
+  // Same rule as the session map: broadcast turn of (rotation - 90) degrees, then a further
+  // quarter when the shape would stand tall in a wide box.
+  let a = ((rotation - 90) * Math.PI) / 180;
+  let pts = turn(a);
+  const ext = (v: number[]) => Math.max(...v) - Math.min(...v);
+  if (ext(pts.map((p) => p.y)) > ext(pts.map((p) => p.x))) {
+    a += Math.PI / 2;
+    pts = turn(a);
+  }
+  const xs = pts.map((p) => p.x);
+  const ys = pts.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+  const bw = Math.max(...xs) - minX || 1;
+  const bh = Math.max(...ys) - minY || 1;
+  const k = (SIZE * (1 - 2 * PAD)) / Math.max(bw, bh);
+  const w = bw * k + SIZE * 2 * PAD;
+  const h = bh * k + SIZE * 2 * PAD;
+  const px = pts.map((p) => ({ x: (p.x - minX) * k + SIZE * PAD, y: (p.y - minY) * k + SIZE * PAD }));
+  const f = (n: number) => n.toFixed(1);
+  const d = px.map((p, i) => `${i ? 'L' : 'M'}${f(p.x)} ${f(p.y)}`).join('') + 'Z';
+  // Start/finish tick, perpendicular to the path at the first point.
+  const n = px[1];
+  const m = px[px.length - 1];
+  const tx = n.x - m.x;
+  const ty = n.y - m.y;
+  const len = Math.hypot(tx, ty) || 1;
+  const nx = (-ty / len) * (TICK / 2);
+  const ny = (tx / len) * (TICK / 2);
+  const tick = `M${f(px[0].x - nx)} ${f(px[0].y - ny)}L${f(px[0].x + nx)} ${f(px[0].y + ny)}`;
+  return { d, w, h, tick };
+}
+
 function build(circuit: number): Mini | null {
   const hit = CACHE.get(circuit);
   if (hit !== undefined) return hit;
   const meta = circuitMeta(circuit);
   const sil = meta?.silhouette;
-  let out: Mini | null = null;
-  if (sil && sil.length > 3) {
-    const turn = (a: number) => {
-      const c = Math.cos(a);
-      const s = Math.sin(a);
-      return sil.map(([x, y]) => ({ x: x * c + y * s, y: x * s - y * c }));
-    };
-    // Same rule as the session map: broadcast turn of (rotation - 90) degrees, then a further
-    // quarter when the shape would stand tall in a wide box.
-    let a = (((meta?.rotation ?? 90) - 90) * Math.PI) / 180;
-    let pts = turn(a);
-    const ext = (v: number[]) => Math.max(...v) - Math.min(...v);
-    if (ext(pts.map((p) => p.y)) > ext(pts.map((p) => p.x))) {
-      a += Math.PI / 2;
-      pts = turn(a);
-    }
-    const xs = pts.map((p) => p.x);
-    const ys = pts.map((p) => p.y);
-    const minX = Math.min(...xs);
-    const minY = Math.min(...ys);
-    const bw = Math.max(...xs) - minX || 1;
-    const bh = Math.max(...ys) - minY || 1;
-    const k = (SIZE * (1 - 2 * PAD)) / Math.max(bw, bh);
-    const w = bw * k + SIZE * 2 * PAD;
-    const h = bh * k + SIZE * 2 * PAD;
-    const px = pts.map((p) => ({ x: (p.x - minX) * k + SIZE * PAD, y: (p.y - minY) * k + SIZE * PAD }));
-    const f = (n: number) => n.toFixed(1);
-    const d = px.map((p, i) => `${i ? 'L' : 'M'}${f(p.x)} ${f(p.y)}`).join('') + 'Z';
-    // Start/finish tick, perpendicular to the path at the first point.
-    const n = px[1];
-    const m = px[px.length - 1];
-    const tx = n.x - m.x;
-    const ty = n.y - m.y;
-    const len = Math.hypot(tx, ty) || 1;
-    const nx = (-ty / len) * (TICK / 2);
-    const ny = (tx / len) * (TICK / 2);
-    const tick = `M${f(px[0].x - nx)} ${f(px[0].y - ny)}L${f(px[0].x + nx)} ${f(px[0].y + ny)}`;
-    out = { d, w, h, tick };
-  }
+  const out = sil ? layout(sil as Pts, meta?.rotation ?? 90) : null;
   CACHE.set(circuit, out);
   return out;
 }
 
-/** A small outline of a circuit from its stored silhouette. Pure; the box is reserved even without one. */
+/** Fallback outlines from the recorded lap, for circuits with no stored silhouette. */
+const RECORDED = new Map<number, Mini | null>();
+
+function useRecorded(circuit: number | null | undefined, enabled: boolean): Mini | null {
+  const [, bump] = useState(0);
+  useEffect(() => {
+    if (!enabled || circuit === null || circuit === undefined || RECORDED.has(circuit)) return;
+    let live = true;
+    getJson<{ points: Array<{ x: number; y: number }> }>(url(`/circuits/${circuit}/outline`))
+      .then((r) =>
+        RECORDED.set(
+          circuit,
+          layout(
+            r.points.map((p) => [p.x, p.y]),
+            0
+          )
+        )
+      )
+      .catch(() => RECORDED.set(circuit, null))
+      .finally(() => {
+        if (live) bump((n) => n + 1);
+      });
+    return () => {
+      live = false;
+    };
+  }, [circuit, enabled]);
+  return enabled && circuit !== null && circuit !== undefined ? (RECORDED.get(circuit) ?? null) : null;
+}
+
+/** A small outline of a circuit from its stored silhouette, or the recorded lap when none is stored. Pure for stored ones; the box is reserved even without one. */
 export function CircuitMini({
   circuit,
   className,
@@ -75,7 +110,9 @@ export function CircuitMini({
   /** Stroke width in CSS px (non-scaling), so it can be matched to the type weight beside it. */
   weight?: number;
 }) {
-  const mini = circuit === null || circuit === undefined ? null : build(circuit);
+  const stored = circuit === null || circuit === undefined ? null : build(circuit);
+  const recorded = useRecorded(circuit, !stored);
+  const mini = stored ?? recorded;
   const w = mini?.w ?? SIZE;
   const h = mini?.h ?? SIZE;
   return (
