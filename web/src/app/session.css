@@ -919,7 +919,7 @@
     border-bottom: 1px solid #5a5a53;
     border-radius: 0;
     background:
-      radial-gradient(ellipse at 0 0, color-mix(in srgb, var(--team) 14%, transparent), transparent 85%),
+      radial-gradient(ellipse at 0 0, color-mix(in srgb, var(--team) 20%, transparent), transparent 85%),
       #181817;
     color: #f4f4ef;
     text-align: left;
@@ -934,6 +934,7 @@
     position: relative;
   }
   .select-team-stripe {
+    display: none;
     width: 3px;
     flex-shrink: 0;
     align-self: stretch;
@@ -1148,7 +1149,7 @@
       grid-column: auto;
     }
     .select-trigger .select-team-stripe {
-      display: block;
+      display: none;
     }
     .select-trigger .select-code {
       display: block;
