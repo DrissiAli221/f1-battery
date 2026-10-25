@@ -111,7 +111,7 @@ function Flow({ value }: { value: number | null }) {
     </span>
   );
 }
-function Info({ label, children }: { label: string; children: string }) {
+export function Info({ label, children }: { label: string; children: string }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btn = useRef<HTMLButtonElement>(null);
