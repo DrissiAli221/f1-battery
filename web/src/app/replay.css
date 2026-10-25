@@ -1163,6 +1163,21 @@
   }
 }
 
+/* Play lap: a compact secondary button with a fixed width, so "Play lap" and "Pause" never shift the row. */
+@layer overrides {
+  .review-distance .distance-play {
+    box-sizing: border-box;
+    width: 84px;
+    min-height: 24px;
+    height: 24px;
+    margin: -4px 0 -4px 12px;
+    padding: 0;
+    font-size: 11px;
+    line-height: 1;
+    align-self: center;
+  }
+}
+
 @property --fog {
   syntax: '<color>';
   inherits: true;

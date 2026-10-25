@@ -109,6 +109,53 @@ function ReplaySession({
     [regimes.data, regimes.loading, lap]
   );
   const [dim, setDim] = useState(false);
+  // The inspect cursor can play along the lap on its own: one lap in ~24 s from elapsed time, never a timer tick count.
+  const [playing, setPlaying] = useState(false);
+  const cursorNow = useRef(cursor);
+  cursorNow.current = cursor;
+  const lapSpan = Math.max(0, (data.lap ?? 50) - 1);
+  const canPlay = mode === 'review' && bins.length > 0 && lapSpan > 0;
+  useEffect(() => {
+    if (!playing) return;
+    if (!canPlay) {
+      setPlaying(false);
+      return;
+    }
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0;
+    let last = performance.now();
+    let pos = cursorNow.current;
+    let held = 0;
+    const tick = (now: number) => {
+      const dt = Math.min(now - last, 250);
+      last = now;
+      if (Math.abs(cursorNow.current - Math.round(pos)) > 1) pos = cursorNow.current;
+      if (reduced) {
+        // Reduced motion: hop in 50 m bins at a slower rate instead of sweeping.
+        held += dt;
+        if (held >= 600) {
+          held = 0;
+          pos = Math.floor(pos / 50 + 1) * 50;
+          if (pos > lapSpan) pos = 0;
+          setCursor(pos);
+        }
+      } else {
+        pos += (dt / 24000) * lapSpan;
+        if (pos > lapSpan) pos -= lapSpan;
+        setCursor(Math.round(pos));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    const hide = () => {
+      if (document.hidden) setPlaying(false);
+    };
+    document.addEventListener('visibilitychange', hide);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('visibilitychange', hide);
+    };
+  }, [playing, canPlay, lapSpan]);
   useEffect(() => {
     if (!regimes.loading) {
       setDim(false);
@@ -375,6 +422,15 @@ function ReplaySession({
                           Drag to inspect the estimates at a distance along the lap; positions are
                           approximate.
                         </Info>
+                        <button
+                          type="button"
+                          className="button button-secondary distance-play"
+                          aria-pressed={playing}
+                          disabled={!canPlay}
+                          onClick={() => setPlaying((p) => !p)}
+                        >
+                          {playing ? 'Pause' : 'Play lap'}
+                        </button>
                       </div>
                       <span style={{ color: colours[selectedRegime ?? 'other'] }}>
                         {regimes.loading
@@ -394,7 +450,11 @@ function ReplaySession({
                       step="1"
                       value={cursor}
                       disabled={!bins.length}
-                      onChange={(e) => setCursor(Number(e.target.value))}
+                      onPointerDown={() => setPlaying(false)}
+                      onChange={(e) => {
+                        setPlaying(false);
+                        setCursor(Number(e.target.value));
+                      }}
                     />
                     <div className="review-distance-labels">
                       <span>Start / finish</span>
