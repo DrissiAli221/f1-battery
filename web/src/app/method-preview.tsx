@@ -16,63 +16,75 @@ import './section-nav.css';
 
 gsap.registerPlugin(ScrollTrigger);
 // These labels summarise the recorded consequences; they do not turn mixed checks into passes.
-const outcomes: Record<string, { label: string; tone: string; group: string; short: string }> = {
-  'phase-s-super-clip': {
-    label: 'Artifact removed',
-    tone: 'bad',
-    group: 'Feasibility',
-    short:
-      'The apparent harvest segments came from braking leaking through the smoothing window. They were not claimed.',
-  },
-  'phase-s-taper': {
-    label: 'Not demonstrated',
-    tone: 'warn',
-    group: 'Feasibility',
-    short:
-      'The expected power-taper break could not be separated from tow, Overtake state and unobserved active aero.',
-  },
-  'phase3-differentiation': {
-    label: 'SG-9 retained',
-    tone: 'neutral',
-    group: 'Estimator',
-    short:
-      'The short Savitzky–Golay window performed best outside the discarded brake-onset region. Synthetic truth remains idealised.',
-  },
-  'phase3-hinge-detector': {
-    label: 'Experimental',
-    tone: 'warn',
-    group: 'Estimator',
-    short:
-      'The hinge detector failed its Singapore reproduction check. Threshold crossing became the primary cut-off.',
-  },
-  'drag-area-identifiability': {
-    label: 'Limitation retained',
-    tone: 'warn',
-    group: 'Estimator',
-    short:
-      'Per-car drag could not be identified reliably. A session-wide value is used and flagged as an assumption.',
-  },
-  'data-quality': {
-    label: 'Exclusions recorded',
-    tone: 'neutral',
-    group: 'Data quality',
-    short:
-      'Coverage and clock checks found a truncated backup, a confirmed feed gap and unusable Hungary race timing.',
-  },
-  'spot-checks': {
-    label: '3 failed',
-    tone: 'bad',
-    group: 'Validation',
-    short: 'Three checks failed, one passed and one was not testable. Their expected signs were not changed.',
-  },
-  'frozen-hypothesis-test': {
-    label: 'No effect',
-    tone: 'neutral',
-    group: 'Validation',
-    short:
-      'The frozen test found no detectable signal beyond its controls with this estimator and selected sample.',
-  },
-};
+const repoBlob = 'https://github.com/DrissiAli221/f1-battery/blob/main/';
+// `pill` is the short status word on the timeline; `label` is the fuller recorded status, kept in the details.
+const outcomes: Record<string, { label: string; pill: string; tone: string; group: string; short: string }> =
+  {
+    'phase-s-super-clip': {
+      label: 'Artifact removed',
+      pill: 'artifact removed',
+      tone: 'bad',
+      group: 'Feasibility',
+      short:
+        'The apparent harvest segments came from braking leaking through the smoothing window. They were not claimed.',
+    },
+    'phase-s-taper': {
+      label: 'Not demonstrated',
+      pill: 'not demonstrated',
+      tone: 'warn',
+      group: 'Feasibility',
+      short:
+        'The expected power-taper break could not be separated from tow, Overtake state and unobserved active aero.',
+    },
+    'phase3-differentiation': {
+      label: 'SG-9 retained',
+      pill: 'retained',
+      tone: 'good',
+      group: 'Estimator',
+      short:
+        'The short Savitzky–Golay window performed best outside the discarded brake-onset region. Synthetic truth remains idealised.',
+    },
+    'phase3-hinge-detector': {
+      label: 'Experimental',
+      pill: 'experimental',
+      tone: 'warn',
+      group: 'Estimator',
+      short:
+        'The hinge detector failed its Singapore reproduction check. Threshold crossing became the primary cut-off.',
+    },
+    'drag-area-identifiability': {
+      label: 'Limitation retained',
+      pill: 'limitation',
+      tone: 'warn',
+      group: 'Estimator',
+      short:
+        'Per-car drag could not be identified reliably. A session-wide value is used and flagged as an assumption.',
+    },
+    'data-quality': {
+      label: 'Exclusions recorded',
+      pill: 'explained',
+      tone: 'neutral',
+      group: 'Data quality',
+      short:
+        'Coverage and clock checks found a truncated backup, a confirmed feed gap and unusable Hungary race timing.',
+    },
+    'spot-checks': {
+      label: '3 failed',
+      pill: '3 failed',
+      tone: 'bad',
+      group: 'Validation',
+      short:
+        'Three checks failed, one passed and one was not testable. Their expected signs were not changed.',
+    },
+    'frozen-hypothesis-test': {
+      label: 'No effect',
+      pill: 'no effect',
+      tone: 'neutral',
+      group: 'Validation',
+      short:
+        'The frozen test found no detectable signal beyond its controls with this estimator and selected sample.',
+    },
+  };
 const steps = [
   [
     'Public telemetry',
@@ -91,13 +103,6 @@ const steps = [
     'The frozen model controls for pace, tyre age, lap number, Overtake availability and session.',
   ],
 ];
-const date = (iso: string) =>
-  new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(iso + 'T00:00:00Z'));
 function App() {
   useInitialAnchor();
   const [filter, setFilter] = useState('All entries');
@@ -314,6 +319,10 @@ function App() {
                   than rewriting the original outcome.
                 </p>
               </div>
+              <div className="record-intro">
+                <h3>{log.title}</h3>
+                <p>{log.intro}</p>
+              </div>
               <div className="record-filters" role="group" aria-label="Method topic">
                 {['All entries', 'Feasibility', 'Data quality', 'Estimator', 'Validation'].map((f) => (
                   <button
@@ -331,62 +340,72 @@ function App() {
               <p className="record-count" role="status">
                 {entries.length} of {log.entries.length} recorded entries
               </p>
-              <div key={filter} className={`method-entries${switched ? ' switch-in' : ''}`}>
+              <ol key={filter} className={`method-timeline${switched ? ' switch-in' : ''}`}>
                 {entries.map((e) => {
                   const outcome = outcomes[e.id];
-                  const index = log.entries.findIndex((x) => x.id === e.id);
+                  const figure = 'figure' in e ? e.figure : null;
                   return (
-                    <details className={`method-entry outcome-${outcome.tone}`} id={e.id} key={e.id}>
-                      <summary>
-                        <span className="entry-number">{String(index + 1).padStart(2, '0')}</span>
-                        <span className="entry-overview">
-                          <span className="entry-title">{e.title}</span>
-                          <span className="entry-meta">
-                            {e.phase} <span aria-hidden="true">/</span>{' '}
-                            <time dateTime={e.date}>{date(e.date)}</time>
-                          </span>
-                          <span className="entry-short">{outcome.short}</span>
-                        </span>
-                        <span className="entry-status">{outcome.label}</span>
-                        <span className="entry-toggle" aria-hidden="true">
-                          +
-                        </span>
-                      </summary>
-                      <div className="entry-detail">
-                        <dl>
-                          {[
-                            ['Tried', e.tried],
-                            ['Pre-set check', e.check],
-                            ['Found', e.found],
-                            ['Changed', e.consequence],
-                          ].map(([label, copy]) => (
-                            <div key={label}>
-                              <dt>{label}</dt>
-                              <dd>{copy}</dd>
-                            </div>
-                          ))}
-                        </dl>
-                        <div className="entry-sources">
+                    <li className={`tl-entry tone-${outcome.tone}`} id={e.id} key={e.id}>
+                      <span className="tl-node" aria-hidden="true" />
+                      <div className="tl-when">
+                        <time dateTime={e.date}>{e.date}</time>
+                        <span className="tl-chip">{e.phase}</span>
+                      </div>
+                      <div className="tl-what">
+                        <div className="tl-head">
+                          <h3>{e.title}</h3>
+                          <span className="tl-pill">{outcome.pill}</span>
+                        </div>
+                        <p className="tl-short">{outcome.short}</p>
+                        {figure && (
+                          <figure className="tl-figure">
+                            <img src={'/' + figure.src} width="320" alt={figure.alt} loading="lazy" />
+                            <figcaption>{figure.caption}</figcaption>
+                          </figure>
+                        )}
+                        <div className="tl-sources">
                           <span>Source notes</span>
                           <ul>
                             {e.sources.map((source) => (
                               <li key={source.path}>
-                                <code>{source.label}</code>
+                                <a href={repoBlob + source.path} target="_blank" rel="noreferrer">
+                                  {source.label}
+                                </a>
                               </li>
                             ))}
                           </ul>
                         </div>
-                        {e.id === 'phase-s-taper' && (
-                          <p className="regulation-reference">
-                            Regulation reference: FIA Section C, Issue 20 (5 August 2026), Article C5.2.8, as
-                            recorded in docs/regulations.md. Per-event limits remain flagged where unknown.
-                          </p>
-                        )}
+                        <details className="tl-details">
+                          <summary>
+                            Details <span aria-hidden="true">+</span>
+                          </summary>
+                          <dl>
+                            {[
+                              ['Recorded status', outcome.label],
+                              ['Tried', e.tried],
+                              ['Pre-set check', e.check],
+                              ['Found', e.found],
+                              ['Changed', e.consequence],
+                            ].map(([label, copy]) => (
+                              <div key={label}>
+                                <dt>{label}</dt>
+                                <dd>{copy}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                          {e.id === 'phase-s-taper' && (
+                            <p className="regulation-reference">
+                              Regulation reference: FIA Section C, Issue 20 (5 August 2026), Article C5.2.8,
+                              as recorded in docs/regulations.md. Per-event limits remain flagged where
+                              unknown.
+                            </p>
+                          )}
+                        </details>
                       </div>
-                    </details>
+                    </li>
                   );
                 })}
-              </div>
+              </ol>
             </div>
           </section>
           <section aria-labelledby="boundaries-title" className="band band-solid">
