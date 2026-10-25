@@ -78,7 +78,7 @@
     grid-template-columns: 1fr 1fr 1fr;
     align-items: end;
     gap: 24px;
-    padding-block: var(--section-pad);
+    padding-block: 28px 36px;
   }
   .replay-lap > span {
     display: block;
@@ -147,7 +147,7 @@
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 24px;
     align-items: start;
-    padding-block: var(--section-pad);
+    padding-block: 40px var(--section-pad);
   }
   .replay-map-panel {
     min-width: 0;
@@ -771,6 +771,18 @@
   }
   .replay-state {
     min-height: 24px;
+    align-self: end;
+  }
+  @media (min-width: 1001px) {
+    .replay-state {
+      min-height: 58px;
+    }
+  }
+  /* The stage band is transparent here: no tint running through the page ground, one top hairline. */
+  .replay-main .band {
+    background: transparent;
+    border-block: 0;
+    box-shadow: 0 1px 0 var(--band-line) inset;
   }
   @media (max-width: 720px) {
     .replay-skel-map {
