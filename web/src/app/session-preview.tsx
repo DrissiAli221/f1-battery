@@ -124,8 +124,8 @@ function Info({ label, children }: { label: string; children: string }) {
     setOpen(false);
   };
   useEffect(() => () => window.clearTimeout(timer.current), []);
-  useLayoutEffect(() => {
-    if (!open || !btn.current || !tip.current) return;
+  const place = () => {
+    if (!btn.current || !tip.current) return;
     const b = btn.current.getBoundingClientRect();
     const w = tip.current.offsetWidth;
     const h = tip.current.offsetHeight;
@@ -135,6 +135,9 @@ function Info({ label, children }: { label: string; children: string }) {
     let top = b.bottom + 8;
     if (top + h > innerHeight - 8) top = Math.max(8, b.top - h - 8);
     setPos({ top, left });
+  };
+  useLayoutEffect(() => {
+    if (open) place();
   }, [open]);
   useEffect(() => {
     if (!open) return;
@@ -144,11 +147,11 @@ function Info({ label, children }: { label: string; children: string }) {
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onDown);
-    window.addEventListener('scroll', close, { passive: true });
+    window.addEventListener('scroll', place, { passive: true });
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('scroll', close);
+      window.removeEventListener('scroll', place);
     };
   }, [open]);
   return (
@@ -824,11 +827,6 @@ function App() {
                     <aside className="estimate-stack" data-count="2" aria-hidden="true">
                       <article className="driver-estimate driver-poster skel" />
                       <article className="driver-estimate driver-poster compare-estimate skel" />
-                      {!compared && (
-                        <div className="driver-estimate driver-poster is-empty" aria-hidden="true">
-                          <p>Pick a driver to compare</p>
-                        </div>
-                      )}
                       <div className="estimate-actions">
                         <span className="text-toggle" style={{ visibility: 'hidden' }}>
                           Use session median
@@ -843,13 +841,7 @@ function App() {
                 <div className="wrap analysis-layout">
                   <div className="driver-tower">
                     <div className="analysis-heading">
-                      <h2>
-                        Drivers.
-                        <Info label="the driver tower">
-                          Session medians for every driver on the selected straight, in alphabetical order.
-                          Pick a row to set the driver.
-                        </Info>
-                      </h2>
+                      <h2>Drivers.</h2>
                       <span className="utility">Cut-off / m est.</span>
                     </div>
                     <p className="quiet-note">Alphabetical order · session medians</p>
@@ -861,13 +853,7 @@ function App() {
                   </div>
                   <div className="lap-panel">
                     <div className="analysis-heading">
-                      <h2>
-                        Lap by lap.
-                        <Info label="the lap chart">
-                          Each dot is one lap&apos;s estimated cut-off on the selected straight. Estimates,
-                          not measurements; pick a lap to compare both drivers on it.
-                        </Info>
-                      </h2>
+                      <h2>Lap by lap.</h2>
                     </div>
                     <Rule on />
                     <p className="quiet-note">
@@ -1087,7 +1073,13 @@ function App() {
                 <div className="wrap analysis-layout">
                   <div className="driver-tower">
                     <div className="analysis-heading">
-                      <h2>Drivers.</h2>
+                      <h2>
+                        Drivers.
+                        <Info label="the driver tower">
+                          Session medians for every driver on the selected straight, in alphabetical order.
+                          Pick a row to set the driver.
+                        </Info>
+                      </h2>
                       <span className="utility">Cut-off / m est.</span>
                     </div>
                     <p className="quiet-note">Alphabetical order · session medians</p>
@@ -1146,7 +1138,13 @@ function App() {
                   </div>
                   <div className="lap-panel" id="lap-chart" tabIndex={-1}>
                     <div className="analysis-heading">
-                      <h2>Lap by lap.</h2>
+                      <h2>
+                        Lap by lap.
+                        <Info label="the lap chart">
+                          Each dot is one lap&apos;s estimated cut-off on the selected straight. Estimates,
+                          not measurements; pick a lap to compare both drivers on it.
+                        </Info>
+                      </h2>
                       <span className="utility">{straight?.label}</span>
                     </div>
                     <Rule on={pBusy || cBusy} />

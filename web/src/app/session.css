@@ -2623,6 +2623,7 @@
     display: grid;
     place-items: center;
     cursor: help;
+    text-transform: none;
     transition:
       border-color 160ms var(--ease),
       color 160ms var(--ease);
@@ -2692,37 +2693,6 @@
   }
   .analysis-heading h2 .info {
     vertical-align: middle;
-  }
-}
-
-@layer pages {
-  /* One driver keeps the two-card stage: the second slot is reserved, so the map never resizes. */
-  .driver-estimate.driver-poster.is-empty {
-    display: grid;
-    place-items: center;
-    background: transparent;
-    border: 1px dashed #ffffff24;
-    box-shadow: none;
-    pointer-events: none;
-  }
-  .driver-estimate.driver-poster.is-empty p {
-    margin: 0;
-    font:
-      400 var(--type-label)/1.4 KHF1,
-      monospace;
-    color: var(--muted);
-    text-align: center;
-  }
-  @media (min-width: 1000px) {
-    .estimate-stack[data-count='1'] {
-      grid-template-rows: repeat(2, minmax(412px, 1fr)) auto;
-      align-self: stretch;
-    }
-  }
-  @media (max-width: 999px) {
-    .driver-estimate.driver-poster.is-empty {
-      display: none;
-    }
   }
 }
 
