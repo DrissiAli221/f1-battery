@@ -32,7 +32,8 @@ export function createPixelButton(element, { interactive = true } = {}) {
       .map((n) => n.textContent.trim())
       .join(' ');
   element.classList.add('pixel-button');
-  element.setAttribute('aria-label', label);
+  // An aria-label the markup already carries (e.g. "View estimates, Italian Grand Prix Race") is kept.
+  if (!element.hasAttribute('aria-label')) element.setAttribute('aria-label', label);
   const window = node('pixel-window');
   const strip = node('pixel-strip');
   window.append(strip);
