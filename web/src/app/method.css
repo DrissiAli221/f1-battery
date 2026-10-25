@@ -166,11 +166,9 @@
     letter-spacing: -0.015em;
     color: #090909;
     text-shadow:
-      0 1px 0 #fff4,
-      0 2px 1px #fff1,
-      0 -1px 0 #000,
-      0 -2px 1.5px #0009,
-      0 -3px 4px #0005;
+      0 1px 0 #fff3,
+      0 -1px 0 #000c,
+      0 -2px 2px #0006;
   }
   .method-plate .card-grain {
     position: absolute;

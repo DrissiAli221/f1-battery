@@ -67,10 +67,13 @@ export function CircuitMini({
   circuit,
   className,
   label,
+  weight = 5,
 }: {
   circuit: number | null | undefined;
   className?: string;
   label?: string;
+  /** Stroke width in CSS px (non-scaling), so it can be matched to the type weight beside it. */
+  weight?: number;
 }) {
   const mini = circuit === null || circuit === undefined ? null : build(circuit);
   const w = mini?.w ?? SIZE;
@@ -83,7 +86,7 @@ export function CircuitMini({
       height={h}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.6}
+      strokeWidth={weight}
       strokeLinejoin="round"
       strokeLinecap="round"
       role={label ? 'img' : undefined}
@@ -94,7 +97,12 @@ export function CircuitMini({
       {mini ? (
         <>
           <path d={mini.d} vectorEffect="non-scaling-stroke" />
-          <path d={mini.tick} vectorEffect="non-scaling-stroke" strokeLinecap="butt" strokeWidth={2.4} />
+          <path
+            d={mini.tick}
+            vectorEffect="non-scaling-stroke"
+            strokeLinecap="butt"
+            strokeWidth={weight * 1.3}
+          />
         </>
       ) : null}
     </svg>
