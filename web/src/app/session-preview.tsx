@@ -860,7 +860,10 @@ function App() {
                     className="map-stage"
                     style={
                       picked?.team_colour
-                        ? ({ '--stage-team': picked.team_colour } as CSSProperties)
+                        ? ({
+                            '--stage-team': picked.team_colour,
+                            '--stage-compare': compared?.team_colour ?? 'transparent',
+                          } as CSSProperties)
                         : undefined
                     }
                   >

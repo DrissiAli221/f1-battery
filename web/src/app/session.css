@@ -1182,7 +1182,7 @@
     opacity: 0.16;
   }
   .session-preview .tmap__straight.is-on.is-blend .tmap__fill {
-    opacity: 0.28;
+    opacity: 0.2;
   }
   .tmap__blend {
     fill: none;
@@ -2425,6 +2425,11 @@
   inherits: true;
   initial-value: transparent;
 }
+@property --stage-compare {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
 @layer pages {
   .hero-band {
     position: relative;
@@ -2445,7 +2450,9 @@
       animation: bloom-drift 18s ease-in-out infinite alternate;
     }
     .map-stage {
-      transition: --stage-team 400ms var(--ease);
+      transition:
+        --stage-team 360ms var(--ease),
+        --stage-compare 360ms var(--ease);
     }
   }
   @keyframes bloom-drift {
@@ -2463,11 +2470,17 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background: radial-gradient(
-      ellipse 85% 90% at 30% 25%,
-      color-mix(in srgb, var(--stage-team) 10%, transparent),
-      transparent 75%
-    );
+    background:
+      radial-gradient(
+        ellipse 80% 85% at 20% 20%,
+        color-mix(in srgb, var(--stage-team) 6%, transparent),
+        transparent 80%
+      ),
+      radial-gradient(
+        ellipse 80% 85% at 85% 80%,
+        color-mix(in srgb, var(--stage-compare) 6%, transparent),
+        transparent 80%
+      );
   }
   .feed-readout > span .feed-code {
     font-weight: inherit;
