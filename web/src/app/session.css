@@ -1181,6 +1181,20 @@
   .session-preview .tmap__straight.is-on .tmap__fill {
     opacity: 0.16;
   }
+  .session-preview .tmap__straight.is-on.is-blend .tmap__fill {
+    opacity: 0.28;
+  }
+  .tmap__blend {
+    fill: none;
+    stroke-linecap: butt;
+    stroke-linejoin: round;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 360ms var(--ease-out);
+  }
+  .tmap__blend.is-on {
+    opacity: 0.08;
+  }
   .session-preview .tmap__glow.is-on {
     opacity: 0.018;
   }

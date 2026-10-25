@@ -93,6 +93,8 @@ export interface TrackMapProps {
   selected?: number | null;
   onSelect?: (id: number) => void;
   runs?: MapRun[];
+  /** Two team colours (picked, compared): the picked straight's fill and the outline carry a faint A to B blend. */
+  blend?: [string, string] | null;
   tags?: MapTag[];
   ticks?: MapTick[];
   /** A cursor dot bound to a straight: `store` holds metres along it. */
@@ -309,6 +311,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     selected = null,
     onSelect,
     runs = NONE as never[],
+    blend,
     tags = NONE as never[],
     ticks = NONE as never[],
     cursor = null,
@@ -910,6 +913,29 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
             ))}
             <path d={T.pathD} className="tmap__edge" strokeWidth={outer} />
             <path d={T.pathD} className="tmap__ground" strokeWidth={gap} />
+            {/* Compare blend: a faint A to B wash over the whole outline. Mounted whenever the prop is
+              passed and faded by opacity, so a compare change never mounts or unmounts it. */}
+            {blend !== undefined && (
+              <>
+                <linearGradient
+                  id={`${maskId}-blend`}
+                  gradientUnits="userSpaceOnUse"
+                  x1={0}
+                  y1={0}
+                  x2={W}
+                  y2={H}
+                >
+                  <stop offset="0" stopColor={blend ? blend[0] : '#fff'} />
+                  <stop offset="1" stopColor={blend ? blend[1] : '#fff'} />
+                </linearGradient>
+                <path
+                  d={T.pathD}
+                  className={`tmap__blend ${blend ? 'is-on' : ''}`}
+                  strokeWidth={gap}
+                  style={{ stroke: `url(#${maskId}-blend)` }}
+                />
+              </>
+            )}
 
             {/* Straights: pickable; the selected one brightens its edges. */}
             {straights.length > 0 && (
@@ -917,10 +943,12 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
                 {straights.map((s) => {
                   const on = s.straight_id === selected;
                   const d = T.sub(s.d0, s.d1);
+                  const gA = T.at(s.d0);
+                  const gB = T.at(Math.min(s.d1, T.lap - 0.01));
                   return (
                     <g
                       key={s.straight_id}
-                      className={`tmap__straight ${on ? 'is-on' : ''} ${onSelect ? 'is-pick' : ''}`}
+                      className={`tmap__straight ${on ? 'is-on' : ''} ${blend ? 'is-blend' : ''} ${onSelect ? 'is-pick' : ''}`}
                       role={onSelect ? 'button' : undefined}
                       tabIndex={onSelect ? 0 : undefined}
                       aria-pressed={onSelect ? on : undefined}
@@ -948,12 +976,26 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
                       {/* Layer 2, between the rails: the picked section's fill, exactly the road's inner
                         width (so it never covers a rail), faded along the road by the section mask,
                         under the telemetry line, arrows and markers. */}
+                      {blend && (
+                        <linearGradient
+                          id={`${maskId}-fillgrad-${s.straight_id}`}
+                          gradientUnits="userSpaceOnUse"
+                          x1={gA.x}
+                          y1={gA.y}
+                          x2={gB.x}
+                          y2={gB.y}
+                        >
+                          <stop offset="0" stopColor={blend[0]} />
+                          <stop offset="1" stopColor={blend[1]} />
+                        </linearGradient>
+                      )}
                       <g mask={`url(#${maskId}-sec-${s.straight_id})`}>
                         <path d={d} className="tmap__hover" strokeWidth={gap} />
                         <path
                           d={d}
                           className="tmap__fill"
                           strokeWidth={gap}
+                          style={blend ? { stroke: `url(#${maskId}-fillgrad-${s.straight_id})` } : undefined}
                           filter={`url(#${maskId}-grain-${s.straight_id})`}
                         />
                       </g>

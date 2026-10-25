@@ -969,6 +969,11 @@ function App() {
                           straightsWithData={straightsWithData}
                           tags={tags}
                           arrows={false}
+                          blend={
+                            compared
+                              ? [picked?.team_colour ?? '#f4f4ef', compared.team_colour ?? '#f4f4ef']
+                              : null
+                          }
                           runs={[picked, compared].filter(Boolean).map((d, i) => ({
                             d0: straight.d0,
                             d1: straight.d1,
