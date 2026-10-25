@@ -64,7 +64,7 @@
     justify-content: space-between;
     gap: 20px;
     padding-block: 12px;
-    margin-block: 0 24px;
+    margin-block: 0;
     position: relative;
   }
   .page-sections::after {
@@ -116,8 +116,11 @@
     color: #eee;
   }
   .session-sections {
-    margin-bottom: 4px;
     padding-top: 0;
+  }
+  /* The section under a rail owns the space below it. */
+  .section-rail + section > .wrap {
+    padding-top: var(--section-pad-rail);
   }
   .session-controls {
     border-top: 0;
@@ -132,8 +135,8 @@
     opacity: 0.55;
     cursor: default;
   }
-  .section-rail:has(.session-sections) + .band > .track-section {
-    padding-top: 20px;
+  .track-section {
+    padding-block: var(--section-pad);
   }
   /* Reading pages use the same baseline and whitespace, with prose allowed to breathe. */
   .finding-hero,
@@ -188,14 +191,10 @@
   .finding-checks,
   .finding-limits,
   .method-record {
-    padding-block: 60px;
-  }
-  .finding-evidence {
-    padding-top: 30px;
+    padding-block: var(--section-pad);
   }
   .finding-sample {
-    padding-top: 4px;
-    padding-bottom: 38px;
+    padding-block: var(--section-pad);
     gap: 36px;
     grid-template-columns: 1fr 1.4fr 1fr;
   }
@@ -269,8 +268,7 @@
     color: #f4f4ef;
   }
   .method-process {
-    padding-top: 12px;
-    padding-bottom: 56px;
+    padding-block: var(--section-pad);
   }
   .method-process h2 {
     font-size: 16px;
@@ -361,7 +359,7 @@
     font-size: 28px;
   }
   .home-research {
-    padding-block: 64px;
+    padding-block: var(--section-pad);
   }
   .home-research h2 {
     line-height: 1.05;
@@ -509,7 +507,7 @@
   }
   .replay-context {
     gap: 64px;
-    padding-block: 50px;
+    padding-block: var(--section-pad);
   }
   .replay-lap select {
     min-height: 56px;
@@ -610,7 +608,7 @@
       flex-wrap: wrap;
       gap: 0;
       padding-block: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 0;
     }
     .page-sections > div {
       gap: 0 22px;
@@ -655,7 +653,6 @@
     .finding-sample {
       gap: 24px 18px;
       grid-template-columns: 1fr 1fr;
-      padding-bottom: 24px;
     }
     .finding-sample > div {
       gap: 12px;
@@ -672,12 +669,6 @@
     .finding-sample span {
       font-size: 11px;
       line-height: 1.6;
-    }
-    .finding-evidence,
-    .finding-checks,
-    .finding-limits,
-    .method-record {
-      padding-block: 38px;
     }
     .finding-section-intro,
     .method-section-heading {
@@ -702,10 +693,6 @@
     }
     .run-value strong {
       font-size: 22px;
-    }
-    .method-process {
-      padding-top: 8px;
-      padding-bottom: 38px;
     }
     .method-process ol {
       grid-template-columns: 1fr;
@@ -788,9 +775,6 @@
       font-size: 11px;
       gap: 12px;
     }
-    .home-research {
-      padding-block: 40px;
-    }
     .home-research .research-copy > p:first-child {
       font-size: 18px;
     }
@@ -807,7 +791,6 @@
       min-height: 76px;
     }
     .replay-context {
-      padding-block: 36px;
       gap: 24px;
     }
     .field-display > span,
@@ -859,9 +842,6 @@
     }
     .session-controls {
       padding-top: 12px;
-    }
-    .session-sections {
-      margin-bottom: 4px;
     }
   }
   /* Intrinsic display-font width must never expand a single-column phone grid. */
@@ -1237,7 +1217,7 @@
     text-overflow: ellipsis;
   }
 
-  /* the felt plate clears the race band hairline below it */
+  /* Exception to --section-pad: this card overlaps the hero's bottom, and the felt plate clears the race band hairline below it. */
   .home-feature {
     padding-bottom: 56px;
   }

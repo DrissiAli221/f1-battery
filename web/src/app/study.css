@@ -2636,13 +2636,7 @@
   }
   /* A band that follows a section rail starts at the rail's own hairline, no second line. */
   .section-rail + .band {
-    margin-top: -24px;
-    padding-top: 24px;
     border-top: 0;
-  }
-  .section-rail:has(.session-sections) + .band {
-    margin-top: -4px;
-    padding-top: 4px;
   }
   /* Sticky header: full-width outer, inner .wrap holds the row. */
   .site-header {

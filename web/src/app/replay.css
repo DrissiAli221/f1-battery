@@ -78,8 +78,7 @@
     grid-template-columns: 1fr 1fr 1fr;
     align-items: end;
     gap: 24px;
-    padding-top: 26px;
-    padding-bottom: 24px;
+    padding-block: var(--section-pad);
   }
   .replay-lap > span {
     display: block;
@@ -148,6 +147,7 @@
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 24px;
     align-items: start;
+    padding-block: var(--section-pad);
   }
   .replay-map-panel {
     min-width: 0;
@@ -372,8 +372,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 70px;
-    padding-top: 44px;
-    padding-bottom: 0;
+    padding-block: var(--section-pad);
   }
   .replay-context h2 {
     font:
@@ -510,7 +509,6 @@
     .replay-controls {
       grid-template-columns: 1fr;
       gap: 20px;
-      padding-top: 24px;
     }
     .replay-state {
       grid-column: auto;
@@ -532,7 +530,6 @@
     .replay-context {
       grid-template-columns: 1fr;
       gap: 26px;
-      padding-top: 35px;
     }
     .replay-context h2 {
       font-size: 22px;

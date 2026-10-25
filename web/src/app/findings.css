@@ -83,8 +83,7 @@
   .finding-sample {
     display: grid;
     grid-template-columns: 1fr 1.5fr 1fr;
-    padding-top: 32px;
-    padding-bottom: 48px;
+    padding-block: var(--section-pad);
     gap: 36px;
   }
   .finding-sample > div {
@@ -135,11 +134,7 @@
   .finding-checks,
   .finding-more,
   .finding-limits {
-    padding-top: 64px;
-    padding-bottom: 64px;
-  }
-  .finding-evidence {
-    padding-top: 36px;
+    padding-block: var(--section-pad);
   }
   .run-figure {
     margin: 0;
@@ -344,8 +339,7 @@
     grid-template-columns: 0.8fr 1.2fr;
     align-items: center;
     gap: 80px;
-    padding-top: 50px;
-    padding-bottom: 55px;
+    padding-block: var(--section-pad);
   }
   .permutation-copy h2 {
     margin-bottom: 24px;
@@ -505,9 +499,6 @@
     margin: 0 140px 24px 56px;
     max-width: 760px;
   }
-  .finding-more {
-    padding-top: 15px;
-  }
   .finding-more > .finding-disclosure:last-child {
     border-bottom: 1px solid #ffffff26;
   }
@@ -657,7 +648,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 90px;
     align-items: start;
-    padding-block: 56px;
+    padding-block: var(--section-pad);
   }
   .finding-provenance h2 {
     font:
@@ -764,8 +755,6 @@
     .finding-sample {
       grid-template-columns: 1fr 1fr;
       gap: 24px 20px;
-      padding-top: 18px;
-      padding-bottom: 20px;
     }
     .finding-sample strong {
       font-size: 34px;
@@ -793,10 +782,6 @@
     }
     .finding-evidence,
     .finding-checks,
-    .finding-more,
-    .finding-limits {
-      padding-block: 38px;
-    }
     .run-figure {
       padding: 20px 16px;
     }
@@ -856,7 +841,6 @@
     .finding-permutation {
       grid-template-columns: 1fr;
       gap: 28px;
-      padding-block: 38px;
     }
     .permutation-copy h2 {
       margin-bottom: 20px;
@@ -938,7 +922,6 @@
     .finding-provenance {
       grid-template-columns: 1fr;
       gap: 24px;
-      padding-block: 38px;
     }
     .provenance-actions {
       justify-self: start;

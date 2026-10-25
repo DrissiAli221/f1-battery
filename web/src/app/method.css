@@ -97,8 +97,7 @@
       sans-serif;
   }
   .method-process {
-    padding-top: 30px;
-    padding-bottom: 60px;
+    padding-block: var(--section-pad);
   }
   .method-process ol {
     display: grid;
@@ -152,7 +151,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 70px;
     align-items: center;
-    padding-bottom: 70px;
+    padding-block: var(--section-pad);
   }
   .method-plate {
     align-self: stretch;
@@ -290,8 +289,7 @@
     color: var(--muted);
   }
   .method-record {
-    padding-top: 50px;
-    padding-bottom: 65px;
+    padding-block: var(--section-pad);
   }
   .method-section-heading {
     display: grid;
@@ -502,8 +500,7 @@
     display: grid;
     grid-template-columns: 1.05fr 1fr;
     gap: 70px;
-    padding-top: 50px;
-    padding-bottom: 56px;
+    padding-block: var(--section-pad);
   }
   .method-boundaries > div {
     max-width: 540px;
@@ -594,10 +591,6 @@
       bottom: 45%;
       opacity: 0.45;
     }
-    .method-process {
-      padding-top: 14px;
-      padding-bottom: 38px;
-    }
     .method-process ol {
       grid-template-columns: 1fr 1fr;
       gap: 28px 20px;
@@ -622,7 +615,6 @@
     .method-estimator {
       grid-template-columns: 1fr;
       gap: 28px;
-      padding-bottom: 24px;
     }
     .method-plate {
       padding: 24px;
@@ -643,10 +635,6 @@
     }
     .estimator-rules dd {
       font-size: 11px;
-    }
-    .method-record {
-      padding-top: 38px;
-      padding-bottom: 38px;
     }
     .method-section-heading {
       grid-template-columns: 1fr;
@@ -719,7 +707,6 @@
     .method-boundaries {
       grid-template-columns: 1fr;
       gap: 25px;
-      padding-block: 38px;
     }
     .method-next-actions {
       align-items: start;

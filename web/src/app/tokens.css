@@ -36,6 +36,11 @@
       rgb(225 6 0 / 0.16),
       transparent 100%
     );
+    /* Section rhythm: every band / plain content section wrap pads this much top and bottom, so a band never ends
+       flush under its content. A section directly under a section rail starts at --section-pad-rail instead
+       (the rail's own padding supplies the rest). Exceptions are commented where they are made. */
+    --section-pad: clamp(44px, 5vw, 72px);
+    --section-pad-rail: 40px;
     --ink: #f4f4ef;
     --muted: #aaa99f;
     --line: #2c2c2b;

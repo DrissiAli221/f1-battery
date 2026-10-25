@@ -358,7 +358,7 @@
     display: grid;
     grid-template-columns: minmax(270px, 0.85fr) minmax(0, 1.65fr);
     gap: 48px;
-    margin-top: 58px;
+    padding-block: var(--section-pad);
   }
   .analysis-heading {
     display: flex;
@@ -559,7 +559,7 @@
     fill: var(--muted);
   }
   .method-section {
-    padding-top: 52px;
+    padding-block: var(--section-pad);
   }
   .method-section .notice {
     grid-template-columns: 26px minmax(0, 1fr);
@@ -815,9 +815,6 @@
     .compare-estimate .estimate-context {
       display: block;
     }
-    .analysis-layout {
-      margin-top: 40px;
-    }
     .analysis-heading {
       gap: 14px;
     }
@@ -842,9 +839,6 @@
     }
     .cc__med {
       font-size: var(--type-label);
-    }
-    .method-section {
-      padding-top: 36px;
     }
     .method-section .notice {
       grid-template-columns: 24px minmax(0, 1fr);
@@ -1762,7 +1756,6 @@
     grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.7fr);
     gap: 32px;
     align-items: start;
-    margin-top: 64px;
   }
   .lap-panel {
     padding: 24px;
