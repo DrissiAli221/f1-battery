@@ -112,6 +112,13 @@ const steps = [
     'The frozen model controls for pace, tyre age, lap number, Overtake availability and session.',
   ],
 ];
+const date = (iso: string) =>
+  new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(iso + 'T00:00:00Z'));
 function App() {
   useInitialAnchor();
   const [filter, setFilter] = useState('All entries');
@@ -358,7 +365,7 @@ function App() {
                     <li className={`tl-entry tone-${outcome.tone}`} id={e.id} key={e.id}>
                       <span className="tl-node" aria-hidden="true" />
                       <div className="tl-when">
-                        <time dateTime={e.date}>{e.date}</time>
+                        <time dateTime={e.date}>{date(e.date)}</time>
                         <span className="tl-chip">{e.phase}</span>
                       </div>
                       <div className="tl-what">

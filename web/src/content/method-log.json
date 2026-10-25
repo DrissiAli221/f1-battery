@@ -202,7 +202,7 @@
       "date": "2026-10-21",
       "tried": "A full re-run of estimate.py --all and profile.py --all-sessions under a new run_id, so that the main straight in qualifying sessions is analysed. The previous-lap gate had excluded it, because the lap before a flying lap is always an out-lap or a cool-down lap. A partial run was not possible: the API serves exactly one published run for every endpoint, and the hinge CdA is pooled over every analysed straight-lap of the session.",
       "check": "The pooled CdA keeps the strict gate. The relaxed rows dragged it to the grid edge in six qualifying sessions, so they are not allowed to enter the pool.",
-      "found": "The pooled CdA keeps the strict gate. Hinge and energy are withheld on the new rows. The run is published as proxy-0.2 so that the frozen findings run is not overwritten.",
+      "found": "Qualifying main-straight rows are now analysed and published. Hinge and energy are withheld on those new rows. The run is published under proxy-0.2 (run 26862846-4455-495b-98c0-3cb1dff4fcb3, 2026-10-21) so the frozen proxy-0.1 findings run is not overwritten.",
       "consequence": "The explorer and replay read proxy-0.2; the findings page keeps the frozen proxy-0.1 record, which was not re-run.",
       "sources": [
         {
