@@ -80,33 +80,6 @@
       400 24px Geist,
       sans-serif;
   }
-  .finding-sample {
-    display: grid;
-    grid-template-columns: 1fr 1.5fr 1fr;
-    padding-block: var(--section-pad);
-    gap: 36px;
-  }
-  .finding-sample > div {
-    border-top: 1px solid #ffffff29;
-    padding-top: 22px;
-    display: flex;
-    align-items: baseline;
-    gap: 18px;
-  }
-  .finding-sample strong {
-    font:
-      900 clamp(34px, 4vw, 56px)/1 F1Black,
-      sans-serif;
-    letter-spacing: -0.035em;
-  }
-  .finding-sample span {
-    font:
-      400 11px/1.5 KHF1,
-      monospace;
-    text-transform: uppercase;
-    color: #bcbcb2;
-    max-width: 150px;
-  }
   .finding-section-intro {
     display: grid;
     grid-template-columns: 1.05fr 1fr;
@@ -135,148 +108,6 @@
   .finding-more,
   .finding-limits {
     padding-block: var(--section-pad);
-  }
-  .run-figure {
-    margin: 0;
-    padding: 28px 28px 24px;
-    background: radial-gradient(ellipse at 0 0, #282825, transparent 90%), #151514;
-  }
-  .run-column-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    font:
-      400 11px/1.5 KHF1,
-      monospace;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 22px;
-  }
-  .run-axis,
-  .run-row {
-    display: grid;
-    grid-template-columns: 240px minmax(0, 1fr) 140px;
-    gap: 32px;
-  }
-  .run-axis-plot {
-    position: relative;
-    height: 22px;
-    font:
-      400 11px GeistMono,
-      monospace;
-    color: var(--muted);
-  }
-  .run-axis-plot > span {
-    position: absolute;
-    transform: translateX(-50%);
-  }
-  .run-row {
-    align-items: center;
-    min-height: 90px;
-    border-top: 1px solid #ffffff12;
-  }
-  .run-name h3 {
-    font:
-      400 12px/1.4 KHF1,
-      monospace;
-    text-transform: uppercase;
-  }
-  .run-name p {
-    font:
-      400 11px/1.5 KHF1,
-      monospace;
-    color: var(--muted);
-    margin-top: 6px;
-  }
-  .run-plot {
-    position: relative;
-    align-self: stretch;
-    min-height: 60px;
-  }
-  .run-null,
-  .run-threshold {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: #c5c5b666;
-  }
-  .run-threshold {
-    background: repeating-linear-gradient(to bottom, #d83e34 0 4px, transparent 4px 9px);
-  }
-  .run-ci {
-    height: 3px;
-    background: #deded4;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  .run-ci::before,
-  .run-ci::after {
-    content: '';
-    position: absolute;
-    top: -4px;
-    height: 11px;
-    width: 1px;
-    background: #deded4;
-  }
-  .run-ci::after {
-    right: 0;
-  }
-  .run-point {
-    position: absolute;
-    top: 50%;
-    width: 10px;
-    height: 10px;
-    background: #f4f4ef;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    box-shadow: 0 0 0 4px #191918;
-  }
-  .run-value {
-    text-align: right;
-    white-space: nowrap;
-  }
-  .run-value strong {
-    display: block;
-    font:
-      400 22px/1.2 GeistMono,
-      monospace;
-    letter-spacing: -0.04em;
-  }
-  .run-value span {
-    display: block;
-    font:
-      400 11px/1.5 GeistMono,
-      monospace;
-    color: var(--muted);
-    margin-top: 6px;
-  }
-  .run-figure figcaption {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px 32px;
-    padding-top: 20px;
-    border-top: 1px solid #ffffff14;
-    font:
-      400 11px/1.5 KHF1,
-      monospace;
-    color: var(--muted);
-  }
-  .run-figure figcaption > span,
-  .permutation-figure figcaption > span {
-    display: flex;
-    gap: 9px;
-    align-items: center;
-  }
-  .run-figure figcaption i {
-    display: inline-block;
-    width: 1px;
-    height: 13px;
-    background: #c5c5b666;
-  }
-  .run-figure figcaption .threshold-key {
-    background: #d83e34;
   }
   .evidence-explanation {
     display: grid;
@@ -376,62 +207,6 @@
   }
   .permutation-chart {
     min-width: 0;
-  }
-  .permutation-figure {
-    margin: 0;
-  }
-  .permutation-figure svg {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-  .perm-grid {
-    stroke: #ffffff0c;
-    stroke-width: 1;
-  }
-  .perm-bar {
-    fill: #78786e;
-  }
-  .perm-base {
-    stroke: #ffffff30;
-    stroke-width: 1;
-  }
-  .perm-limit {
-    stroke: #b6b6a5;
-    stroke-dasharray: 3 4;
-    stroke-width: 1;
-  }
-  .perm-observed {
-    stroke: #ef5b4d;
-    stroke-width: 2;
-  }
-  .permutation-figure text {
-    font:
-      400 11px GeistMono,
-      monospace;
-    fill: #c0c0b4;
-  }
-  .permutation-figure figcaption {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    font:
-      400 11px/1.6 KHF1,
-      monospace;
-    color: #bcbcb2;
-    margin-top: 12px;
-  }
-  .observed-key {
-    width: 12px;
-    height: 2px;
-    background: #ef5b4d;
-    flex-shrink: 0;
-  }
-  .limit-key {
-    width: 12px;
-    height: 0;
-    border-top: 1px dashed #b6b6a5;
-    flex-shrink: 0;
   }
   .check-list {
     border-top: 1px solid #ffffff26;
@@ -710,18 +485,8 @@
     .finding-hero h1 {
       font-size: clamp(72px, 10vw, 110px);
     }
-    .finding-sample > div {
-      align-items: start;
-      flex-direction: column;
-      gap: 12px;
-    }
     .finding-permutation {
       gap: 40px;
-    }
-    .run-axis,
-    .run-row {
-      grid-template-columns: 190px minmax(0, 1fr) 110px;
-      gap: 22px;
     }
     .finding-answer h2 {
       font-size: 22px;
@@ -752,25 +517,6 @@
       bottom: 50%;
       opacity: 0.5;
     }
-    .finding-sample {
-      grid-template-columns: 1fr 1fr;
-      gap: 24px 20px;
-    }
-    .finding-sample strong {
-      font-size: 34px;
-    }
-    .finding-sample > div {
-      padding-top: 18px;
-    }
-    .finding-sample > div:last-child {
-      grid-column: 1/-1;
-      flex-direction: row;
-      align-items: center;
-      gap: 20px;
-    }
-    .finding-sample span {
-      font-size: 11px;
-    }
     .finding-section-intro {
       grid-template-columns: 1fr;
       gap: 20px;
@@ -781,58 +527,8 @@
       font-size: 22px;
     }
     .finding-evidence,
-    .finding-checks,
-    .run-figure {
+    .finding-checks {
       padding: 20px 16px;
-    }
-    .run-column-head {
-      display: none;
-    }
-    .run-axis {
-      display: block;
-      margin-inline: 6px;
-    }
-    .run-axis-space,
-    .run-value-space {
-      display: none;
-    }
-    .run-axis-plot {
-      height: 28px;
-    }
-    .run-row {
-      grid-template-columns: minmax(0, 1fr) 84px;
-      gap: 0 12px;
-      padding-block: 18px 0;
-    }
-    .run-name {
-      min-width: 0;
-    }
-    .run-name h3 {
-      font-size: 12px;
-    }
-    .run-name p {
-      font-size: 11px;
-      margin-top: 5px;
-    }
-    .run-value {
-      grid-column: 2;
-      grid-row: 1;
-    }
-    .run-value strong {
-      font-size: 20px;
-    }
-    .run-value span {
-      font-size: 11px;
-    }
-    .run-plot {
-      grid-column: 1/-1;
-      grid-row: 2;
-      margin-inline: 6px;
-      min-height: 48px;
-    }
-    .run-figure figcaption {
-      flex-direction: column;
-      gap: 12px;
     }
     .evidence-explanation {
       grid-template-columns: 1fr;
@@ -851,9 +547,6 @@
     }
     .permutation-p strong {
       font-size: 28px;
-    }
-    .permutation-figure svg {
-      min-height: 150px;
     }
     .spot-check summary {
       grid-template-columns: 22px minmax(0, 1fr) 14px;
@@ -945,10 +638,6 @@
       monospace;
     color: var(--muted);
   }
-  .finding-sample strong {
-    font-feature-settings: 'calt' 0;
-    letter-spacing: -0.015em;
-  }
   @media (max-width: 720px) {
     .maker-axis {
       margin: 24px 0 0;
@@ -978,6 +667,321 @@
       bottom: 50%;
       opacity: 0.5;
       right: 0;
+    }
+  }
+
+  /* Evidence block: stat tiles, forest plot, permutation histogram. */
+  .finding-sample-wrap {
+    padding-block: var(--section-pad);
+  }
+  .finding-sample {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .finding-sample > div {
+    background: #0b0b0a;
+    padding: 24px 24px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+  .finding-sample strong {
+    font:
+      900 clamp(34px, 3.8vw, 54px)/1 F1Black,
+      sans-serif;
+    letter-spacing: -0.015em;
+    font-feature-settings: 'calt' 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .finding-sample span {
+    font:
+      400 12px/1.5 KHF1,
+      monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #bcbcb2;
+  }
+  .finding-sample small {
+    font:
+      400 13px/1.5 Geist,
+      sans-serif;
+    color: var(--muted);
+    margin-top: -4px;
+  }
+  .run-figure {
+    margin: 0;
+    padding: 24px 28px 22px;
+    background: #0b0b0a;
+    border: 1px solid var(--line);
+    container-type: inline-size;
+  }
+  .forest-head,
+  .forest-row,
+  .forest-axis-row {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 200px;
+    column-gap: 28px;
+  }
+  .forest-col {
+    align-self: end;
+    padding-bottom: 4px;
+    font:
+      400 12px/1.5 KHF1,
+      monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .forest-col-value {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .forest-plot-head,
+  .forest-axis-row {
+    min-width: 0;
+  }
+  .forest-row {
+    border-top: 1px solid #ffffff12;
+  }
+  .forest-name {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .forest-name h3 {
+    margin: 0;
+    font:
+      400 12px/1.4 KHF1,
+      monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .forest-name p {
+    margin: 0;
+    font:
+      400 13px/1.45 Geist,
+      sans-serif;
+    color: var(--muted);
+  }
+  .forest-plot,
+  .forest-plot-head svg,
+  .forest-axis-row svg {
+    display: block;
+    overflow: visible;
+  }
+  .forest-value {
+    align-self: center;
+    text-align: right;
+    white-space: nowrap;
+    font:
+      400 13px GeistMono,
+      monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .forest-value strong {
+    font-weight: 400;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .forest-value span {
+    color: var(--muted);
+  }
+  .forest-axis-row {
+    border-top: 1px solid #ffffff12;
+  }
+  .forest-axis-row svg {
+    grid-column: 2;
+  }
+  .forest-grid {
+    stroke: #ffffff12;
+    stroke-width: 1;
+  }
+  .forest-null {
+    stroke: var(--ink);
+    stroke-width: 1;
+  }
+  .forest-threshold {
+    stroke: var(--red);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+  }
+  .forest-band {
+    fill: #ffffff0a;
+  }
+  .forest-ci {
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .forest-point {
+    fill: var(--ink);
+  }
+  .forest-tag,
+  .perm-tag {
+    font:
+      400 11px KHF1,
+      monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    fill: var(--muted);
+  }
+  .forest-tag-red,
+  .perm-tag-red {
+    fill: var(--red-text);
+  }
+  .forest-tick,
+  .perm-label {
+    font:
+      400 11px GeistMono,
+      monospace;
+    fill: var(--muted);
+  }
+  .run-figure figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 32px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #ffffff14;
+    font:
+      400 12px/1.5 KHF1,
+      monospace;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  .run-figure figcaption > span,
+  .permutation-figure figcaption > span {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+  }
+  .run-figure figcaption i {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 1px;
+    height: 13px;
+    background: var(--ink);
+  }
+  .run-figure figcaption .threshold-key {
+    width: 0;
+    height: 13px;
+    background: none;
+    border-left: 1.5px dashed var(--red);
+  }
+  .run-figure figcaption .point-key {
+    width: 7px;
+    height: 7px;
+  }
+  @container (max-width: 700px) {
+    .forest-head,
+    .forest-row,
+    .forest-axis-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 16px;
+    }
+    .forest-col {
+      display: none;
+    }
+    .forest-plot-head,
+    .forest-row > .forest-plot,
+    .forest-axis-row svg {
+      grid-column: 1 / -1;
+    }
+    .forest-row {
+      grid-template-areas: 'name value' 'plot plot';
+    }
+    .forest-row > .forest-name {
+      grid-area: name;
+      padding-top: 16px;
+    }
+    .forest-row > .forest-value {
+      grid-area: value;
+      padding-top: 16px;
+      align-self: start;
+    }
+    .forest-row > .forest-plot {
+      grid-area: plot;
+    }
+  }
+  .permutation-figure {
+    margin: 0;
+    padding: 24px 24px 20px;
+    background: #0b0b0a;
+    border: 1px solid var(--line);
+  }
+  .permutation-figure svg {
+    display: block;
+    overflow: visible;
+  }
+  .perm-bar {
+    fill: #aaa99f;
+    fill-opacity: 0.5;
+  }
+  .perm-base {
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+  .perm-tick {
+    stroke: var(--muted);
+    stroke-width: 1;
+  }
+  .perm-limit {
+    stroke: var(--ink);
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+  }
+  .perm-observed {
+    stroke: var(--red);
+    stroke-width: 2;
+  }
+  .permutation-figure figcaption {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+    font:
+      400 13px/1.5 Geist,
+      sans-serif;
+    color: #bcbcb2;
+  }
+  .permutation-figure figcaption i {
+    flex-shrink: 0;
+  }
+  .observed-key {
+    width: 12px;
+    height: 2px;
+    background: var(--red);
+  }
+  .limit-key {
+    width: 12px;
+    height: 0;
+    border-top: 1px dashed var(--ink);
+  }
+  @media (max-width: 1000px) {
+    .finding-sample {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 720px) {
+    .finding-sample > div {
+      padding: 18px 16px 16px;
+    }
+    .finding-sample strong {
+      font-size: 34px;
+    }
+    .run-figure {
+      padding: 4px 16px 18px;
+    }
+    .permutation-figure {
+      padding: 18px 16px 16px;
+    }
+    .forest-value {
+      font-size: 13px;
     }
   }
 }

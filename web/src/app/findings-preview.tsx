@@ -1,7 +1,7 @@
 import './reveal';
 import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -32,54 +32,99 @@ const runs = [
     ...findings.runs.upper_edge,
   },
 ];
+/** Width of an element in CSS px, tracked live, so charts draw 1px lines and square marks at true size. */
+function useWidth<T extends HTMLElement>(initial: number) {
+  const ref = useRef<T>(null);
+  const [w, setW] = useState(initial);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const read = () => setW(Math.max(120, Math.round(el.getBoundingClientRect().width)));
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w] as const;
+}
 const OR_MIN = 0.6,
-  OR_MAX = 1.6;
-const percent = (n: number) => (100 * (n - OR_MIN)) / (OR_MAX - OR_MIN);
+  OR_MAX = 1.6,
+  OR_PAD = 14,
+  OR_THRESHOLD = 1.3,
+  OR_TICKS = [0.6, 0.8, 1, 1.2, 1.4, 1.6];
+function ForestLines({ x, y1, y2 }: { x: (v: number) => number; y1: number; y2: number }) {
+  return (
+    <>
+      {OR_TICKS.map((t) => (
+        <line key={t} x1={x(t)} x2={x(t)} y1={y1} y2={y2} className="forest-grid" />
+      ))}
+      <line x1={x(1)} x2={x(1)} y1={y1} y2={y2} className="forest-null" />
+      <line x1={x(OR_THRESHOLD)} x2={x(OR_THRESHOLD)} y1={y1} y2={y2} className="forest-threshold" />
+    </>
+  );
+}
 function RunChart() {
+  const [ref, w] = useWidth<HTMLDivElement>(300);
+  const ROW_H = w < 400 ? 52 : 76;
+  const x = (v: number) =>
+    OR_PAD + ((Math.log(v) - Math.log(OR_MIN)) / (Math.log(OR_MAX) - Math.log(OR_MIN))) * (w - OR_PAD * 2);
   return (
     <figure
-      className="run-figure"
+      className="run-figure forest"
       aria-label="Odds ratios per one standard deviation earlier defender cut-off, with 95 percent confidence intervals"
     >
-      <div className="run-column-head">
-        <span>Test run</span>
-        <span>Odds ratio / 95% interval</span>
-      </div>
-      <div className="run-axis" aria-hidden="true">
-        <div className="run-axis-space" />
-        <div className="run-axis-plot">
-          {[0.6, 0.8, 1, 1.3, 1.6].map((n) => (
-            <span key={n} style={{ left: `${percent(n)}%` }}>
-              {fmt(n, 1)}
-            </span>
-          ))}
+      <div className="forest-grid-box">
+        <div className="forest-head">
+          <span className="forest-col forest-col-name">Test run</span>
+          <div className="forest-plot-head" ref={ref}>
+            <svg width={w} height={26} aria-hidden="true">
+              <text x={x(1)} y={12} textAnchor="middle" className="forest-tag">
+                No effect
+              </text>
+              <text x={x(OR_THRESHOLD)} y={12} textAnchor="middle" className="forest-tag forest-tag-red">
+                {w < 340 ? '1.3' : '1.3 threshold'}
+              </text>
+              <ForestLines x={x} y1={20} y2={26} />
+            </svg>
+          </div>
+          <span className="forest-col forest-col-value">Odds ratio / 95% interval</span>
         </div>
-        <div className="run-value-space" />
-      </div>
-      <div className="run-rows">
         {runs.map((r) => (
-          <div className="run-row" key={r.name}>
-            <div className="run-name">
+          <div className="forest-row" key={r.name}>
+            <div className="forest-name">
               <h3>{r.name}</h3>
               <p>{r.detail}</p>
             </div>
-            <div className="run-plot">
-              <span className="run-null" style={{ left: `${percent(1)}%` }} />
-              <span className="run-threshold" style={{ left: `${percent(1.3)}%` }} />
-              <span
-                className="run-ci"
-                style={{ left: `${percent(r.lo)}%`, width: `${percent(r.hi) - percent(r.lo)}%` }}
+            <svg className="forest-plot" width={w} height={ROW_H} aria-hidden="true">
+              <rect
+                x={OR_PAD - 6}
+                y={ROW_H / 2 - 2}
+                width={w - OR_PAD * 2 + 12}
+                height={4}
+                className="forest-band"
               />
-              <span className="run-point" style={{ left: `${percent(r.or)}%` }} />
-            </div>
-            <div className="run-value">
-              <strong>{fmt(r.or)}</strong>
+              <ForestLines x={x} y1={0} y2={ROW_H} />
+              <line x1={x(r.lo)} x2={x(r.hi)} y1={ROW_H / 2} y2={ROW_H / 2} className="forest-ci" />
+              <rect x={x(r.or) - 3.5} y={ROW_H / 2 - 3.5} width={7} height={7} className="forest-point" />
+            </svg>
+            <div className="forest-value">
+              <strong>{fmt(r.or)}</strong>{' '}
               <span>
-                {fmt(r.lo)}–{fmt(r.hi)}
+                [{fmt(r.lo)}, {fmt(r.hi)}]
               </span>
             </div>
           </div>
         ))}
+        <div className="forest-axis-row">
+          <svg width={w} height={26} aria-hidden="true">
+            <ForestLines x={x} y1={0} y2={6} />
+            {OR_TICKS.map((t) => (
+              <text key={t} x={x(t)} y={21} textAnchor="middle" className="forest-tick">
+                {fmt(t, 1)}
+              </text>
+            ))}
+          </svg>
+        </div>
       </div>
       <figcaption>
         <span>
@@ -90,72 +135,78 @@ function RunChart() {
           <i className="threshold-key" />
           1.3 / pre-registered effect threshold
         </span>
+        <span>
+          <i className="point-key" />
+          Square is the point estimate, bar the 95% interval; log scale
+        </span>
       </figcaption>
     </figure>
   );
 }
+const HIST_H = 176;
 function Permutation() {
-  const h = findings.permutation.histogram;
-  const w = 580,
-    height = 230,
-    pad = 28,
-    plotW = w - pad * 2,
-    plotH = height - 54,
+  const p = findings.permutation;
+  const h = p.histogram;
+  const [ref, w] = useWidth<HTMLDivElement>(520);
+  const pad = 10,
+    base = HIST_H,
+    maxBar = HIST_H - 40,
     max = Math.max(...h.counts);
-  const x = (n: number) => pad + ((n - h.lo) / (h.hi - h.lo)) * plotW;
-  const binW = plotW / h.counts.length;
+  const x = (n: number) => pad + ((n - h.lo) / (h.hi - h.lo)) * (w - pad * 2);
+  const binW = (w - pad * 2) / h.counts.length;
   return (
     <figure className="permutation-figure">
-      <svg
-        viewBox={`0 0 ${w} ${height}`}
-        role="img"
-        aria-label={`${int(findings.permutation.n)} within-session permutations. Observed coefficient ${fmt(findings.permutation.observed, 3)}, two-sided p value ${fmt(findings.permutation.p_two_sided, 3)}.`}
-      >
-        {[0.5, 1].map((n) => (
-          <line
-            key={n}
-            x1={pad}
-            x2={w - pad}
-            y1={18 + plotH * (1 - n)}
-            y2={18 + plotH * (1 - n)}
-            className="perm-grid"
-          />
-        ))}
-        {h.counts.map((n, i) => (
-          <rect
-            key={i}
-            x={pad + i * binW + 1}
-            y={18 + plotH - (n / max) * plotH}
-            width={Math.max(1, binW - 2)}
-            height={(n / max) * plotH}
-            className="perm-bar"
-          />
-        ))}
-        <line x1={pad} x2={w - pad} y1={18 + plotH} y2={18 + plotH} className="perm-base" />
-        {[-findings.permutation.q95_abs, findings.permutation.q95_abs].map((n) => (
-          <line key={n} x1={x(n)} x2={x(n)} y1={12} y2={18 + plotH} className="perm-limit" />
-        ))}
-        <line
-          x1={x(findings.permutation.observed)}
-          x2={x(findings.permutation.observed)}
-          y1={8}
-          y2={18 + plotH}
-          className="perm-observed"
-        />
-        {[-0.2, 0, 0.2].map((n) => (
-          <text key={n} x={x(n)} y={height - 12} textAnchor="middle">
-            {fmt(n, 1)}
+      <div ref={ref}>
+        <svg
+          width={w}
+          height={base + 30}
+          role="img"
+          aria-label={`${int(p.n)} within-session permutations. Observed coefficient ${fmt(p.observed, 3)}, two-sided p value ${fmt(p.p_two_sided, 3)}.`}
+        >
+          {h.counts.map((n, i) => (
+            <rect
+              key={i}
+              x={pad + i * binW + 0.5}
+              y={base - (n / max) * maxBar}
+              width={Math.max(1, binW - 1)}
+              height={(n / max) * maxBar}
+              className="perm-bar"
+            />
+          ))}
+          <line x1={pad} x2={w - pad} y1={base + 0.5} y2={base + 0.5} className="perm-base" />
+          {[-p.q95_abs, p.q95_abs].map((n) => (
+            <line key={n} x1={x(n)} x2={x(n)} y1={18} y2={base} className="perm-limit" />
+          ))}
+          <text x={x(p.q95_abs) + 6} y={12} className="perm-tag">
+            95th pct
           </text>
-        ))}
-      </svg>
+          <line x1={x(p.observed)} x2={x(p.observed)} y1={4} y2={base} className="perm-observed" />
+          <text x={x(p.observed) - 6} y={12} textAnchor="end" className="perm-tag perm-tag-red">
+            observed
+          </text>
+          {[
+            [-0.2, '−0.2'],
+            [0, '0'],
+            [0.2, '+0.2'],
+          ].map(([n, label]) => (
+            <g key={label}>
+              <line x1={x(Number(n))} x2={x(Number(n))} y1={base} y2={base + 5} className="perm-tick" />
+              <text x={x(Number(n))} y={base + 21} textAnchor="middle" className="perm-label">
+                {label}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
       <figcaption>
         <span>
           <i className="observed-key" />
-          Observed coefficient {fmt(findings.permutation.observed, 3)}
+          Observed coefficient {fmt(p.observed, 3)}: more extreme than {fmt(p.pct_abs, 1)}% of the {int(p.n)}{' '}
+          shuffles (two-sided p = {fmt(p.p_two_sided, 3)})
         </span>
         <span>
           <i className="limit-key" />
-          95th percentile of absolute shuffled coefficients
+          95th percentile of absolute shuffled coefficients (±{fmt(p.q95_abs, 3)})
         </span>
       </figcaption>
     </figure>
@@ -275,17 +326,33 @@ function App() {
             </div>
           </nav>
           <section aria-label="Sample used in the frozen test">
-            <div className="wrap finding-sample">
-              {[
-                [findings.sample.events_tested, 'Passes tested'],
-                [findings.sample.non_events_tested, 'Close-following non-passes'],
-                [findings.sample.sessions_in_model, 'Sessions in the model'],
-              ].map(([n, label]) => (
-                <div key={label}>
-                  <strong>{int(Number(n))}</strong>
-                  <span>{label}</span>
-                </div>
-              ))}
+            <div className="wrap finding-sample-wrap">
+              <div className="finding-sample">
+                {[
+                  [
+                    int(findings.sample.events_tested),
+                    'Passes tested',
+                    `against ${int(findings.sample.non_events_tested)} close-following non-passes`,
+                  ],
+                  [
+                    fmt(findings.runs.point.or),
+                    'Odds ratio, point run',
+                    '95% interval ' + fmt(findings.runs.point.lo) + '–' + fmt(findings.runs.point.hi),
+                  ],
+                  [String(findings.sample.sessions_in_model), 'Sessions in the model', ''],
+                  [
+                    fmt(findings.permutation.p_two_sided, 3),
+                    'Permutation p',
+                    'two-sided, ' + int(findings.permutation.n) + ' shuffles',
+                  ],
+                ].map(([n, label, sub]) => (
+                  <div key={label}>
+                    <strong>{n}</strong>
+                    <span>{label}</span>
+                    {sub && <small>{sub}</small>}
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
           <section id="evidence" tabIndex={-1} aria-labelledby="evidence-title" className="band">
