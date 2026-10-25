@@ -1601,3 +1601,34 @@
     margin-bottom: 40px;
   }
 }
+
+@layer overrides {
+  /* The estimator caveat is plain content, always open: an eyebrow-style title, no marker, no rule. */
+  .method-preview .method-explainer {
+    margin: 28px 0 0;
+    background: none;
+    border-top: 0;
+  }
+  .method-preview .method-explainer h4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+    font:
+      400 12px/1.4 KHF1,
+      monospace;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .method-preview .method-explainer h4::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+  .method-preview .method-explainer p {
+    padding-bottom: 0;
+  }
+}

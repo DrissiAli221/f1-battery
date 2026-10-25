@@ -328,17 +328,15 @@ function App() {
                   Per-car session medians and lap-bootstrap intervals summarise the estimates. The explorer
                   places them in metres from the start of each straight.
                 </p>
-                <details className="method-explainer">
-                  <summary>
-                    What the threshold cannot establish <span aria-hidden="true">+</span>
-                  </summary>
+                <div className="method-explainer">
+                  <h4>What the threshold cannot establish</h4>
                   <p>
                     It is an energy-management proxy, not a measurement of electrical power. Drag, mass,
                     engine behaviour and unobserved aero limit interpretation. The primary estimator may
                     include lift leakage. A separate hinge-ramp detector remains experimental and is not used
                     in the frozen test.
                   </p>
-                </details>
+                </div>
                 <p className="method-small">
                   These are estimator rules, not FIA power limits. Source: the Phase 3–4 estimator and
                   findings notes.
