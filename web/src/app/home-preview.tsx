@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { useList, useRateLimited } from '../lib/api';
 import type { SessionRow } from '../lib/types';
 import { circuitMeta } from '../track/circuits';
+import { CircuitMini } from './circuit-mini';
 import { createPixelButton } from './hover.js';
 import { paintScreen } from './session-halftone';
 import './session.css';
@@ -117,6 +118,9 @@ function App() {
                       </span>
                     </h2>
                     <p className="utility">Autodromo Nazionale Monza</p>
+                  </div>
+                  <div className="home-feature-map" aria-hidden="true">
+                    <CircuitMini circuit={feature.circuit_key} />
                   </div>
                   <div className="home-feature-bottom">
                     <p>
