@@ -322,6 +322,13 @@ function App() {
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
+  const [wideStage, setWideStage] = useState(() => matchMedia('(min-width:1000px)').matches);
+  useEffect(() => {
+    const mq = matchMedia('(min-width:1000px)');
+    const update = () => setWideStage(mq.matches);
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
   const [activeNav, setActiveNav] = useState('track');
   const tower = useRef<HTMLDivElement>(null);
   const revealDriver = (n: number) => {
@@ -799,6 +806,7 @@ function App() {
                           sf
                           straightLabels
                           rotation={data.session?.circuit_key === 39 ? 85 : (meta?.rotation ?? undefined)}
+                          fill={wideStage}
                           maxHeight={520}
                           markerScale={compactMap ? 1 : 1.2}
                           label={`${place} track with estimated deployment cut-off markers`}

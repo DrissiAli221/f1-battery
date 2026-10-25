@@ -123,6 +123,8 @@ export interface TrackMapProps {
   scale?: boolean;
   /** Size the box from its width so the track fills it edge to edge (default). */
   autoHeight?: boolean;
+  /** Fill the parent's box (its height comes from layout) and fit the track to width and height. */
+  fill?: boolean;
   maxHeight?: number;
   /** Turn tall circuits a quarter so the track lies wide (default). */
   landscape?: boolean;
@@ -154,6 +156,7 @@ export interface TrackMapHandle {
  */
 const REF_W = 640;
 const SIDE = { wide: { l: 56, r: 56, t: 52, b: 52 }, narrow: { l: 28, r: 28, t: 34, b: 34 } };
+const SIDE_FILL = { wide: { l: 52, r: 52, t: 52, b: 52 }, narrow: { l: 30, r: 30, t: 30, b: 30 } };
 
 /** Relative luminance of a #rrggbb colour; chips on light colours take dark type. */
 function isLight(hex: string): boolean {
@@ -323,12 +326,13 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
     label = 'Track map',
     children,
   } = props;
-  const autoHeight = props.autoHeight ?? true;
+  const fill = props.fill ?? false;
+  const autoHeight = fill ? false : (props.autoHeight ?? true);
   const maxHeight = props.maxHeight ?? 760;
   const landscape = props.landscape ?? true;
   const [boxRef, { w: W, h: measuredH }] = useSize<HTMLDivElement>();
   const wide = W >= 560;
-  const padding = pad ?? (wide ? SIDE.wide : SIDE.narrow);
+  const padding = pad ?? (fill ? (wide ? SIDE_FILL.wide : SIDE_FILL.narrow) : wide ? SIDE.wide : SIDE.narrow);
   const ref2 = useMemo(
     () => (rotation === undefined ? circuit : circuit ? { ...circuit, rotation } : null),
     [circuit, rotation]
@@ -844,7 +848,7 @@ export const TrackMap = forwardRef<TrackMapHandle, TrackMapProps>(function Track
   return (
     <div
       ref={boxRef}
-      className={`tmap ${className}`}
+      className={`tmap ${fill ? 'tmap--fill' : ''} ${className}`}
       data-jump={jump ? '1' : undefined}
       data-hires={T?.hires ? '1' : '0'}
       style={{

@@ -229,7 +229,9 @@ function orientation(
   let a = ((ref.rotation - 90) * Math.PI) / 180;
   if (landscape) {
     const b = bbox(rotate(ring, a));
-    if (b.h > b.w && iw >= ih) a += Math.PI / 2;
+    // Turn a tall outline a quarter when that fits the box better: landscape circuits get wider,
+    // portrait ones stay tall in a tall box.
+    if (b.h > b.w && Math.min(iw / b.h, ih / b.w) > Math.min(iw / b.w, ih / b.h)) a += Math.PI / 2;
   }
   return a;
 }

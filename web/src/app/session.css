@@ -2257,6 +2257,12 @@
     display: flex;
     flex-direction: column;
   }
+  /* The stage's height comes from the grid row; the svg is absolute, so fitting never feeds back. */
+  .map-surface .tmap--fill {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 420px;
+  }
   .map-surface .map-footnote {
     margin-top: auto;
     padding-top: 16px;
