@@ -1272,12 +1272,12 @@
     .method-screen {
       mask-image:
         linear-gradient(to right, transparent 0, #000 40%),
-        linear-gradient(to bottom, #000 45%, transparent 100%),
-        linear-gradient(to left, transparent 0, #000 48px);
+        linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%),
+        linear-gradient(to left, transparent 0, #000 96px);
       -webkit-mask-image:
         linear-gradient(to right, transparent 0, #000 40%),
-        linear-gradient(to bottom, #000 45%, transparent 100%),
-        linear-gradient(to left, transparent 0, #000 48px);
+        linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%),
+        linear-gradient(to left, transparent 0, #000 96px);
     }
   }
 }
