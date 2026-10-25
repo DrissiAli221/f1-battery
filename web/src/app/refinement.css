@@ -1575,3 +1575,29 @@
     border-color: #9ad67a80;
   }
 }
+
+@layer overrides {
+  /* Method: one line under the rail, none per column; the record keeps its filter line and one rule per entry. */
+  .method-preview .method-process li,
+  .method-preview .estimator-rules > div,
+  .method-preview .method-entries,
+  .method-preview .entry-detail dl > div,
+  .method-preview .tl-details dl > div {
+    border-top: 0;
+  }
+  .method-preview .estimator-rules > div {
+    padding-top: 0;
+  }
+  .method-preview .method-process li {
+    padding-top: 0;
+  }
+  .method-preview .process-number {
+    color: var(--red-text);
+  }
+  .method-preview .method-estimator {
+    row-gap: 0;
+  }
+  .method-preview .method-process .section-no {
+    margin-bottom: 40px;
+  }
+}

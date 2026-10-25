@@ -239,9 +239,15 @@ function App() {
           <nav className="section-rail" aria-label="Method sections">
             <div className="wrap page-sections">
               <div>
-                <a href="#process">Overview</a>
-                <a href="#estimator">Estimator</a>
-                <a href="#method-record">The record</a>
+                <a href="#process">
+                  <b>01</b>Overview
+                </a>
+                <a href="#estimator">
+                  <b>02</b>Estimator
+                </a>
+                <a href="#method-record">
+                  <b>03</b>The record
+                </a>
               </div>
               <a href="/findings.html">
                 See the findings <span aria-hidden="true">↗</span>
@@ -255,6 +261,9 @@ function App() {
             className="band"
           >
             <div className="wrap method-process">
+              <p className="section-no">
+                <b>01</b>Overview
+              </p>
               <ol>
                 {steps.map(([title, description], i) => (
                   <li key={title}>
@@ -271,6 +280,9 @@ function App() {
           </section>
           <section id="estimator" tabIndex={-1} aria-labelledby="estimator-title">
             <div className="wrap method-estimator">
+              <p className="section-no in-grid">
+                <b>02</b>Estimator
+              </p>
               <div className="session-card method-plate">
                 <h2 id="estimator-title">
                   A cut-off.
@@ -336,6 +348,9 @@ function App() {
           </section>
           <section id="method-record" tabIndex={-1} aria-labelledby="record-title" className="band">
             <div className="wrap method-record">
+              <p className="section-no">
+                <b>03</b>The record
+              </p>
               <div className="method-section-heading">
                 <h2 id="record-title">
                   The record.
