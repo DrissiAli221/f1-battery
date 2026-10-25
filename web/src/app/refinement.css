@@ -1325,8 +1325,20 @@
     border-top: 0;
     margin-inline: calc(var(--row-inset) * -1);
   }
+  /* The fill spans the wider box; the hairlines stay on the content edge. */
   .method-explainer {
     margin-inline: -14px;
+    border-top: 0;
+    background: linear-gradient(#ffffff26, #ffffff26) 14px 0 / calc(100% - 28px) 1px no-repeat;
+  }
+  .method-entry {
+    border-bottom: 0;
+  }
+  .method-entry::after {
+    content: '';
+    display: block;
+    margin-inline: var(--row-inset);
+    border-bottom: 1px solid #ffffff26;
   }
   .method-entry summary,
   .method-explainer summary {
@@ -1343,7 +1355,8 @@
   .entry-detail dl > div:first-child {
     border-top: 0;
   }
-  .method-footer {
+  .method-footer,
+  .findings-footer {
     border-top: 1px solid var(--line);
   }
   /* Match Findings: rows lift to white on hover and dim on press. */
