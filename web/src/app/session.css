@@ -79,13 +79,13 @@
     right: 0;
     top: 0;
     bottom: -38px;
-    width: 360px;
-    opacity: 0.62;
+    width: 520px;
+    opacity: 0.58;
     mask-image:
-      linear-gradient(to right, transparent 0, #000 40%),
+      radial-gradient(ellipse closest-side at 70% 45%, #000 40%, transparent 100%),
       linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%);
     -webkit-mask-image:
-      linear-gradient(to right, transparent 0, #000 40%),
+      radial-gradient(ellipse closest-side at 70% 45%, #000 40%, transparent 100%),
       linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%);
     mask-composite: intersect;
     -webkit-mask-composite: source-in;
@@ -723,7 +723,7 @@
       align-self: flex-start;
     }
     .race-halftone {
-      width: 240px;
+      width: 330px;
       opacity: 0.45;
     }
     .session-controls {
@@ -761,7 +761,7 @@
       font-size: var(--type-label);
     }
     .race-halftone {
-      width: 160px;
+      width: 220px;
       opacity: 0.45;
     }
     .session-controls {
