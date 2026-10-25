@@ -79,103 +79,11 @@
       400 24px Geist,
       sans-serif;
   }
-  .home-feature-card {
-    padding: 28px 32px;
-    gap: 36px;
-    background-color: #6a6a65;
-    background-image:
-      linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 55%, rgba(0, 0, 0, 0.12)),
-      url('/assets/felt-grey.jpg');
-    background-size:
-      100% 100%,
-      480px;
-    background-repeat: no-repeat, repeat;
-    background-blend-mode: normal, multiply;
-    box-shadow:
-      inset 1px 1px 0 rgba(255, 255, 255, 0.1),
-      inset -1px -1px 0 rgba(0, 0, 0, 0.45);
-    border-color: #ffffff13;
-  }
-  .home-feature-card .card-meta,
   .race-choice .card-meta {
     font:
       400 11px/1.5 KHF1,
       monospace;
     text-transform: uppercase;
-  }
-  .home-feature-card {
-    position: relative;
-  }
-  .home-feature-map {
-    position: absolute;
-    right: 36px;
-    top: 46%;
-    height: 56%;
-    max-height: 300px;
-    max-width: clamp(200px, 22vw, 320px);
-    transform: translateY(-50%);
-    display: flex;
-    justify-content: flex-end;
-    /* Carved into the felt like the title: black stroke, highlight below, shadow above. */
-    color: #090909;
-    pointer-events: none;
-    z-index: 0;
-  }
-  .home-feature-map svg {
-    display: block;
-    height: 100%;
-    width: auto;
-    max-width: 100%;
-    filter: drop-shadow(0 1px 0 #fff3) drop-shadow(0 -1px 0 #000c);
-  }
-  .home-feature-card > :not(.home-feature-map) {
-    position: relative;
-    z-index: 1;
-  }
-  .home-feature-title h2 {
-    font:
-      900 clamp(46px, 7.8vw, 118px)/0.92 F1Black,
-      sans-serif;
-    letter-spacing: -0.015em;
-    text-transform: uppercase;
-    color: #090909;
-    text-shadow:
-      0 1px 0 #fff3,
-      0 -1px 0 #000c,
-      0 -2px 2px #0006;
-    font-feature-settings: 'calt' 1;
-  }
-  .home-feature-title p {
-    font-size: 11px;
-    margin-top: 22px;
-    /* Rendered as --muted (via .session-card p.utility, which outranked this rule before cascade layers); #d0d0c6 was never shown. */
-    color: var(--muted);
-  }
-  .home-feature-bottom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 28px;
-    border-top: 1px solid #ffffff24;
-    padding-top: 22px;
-  }
-  .home-feature-bottom p {
-    font:
-      400 12px/1.6 KHF1,
-      monospace;
-    text-transform: uppercase;
-    color: #eee;
-  }
-  .home-feature-bottom p span {
-    color: #c0c0b7;
-    font:
-      400 13px/1.6 Geist,
-      sans-serif;
-    text-transform: none;
-  }
-  .home-feature-bottom .button {
-    flex-shrink: 0;
-    min-height: 38px;
   }
   .home-races {
     padding-block: var(--section-pad);
@@ -312,31 +220,6 @@
   .race-session-links {
     border-top: 1px solid #ffffff26;
   }
-  .race-session-links > a,
-  .race-unavailable {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    min-height: 44px;
-    font:
-      400 12px/1.4 KHF1,
-      monospace;
-    text-transform: uppercase;
-    border-bottom: 1px solid #ffffff18;
-  }
-  .race-session-links > a > span:last-child {
-    font:
-      400 20px Geist,
-      sans-serif;
-    transition: transform 160ms var(--ease);
-  }
-  .race-unavailable {
-    color: var(--muted);
-  }
-  .race-unavailable > span:last-child {
-    font-size: 11px;
-  }
   .race-show {
     display: flex;
     gap: 20px;
@@ -441,13 +324,6 @@
     position: static;
   }
   @media (hover: hover) and (pointer: fine) {
-    .race-session-links > a:hover {
-      color: #fff;
-      background: #ffffff08;
-    }
-    .race-session-links > a:hover > span:last-child {
-      transform: translate(2px, -2px);
-    }
     .race-filters button:hover {
       color: #fff;
     }
@@ -516,35 +392,6 @@
     .desktop-break {
       display: none;
     }
-    .home-feature-card {
-      padding: 20px;
-      gap: 30px;
-    }
-    .home-feature-title h2 {
-      font-size: clamp(32px, 7.8vw, 62px);
-    }
-    .home-feature-map {
-      top: auto;
-      bottom: 22px;
-      right: 20px;
-      height: auto;
-      width: 108px;
-      transform: none;
-      opacity: 0.4;
-    }
-    .home-feature-bottom {
-      align-items: start;
-      flex-direction: column;
-      gap: 16px;
-      padding-top: 18px;
-    }
-    .home-feature-bottom p span {
-      display: block;
-      margin-top: 8px;
-    }
-    .home-feature-title p {
-      margin-top: 16px;
-    }
     .home-section-heading h2 {
       font-size: 22px;
     }
@@ -577,16 +424,13 @@
     .research-copy > p:first-child {
       font-size: 16px;
     }
-    .home-feature-card .card-meta,
     .race-choice .card-meta {
       gap: 16px;
       align-items: start;
     }
-    .home-feature-card .card-meta > span,
     .race-choice .card-meta > span {
       text-align: right;
     }
-    .home-feature-card .card-meta time,
     .race-choice .card-meta time {
       white-space: nowrap;
     }
@@ -595,14 +439,6 @@
     .home-preview * {
       scroll-behavior: auto !important;
     }
-    .race-session-links > a > span:last-child {
-      transition: none !important;
-      transform: none !important;
-    }
-  }
-  html[data-input='keyboard'] .race-session-links > a > span:last-child {
-    transition: none;
-    transform: none;
   }
 
   .home-preview .session-card {
@@ -610,21 +446,6 @@
       100% 100%,
       480px;
     background-repeat: no-repeat, repeat;
-  }
-  .home-feature-title h2 {
-    position: relative;
-  }
-  .home-feature-title .card-grain {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: url('/assets/felt-grey.jpg') 0 0/480px 480px;
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    text-shadow: none;
-    filter: grayscale(1) brightness(0.9);
-    opacity: 0.14;
   }
 
   .home-preview .card-grain {
@@ -645,23 +466,159 @@
   .race-count {
     min-height: 1.7em;
   }
-  .home-feature-card.skel {
-    min-height: 476px;
+
+  /* Race cards: venue photograph on the right (fading into the card), felt plate when a circuit has no photo. */
+  .race-choice {
+    position: relative;
+    transition: border-color 200ms var(--ease);
   }
-  .race-choice.skel {
-    min-height: 260px;
+  .race-choice > :not(.race-photo) {
+    position: relative;
+    z-index: 1;
+  }
+  .race-choice .card-meta {
+    text-shadow: 0 1px 8px #000b;
+  }
+  .race-photo {
+    --fade: 45%;
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 55%;
+    pointer-events: none;
+    -webkit-mask-image:
+      linear-gradient(to right, transparent 0, #000 var(--fade)),
+      linear-gradient(to bottom, transparent 0, #000 18%, #000 55%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, transparent 0, #000 var(--fade)),
+      linear-gradient(to bottom, transparent 0, #000 18%, #000 55%, transparent 100%);
+    mask-composite: intersect;
+    filter: saturate(0.85) brightness(0.85);
+    transition: --fade 200ms var(--ease);
+  }
+  .race-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  .race-choice h3 {
+    position: relative;
+  }
+  .race-choice:not(.race-plate) h3 {
+    text-shadow: 0 2px 18px #000a;
+  }
+  .race-single {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 44px;
+  }
+  .race-single-label,
+  .race-row > span:first-child {
+    font:
+      400 12px/1.4 KHF1,
+      monospace;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .race-unavailable-note {
+    font:
+      400 11px/1.4 KHF1,
+      monospace;
+    text-transform: uppercase;
+    color: #6d6d66;
+  }
+  .race-session-links {
+    border-top: 1px solid #ffffff26;
+  }
+  .race-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 50px;
+    border-bottom: 1px solid #ffffff18;
+  }
+  .race-row > span:first-child {
+    color: var(--ink);
+  }
+  .race-choice .button-grey {
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+  .race-choice .button-grey.button-compact {
+    min-height: 36px;
+    padding: 0 10px;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .race-choice:not(.race-plate):hover,
+    .race-choice:not(.race-plate):focus-within {
+      border-color: #ffffff33;
+    }
+    .race-choice:hover .race-photo,
+    .race-choice:focus-within .race-photo {
+      --fade: 35%;
+    }
+  }
+  /* Skeleton mirrors the real card: meta line, two-line title, facts, bottom row. */
+  .skel-bar {
+    display: block;
+    height: 12px;
+    background: #ffffff0f;
+  }
+  .race-choice.skel .card-meta .skel-bar {
+    width: 84px;
+    height: 1.5em;
+    background: linear-gradient(#0000 0.2em, #ffffff0f 0.2em, #ffffff0f 1.3em, #0000 1.3em);
+  }
+  .skel-title {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    min-height: 2.1em;
+    font-size: clamp(29px, 6.4cqw, 56px);
+    line-height: 1.02;
+  }
+  .skel-title .skel-bar {
+    height: 0.8em;
+    width: 70%;
+  }
+  .skel-title .skel-bar + .skel-bar {
+    width: 48%;
+  }
+  .skel-facts {
+    width: 55%;
+    height: 17px;
+    background: linear-gradient(#0000 2px, #ffffff0f 2px, #ffffff0f 15px, #0000 15px);
+  }
+  .race-choice.skel .skel-button {
+    width: 128px;
+    height: 44px;
+  }
+  .race-choice.skel .race-single .skel-bar:first-child {
+    width: 56px;
   }
   @media (max-width: 720px) {
-    .home-feature-card.skel {
-      min-height: 361px;
+    .skel-title {
+      font-size: clamp(28px, 8.3cqw, 46px);
     }
-    .race-choice.skel {
-      min-height: 237px;
+    .race-photo {
+      width: 62%;
+    }
+    .race-plate-map {
+      width: 150px;
+      height: 96px;
     }
   }
-  body .session-preview .home-feature-card.skel {
-    background-image: none;
-    background-color: #141413;
-    box-shadow: none;
-  }
+}
+@property --fade {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 45%;
 }

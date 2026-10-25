@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useList, useRateLimited } from '../lib/api';
 import type { SessionRow } from '../lib/types';
-import { circuitMeta } from '../track/circuits';
+import { circuitHero, circuitMeta } from '../track/circuits';
 import { CircuitMini } from './circuit-mini';
 import { createPixelButton } from './hover.js';
 import { paintScreen } from './session-halftone';
@@ -34,8 +34,6 @@ function App() {
   const [switched, setSwitched] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const sessions = useMemo(() => remote.data ?? [], [remote.data]);
-  const feature = sessions.find((s) => s.session_key === 11361 && s.has_results);
-  const hasFeature = !!feature;
   const meetings = useMemo(() => {
     const grouped = new Map<number, SessionRow[]>();
     for (const s of sessions) {
@@ -61,9 +59,9 @@ function App() {
   }, []);
   useEffect(() => {
     document
-      .querySelectorAll<HTMLAnchorElement>('.home-preview .button-light')
+      .querySelectorAll<HTMLAnchorElement>('.home-preview .button-grey')
       .forEach((el) => createPixelButton(el));
-  }, [hasFeature]);
+  }, [meetings, all, remote.loading]);
   return (
     <div className="session-preview home-preview">
       <a className="skip" href="#races">
@@ -96,48 +94,6 @@ function App() {
                   </a>
                 </div>
               </div>
-            </div>
-          </section>
-          <section aria-label="Start exploring at Monza">
-            <div className="home-feature wrap">
-              {feature ? (
-                <article className="session-card home-feature-card">
-                  <div className="card-meta utility">
-                    <time dateTime={feature.date_start ?? undefined}>{date(feature)}</time>
-                    <span>Italy / {feature.session_name}</span>
-                  </div>
-                  <div className="home-feature-title">
-                    <h2>
-                      Italian
-                      <br />
-                      Grand Prix
-                      <span className="card-grain" aria-hidden="true">
-                        Italian
-                        <br />
-                        Grand Prix
-                      </span>
-                    </h2>
-                    <p className="utility">Autodromo Nazionale Monza</p>
-                  </div>
-                  <div className="home-feature-map" aria-hidden="true">
-                    <CircuitMini circuit={feature.circuit_key} />
-                  </div>
-                  <div className="home-feature-bottom">
-                    <p>
-                      Start with Monza.
-                      <br />
-                      <span>Compare drivers’ estimated cut-offs on the long straights.</span>
-                    </p>
-                    <a className="button button-light" href={href(feature)}>
-                      Explore Monza
-                    </a>
-                  </div>
-                </article>
-              ) : remote.loading ? (
-                <article className="session-card home-feature-card skel" aria-hidden="true">
-                  <div className="home-feature-skel" />
-                </article>
-              ) : null}
             </div>
           </section>
           <section id="races" tabIndex={-1} aria-labelledby="races-title" className="band">
@@ -219,88 +175,132 @@ function App() {
                   {remote.loading
                     ? Array.from({ length: 6 }, (_, i) => (
                         <article key={i} className="session-card race-choice skel" aria-hidden="true">
-                          <div className="race-skel" />
+                          <div className="card-meta utility">
+                            <span className="skel-bar" />
+                            <span className="skel-bar" />
+                          </div>
+                          <div className="skel-title">
+                            <span className="skel-bar" />
+                            <span className="skel-bar" />
+                          </div>
+                          <span className="skel-bar skel-facts" />
+                          <div className="race-choice-bottom">
+                            <div className="race-single">
+                              <span className="skel-bar" />
+                              <span className="skel-bar skel-button" />
+                            </div>
+                          </div>
                         </article>
                       ))
                     : (all ? meetings : meetings.slice(0, 6)).map((rows, index) => {
                         const s = rows[0],
                           m = circuitMeta(s.circuit_key);
                         const title = m?.meeting_name ?? s.circuit_short_name ?? 'Session';
+                        const photo = circuitHero(s.circuit_key, 900);
+                        const single = filter !== 'All sessions';
+                        const fold = (x: string) =>
+                          x
+                            .normalize('NFD')
+                            .replace(/[\u0300-\u036f]/g, '')
+                            .toLowerCase();
+                        const venue = m?.name ?? s.circuit_short_name ?? '';
+                        const v = fold(venue);
+                        const facts = [
+                          v !== fold(title) && v !== fold(m?.location ?? '') ? venue : '',
+                          m?.location ?? '',
+                          m && m.corners > 0 ? `${m.corners} corners` : '',
+                        ].filter(Boolean);
+                        const line1 = title.replace(/ Grand Prix$/, '');
+                        const line2 = /Grand Prix$/.test(title) ? 'Grand Prix' : '';
+                        const slots = single
+                          ? rows.filter((r) => r.session_name === filter).slice(0, 1)
+                          : SLOTS.map(
+                              (name) =>
+                                rows.find((r) => r.session_name === name) ??
+                                ({
+                                  session_key: -1,
+                                  session_name: name,
+                                  has_results: false,
+                                  missing: true,
+                                } as SessionRow & { missing?: boolean })
+                            );
                         return (
                           <article
                             key={s.meeting_key}
-                            className={`session-card race-choice${all && index >= 6 ? ' switch-in' : ''}`}
+                            className={`session-card race-choice${photo ? '' : ' race-plate'}${all && index >= 6 ? ' switch-in' : ''}`}
                           >
+                            {photo && (
+                              <div className="race-photo" aria-hidden="true">
+                                <img src={photo} alt="" loading="lazy" decoding="async" />
+                              </div>
+                            )}
                             <div className="card-meta utility">
                               <time dateTime={s.date_start ?? undefined}>{date(s)}</time>
                               <span>{m?.country ?? s.circuit_short_name}</span>
                             </div>
                             <h3>
-                              {title.replace(/ Grand Prix$/, '')}
+                              {line1}
                               <br />
-                              {/Grand Prix$/.test(title) ? 'Grand Prix' : ''}
-                              <span className="card-grain" aria-hidden="true">
-                                {title.replace(/ Grand Prix$/, '')}
-                                <br />
-                                {/Grand Prix$/.test(title) ? 'Grand Prix' : ''}
-                              </span>
+                              {line2}
+                              {!photo && (
+                                <span aria-hidden="true">
+                                  <CircuitMini
+                                    circuit={s.circuit_key}
+                                    weight={5}
+                                    className="race-plate-map"
+                                  />
+                                </span>
+                              )}
                             </h3>
                             <p className="race-facts">
-                              {(() => {
-                                const fold = (x: string) =>
-                                  x
-                                    .normalize('NFD')
-                                    .replace(/[\u0300-\u036f]/g, '')
-                                    .toLowerCase();
-                                const venue = m?.name ?? s.circuit_short_name ?? '';
-                                const v = fold(venue);
-                                const parts = [
-                                  v !== fold(title) && v !== fold(m?.location ?? '') ? venue : '',
-                                  m?.location ?? '',
-                                  m && m.corners > 0 ? `${m.corners} corners` : '',
-                                ].filter(Boolean);
-                                return parts.length ? parts.join(' · ') : (m?.country ?? '');
-                              })()}
+                              {facts.length ? facts.join(' · ') : (m?.country ?? '')}
                             </p>
                             <div className="race-choice-bottom">
-                              <div className="race-session-links">
-                                {(filter === 'All sessions'
-                                  ? SLOTS.map(
-                                      (name) =>
-                                        rows.find((r) => r.session_name === name) ??
-                                        ({
-                                          session_key: -1,
-                                          session_name: name,
-                                          has_results: false,
-                                          missing: true,
-                                        } as SessionRow & { missing?: boolean })
-                                    )
-                                  : rows
-                                ).map((row) =>
-                                  (row as { missing?: boolean }).missing ? (
-                                    <span key={row.session_name} className="race-unavailable race-not-held">
-                                      <span>{row.session_name}</span>
-                                      <span>Not held</span>
-                                    </span>
-                                  ) : row.has_results ? (
+                              {single ? (
+                                <div className="race-single">
+                                  <span className="race-single-label">{filter}</span>
+                                  {slots[0]?.has_results ? (
                                     <a
-                                      key={row.session_key}
-                                      href={href(row)}
-                                      aria-label={`Explore ${s.circuit_short_name} ${row.session_name}`}
+                                      className="button button-grey"
+                                      data-pixel-rest="#1b1b19"
+                                      data-pixel-rest-text="#f4f4ef"
+                                      data-pixel-active="#f4f4ef"
+                                      data-pixel-active-text="#030303"
+                                      href={href(slots[0])}
+                                      aria-label={`View estimates, ${title} ${filter}`}
                                     >
-                                      <span>{row.session_name}</span>
-                                      <span className="race-link-action">
-                                        View estimates <span aria-hidden="true">↗</span>
-                                      </span>
+                                      View estimates
                                     </a>
                                   ) : (
-                                    <span key={row.session_key} className="race-unavailable">
+                                    <span className="race-unavailable-note">No results</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="race-session-links">
+                                  {slots.map((row) => (
+                                    <div className="race-row" key={row.session_name}>
                                       <span>{row.session_name}</span>
-                                      <span>No results</span>
-                                    </span>
-                                  )
-                                )}
-                              </div>
+                                      {(row as { missing?: boolean }).missing ? (
+                                        <span className="race-unavailable-note">Not held</span>
+                                      ) : row.has_results ? (
+                                        <a
+                                          className="button button-grey button-compact"
+                                          data-pixel-rest="#1b1b19"
+                                          data-pixel-rest-text="#f4f4ef"
+                                          data-pixel-active="#f4f4ef"
+                                          data-pixel-active-text="#030303"
+                                          href={href(row)}
+                                          aria-label={`View estimates, ${title} ${row.session_name}`}
+                                        >
+                                          View estimates
+                                        </a>
+                                      ) : (
+                                        <span className="race-unavailable-note">No results</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </article>
                         );

@@ -304,11 +304,6 @@
   .entry-detail {
     padding-bottom: 30px;
   }
-  /* Materials carry identity; secondary copy remains comfortably readable on them. */
-  .home-feature-card {
-    padding: 32px 36px;
-    gap: 40px;
-  }
   .race-choice {
     padding: 20px;
     gap: 18px;
@@ -317,8 +312,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: none;
   }
-  .race-choice .card-meta,
-  .home-feature-card .card-meta {
+  .race-choice .card-meta {
     font-size: 12px;
     color: #d6d6cb;
   }
@@ -331,24 +325,6 @@
     font-size: 12px;
     color: #d0d0c5;
     line-height: 1.6;
-  }
-  .race-session-links > a {
-    min-height: 50px;
-    font-size: 13px;
-  }
-  .race-session-links > a > .race-link-action {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    font:
-      400 12px/1.4 KHF1,
-      monospace;
-    color: #deded3;
-  }
-  .race-link-action > span {
-    font:
-      400 22px/1 Geist,
-      sans-serif;
   }
   .race-count {
     font-size: 12px;
@@ -556,9 +532,6 @@
     .replay-track .tmap__tag.is-compact:hover .tmap__tag-chip {
       opacity: 1;
     }
-    .race-session-links > a:hover {
-      background: #ffffff0b;
-    }
   }
   @media (max-width: 1000px) {
     .finding-hero,
@@ -747,15 +720,10 @@
     .entry-short {
       font-size: 14px;
     }
-    .home-feature-card {
-      padding: 22px;
-      gap: 30px;
-    }
     .race-choice {
       padding: 20px;
       gap: 18px;
     }
-    .home-feature-card .card-meta,
     .race-choice .card-meta {
       font-size: 11px;
     }
@@ -767,13 +735,6 @@
     }
     .home-section-heading h2 {
       font-size: 24px;
-    }
-    .race-session-links > a {
-      font-size: 12px;
-    }
-    .race-session-links > a > .race-link-action {
-      font-size: 11px;
-      gap: 12px;
     }
     .home-research .research-copy > p:first-child {
       font-size: 18px;
@@ -1120,7 +1081,6 @@
     :is(
       .replay-modes > div button,
       .select-trigger,
-      .race-session-links > a,
       .home-text-link,
       .home-scroll,
       .finding-jump,
@@ -1202,29 +1162,10 @@
   .race-facts {
     min-height: 17px;
   }
-  .race-not-held {
-    color: #6d6d66;
-  }
-  .race-not-held > span:last-child {
-    color: #6d6d66;
-  }
-  .race-unavailable {
-    min-height: 50px;
-  }
   .race-facts {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  /* Exception to --section-pad: this card overlaps the hero's bottom, and the felt plate clears the race band hairline below it. */
-  .home-feature {
-    padding-bottom: 56px;
-  }
-  @media (max-width: 720px) {
-    .home-feature {
-      padding-bottom: 36px;
-    }
   }
 
   /* Anchor landing offsets, from the pinned chrome tokens (tokens.css). The header is 64px
@@ -1412,5 +1353,51 @@
     .entry-detail {
       padding: 0 var(--row-inset) 22px calc(var(--row-inset) + var(--icon-col) + var(--col-gap));
     }
+  }
+}
+@layer overrides {
+  .home-preview .race-choice {
+    background-color: #0b0b0a;
+    border-color: #ffffff14;
+  }
+  .home-preview .race-choice.race-plate {
+    background-color: #6a6a65;
+    background-image:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 55%, rgba(0, 0, 0, 0.12)),
+      url('/assets/felt-grey.jpg');
+    background-size:
+      100% 100%,
+      480px;
+    background-repeat: no-repeat, repeat;
+    background-blend-mode: normal, multiply;
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.1),
+      inset -1px -1px 0 rgba(0, 0, 0, 0.45);
+    border-color: #ffffff13;
+  }
+  .race-plate .card-meta,
+  .race-plate .race-facts {
+    color: #c0c0b7;
+    text-shadow: none;
+  }
+  .race-plate h3,
+  .race-plate:hover h3,
+  .race-plate:focus-within h3 {
+    color: #090909;
+    text-shadow:
+      0 1px 0 #fff3,
+      0 -1px 0 #000c,
+      0 -2px 2px #0006;
+  }
+  .race-plate-map {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 200px;
+    height: 128px;
+    transform: translateY(-50%);
+    color: #090909;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 0 #fff3) drop-shadow(0 -1px 0 #000c);
   }
 }
