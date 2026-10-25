@@ -1566,13 +1566,12 @@
   .findings-preview .finding-flags li.is-neutral i {
     display: none;
   }
-  .findings-preview .finding-flags li.is-fail {
-    color: var(--red-text);
-    border-color: var(--red-text);
+  /* Toned down (Ali, 2026-10-25): the text and border stay neutral; only the dot carries the state. */
+  .findings-preview .finding-flags li.is-fail i {
+    background: var(--red-text);
   }
-  .findings-preview .finding-flags li.is-pass {
-    color: #9ad67a;
-    border-color: #9ad67a80;
+  .findings-preview .finding-flags li.is-pass i {
+    background: #9ad67a;
   }
 }
 

@@ -1116,6 +1116,7 @@
       sans-serif;
     color: var(--team);
     opacity: 0.85;
+    letter-spacing: -0.09em;
     font-variant-numeric: tabular-nums;
   }
   .replay-field-rows .field-code > small {
