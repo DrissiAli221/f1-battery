@@ -590,7 +590,10 @@ function ReplaySession({
                         <span>{driverName(d)}</span>
                         <small>{d.team_name}</small>
                       </span>
-                      <span className="field-code">{d.name_acronym}</span>
+                      <span className="field-code">
+                        <b>{d.driver_number ?? d.name_acronym}</b>
+                        <small>{d.name_acronym}</small>
+                      </span>
                       {mode === 'feed' && (
                         <span className="field-regime" style={{ color: colours[s?.regime ?? 'other'] }}>
                           {s ? words[s.regime] : '—'}
