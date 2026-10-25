@@ -323,8 +323,7 @@ function DriverEstimate({
       <div className={`driver-poster-data ${busy ? 'is-loading' : ''}`} aria-busy={busy || undefined}>
         <div className="poster-readout">
           <p className="estimate-label">
-            {lap !== null ? `Lap ${lap} cut-off` : 'Median cut-off'}
-            <Info label="the cut-off">
+            <Info term={lap !== null ? `Lap ${lap} cut-off` : 'Median cut-off'} label="the cut-off">
               {lap !== null
                 ? 'The estimated point on this straight where electrical deployment ends on the selected lap, in metres from its start. An estimate from public telemetry, not a battery reading.'
                 : 'The session median of where the model estimates electrical deployment ends on this straight, in metres from its start. An estimate from public telemetry, not a battery reading.'}
@@ -338,8 +337,7 @@ function DriverEstimate({
         {ranged ? (
           <div className="rng" aria-label={`95% interval ${fmt(lo)} to ${fmt(hi)} metres`}>
             <p className="rng-cap">
-              95% interval
-              <Info label="the 95% interval">
+              <Info term="95% interval" label="the 95% interval">
                 The range the cut-off falls in across laps, from a 95% bootstrap interval. A wide band means
                 the laps disagree.
               </Info>

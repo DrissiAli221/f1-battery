@@ -2665,28 +2665,38 @@
     text-transform: none;
   }
   .info-dot {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     padding: 0;
     border-radius: 50%;
-    border: 1px solid #ffffff2e;
-    background: transparent;
-    color: var(--muted);
+    border: 0;
+    background: #2a2a28;
+    color: #f4f4ef;
     font:
-      400 10px/1 KHF1,
-      monospace;
+      700 12px/1 Geist,
+      system-ui,
+      sans-serif;
     display: grid;
     place-items: center;
+    padding-bottom: 1px;
+    margin-block: -1px;
     cursor: help;
     text-transform: none;
+    letter-spacing: normal;
     transition:
-      border-color 160ms var(--ease),
+      background-color 160ms var(--ease),
       color 160ms var(--ease);
   }
   .info-dot:hover,
-  .info-dot[aria-expanded='true'] {
-    border-color: #ffffff6b;
-    color: #f4f4ef;
+  .info-dot[aria-expanded='true'],
+  .info-dot:focus-visible {
+    background: #f4f4ef;
+    color: #090909;
+  }
+  .info-term {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    text-decoration-color: #ffffff55;
   }
   .info-dot:focus-visible {
     outline: 2px solid #f4f4ef;

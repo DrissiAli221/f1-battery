@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export function Info({ label, children }: { label: string; children: string }) {
+export function Info({ label, term, children }: { label: string; term?: string; children: string }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btn = useRef<HTMLButtonElement>(null);
@@ -45,39 +45,42 @@ export function Info({ label, children }: { label: string; children: string }) {
     };
   }, [open]);
   return (
-    <span className="info">
-      <button
-        ref={btn}
-        type="button"
-        className="info-dot"
-        aria-label={`About ${label}`}
-        aria-describedby={tipId}
-        aria-expanded={open}
-        onMouseEnter={() => {
-          if (!hover()) return;
-          window.clearTimeout(timer.current);
-          timer.current = window.setTimeout(() => setOpen(true), 120);
-        }}
-        onMouseLeave={() => hover() && close()}
-        onFocus={() => setOpen(true)}
-        onBlur={close}
-        onClick={() => setOpen(true)}
-      >
-        i
-      </button>
-      {createPortal(
-        <div
-          ref={tip}
-          id={tipId}
-          role="tooltip"
-          className="info-tip"
-          data-open={open ? 'true' : 'false'}
-          style={{ top: pos.top, left: pos.left }}
+    <>
+      {term ? <span className="info-term">{term}</span> : null}
+      <span className="info">
+        <button
+          ref={btn}
+          type="button"
+          className="info-dot"
+          aria-label={`About ${label}`}
+          aria-describedby={tipId}
+          aria-expanded={open}
+          onMouseEnter={() => {
+            if (!hover()) return;
+            window.clearTimeout(timer.current);
+            timer.current = window.setTimeout(() => setOpen(true), 120);
+          }}
+          onMouseLeave={() => hover() && close()}
+          onFocus={() => setOpen(true)}
+          onBlur={close}
+          onClick={() => setOpen(true)}
         >
-          {children}
-        </div>,
-        document.body
-      )}
-    </span>
+          i
+        </button>
+        {createPortal(
+          <div
+            ref={tip}
+            id={tipId}
+            role="tooltip"
+            className="info-tip"
+            data-open={open ? 'true' : 'false'}
+            style={{ top: pos.top, left: pos.left }}
+          >
+            {children}
+          </div>,
+          document.body
+        )}
+      </span>
+    </>
   );
 }
