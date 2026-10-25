@@ -814,35 +814,142 @@
     display: flex;
     flex-direction: column;
   }
-  .replay-map-panel > .mode-top {
+  .replay-map-panel > .mode-stack.replay-ctl {
+    margin-top: 0;
+    margin-bottom: 8px;
+    min-height: 92px;
+    padding-inline: 8px;
+  }
+  .replay-ctl > .mode-pane {
+    display: flex;
+    align-items: center;
+  }
+  .replay-ctl > .mode-pane > * {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .replay-ctl .review-distance {
+    padding-inline: 0;
+    margin-top: 0;
+  }
+  .field-display .info-dot {
+    min-height: 16px;
+    padding: 0;
+    border: 1px solid #ffffff2e;
+    background: transparent;
+    color: var(--muted);
+    font-size: 10px;
+  }
+  .replay-ctl .field-display {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .review-notes {
+    margin-top: 4px;
+  }
+  .distance-title {
+    display: flex;
+    align-items: center;
+  }
+  .field-lead,
+  .field-count {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .field-lead > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  @media (max-width: 720px) {
+    .field-display .field-count > span {
+      white-space: normal;
+      text-align: left;
+    }
+  }
+  /* The pending driver select has no label, so the skeleton row reserves the loaded row's height. */
+  @media (min-width: 1001px) {
+    .replay-controls {
+      min-height: 149px;
+    }
+  }
+  .field-count > span {
+    font:
+      400 11px/1.5 KHF1,
+      monospace;
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .replay-map-wrap {
+    position: relative;
+  }
+  .replay-map-wrap > .tmap {
+    display: block;
+  }
+  .replay-map-panel .feed-waiting {
     position: absolute;
     z-index: 3;
-    top: 62px;
-    left: 14px;
-    right: 14px;
-    background: linear-gradient(#151514f2 70%, #15151400);
-    padding-bottom: 14px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    width: min(360px, calc(100% - 32px));
+    min-height: 150px;
+    margin: 0;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+    background: #151514f2;
+    border: 1px solid #ffffff1c;
+    pointer-events: none;
   }
-  .replay-map-panel > .mode-top .field-display {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: 0;
+  .replay-map-panel .feed-waiting[hidden] {
+    display: none;
   }
-  .replay-map-panel > .mode-top .feed-waiting {
-    margin: 14px 8px 0;
-  }
-  .replay-map-panel > .mode-top .feed-waiting > p {
+  .replay-map-panel .feed-waiting > p {
     min-height: 0;
   }
+  .replay-map-panel .feed-waiting > button {
+    pointer-events: auto;
+  }
+  .feed-control > .feed-eyebrow {
+    display: block;
+    font:
+      400 11px/1.4 KHF1,
+      monospace;
+    text-transform: uppercase;
+    color: #c0c0b7;
+    margin-bottom: 6px;
+  }
+  .feed-control {
+    gap: 4px;
+    height: 83px;
+  }
+  .replay-skel-ctl {
+    height: 92px;
+    margin: 0 8px 8px;
+    background: #1c1c1b;
+  }
   /* The box is sized by the row, never by the circuit: the track fits inside it. */
-  .replay-map-panel > .tmap {
+  .replay-map-wrap > .tmap {
     flex: none;
     height: auto;
     aspect-ratio: 1.86;
     min-height: 0;
   }
   @media (max-width: 720px) {
-    .replay-map-panel > .tmap {
+    .replay-map-wrap > .tmap {
       aspect-ratio: 1.61;
     }
   }
@@ -874,7 +981,7 @@
     max-height: none;
   }
   .replay-skel-foot {
-    height: 175px;
+    height: 155px;
     margin: 12px 8px 0;
   }
   .replay-skel-title {
@@ -889,7 +996,10 @@
       aspect-ratio: 1.61;
     }
     .replay-skel-foot {
-      height: 221px;
+      height: 211px;
+    }
+    .replay-skel-ctl {
+      height: 126px;
     }
   }
 }

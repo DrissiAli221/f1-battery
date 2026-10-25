@@ -1,7 +1,8 @@
 import './reveal';
 import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { useList, useRateLimited } from '../lib/api';
@@ -34,12 +35,94 @@ const words: Record<string, string> = {
   brake: 'Braking',
   other: 'Other',
 };
+// Same hover/focus info marker as the session page (session-preview.tsx mounts its own root on import, so it is mirrored here).
+function Info({ label, children }: { label: string; children: string }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btn = useRef<HTMLButtonElement>(null);
+  const tip = useRef<HTMLDivElement>(null);
+  const timer = useRef<number>();
+  const tipId = useId();
+  const hover = () => matchMedia('(hover:hover) and (pointer:fine)').matches;
+  const close = () => {
+    window.clearTimeout(timer.current);
+    setOpen(false);
+  };
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const place = () => {
+    if (!btn.current || !tip.current) return;
+    const b = btn.current.getBoundingClientRect();
+    const w = tip.current.offsetWidth;
+    const h = tip.current.offsetHeight;
+    let left = b.left;
+    if (left + w > innerWidth - 8) left = b.right - w;
+    left = Math.max(8, left);
+    let top = b.bottom + 8;
+    if (top + h > innerHeight - 8) top = Math.max(8, b.top - h - 8);
+    setPos({ top, left });
+  };
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
+    const onDown = (e: PointerEvent) => {
+      if (e.target !== btn.current) close();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('scroll', place, { passive: true });
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('scroll', place);
+    };
+  }, [open]);
+  return (
+    <span className="info">
+      <button
+        ref={btn}
+        type="button"
+        className="info-dot"
+        aria-label={`About ${label}`}
+        aria-describedby={tipId}
+        aria-expanded={open}
+        onMouseEnter={() => {
+          if (!hover()) return;
+          window.clearTimeout(timer.current);
+          timer.current = window.setTimeout(() => setOpen(true), 120);
+        }}
+        onMouseLeave={() => hover() && close()}
+        onFocus={() => setOpen(true)}
+        onBlur={close}
+        onClick={() => setOpen(true)}
+      >
+        i
+      </button>
+      {createPortal(
+        <div
+          ref={tip}
+          id={tipId}
+          role="tooltip"
+          className="info-tip"
+          data-open={open ? 'true' : 'false'}
+          style={{ top: pos.top, left: pos.left }}
+        >
+          {children}
+        </div>,
+        document.body
+      )}
+    </span>
+  );
+}
 function ReplayStageSkeleton({ label }: { label: string }) {
   return (
     <section aria-label={label} aria-busy="true" className="band">
       <div className="wrap replay-stage replay-skeleton">
         <div className="replay-map-panel skel">
           <div className="replay-skel-head" />
+          <div className="replay-skel-ctl" />
           <div className="replay-skel-map" />
           <div className="replay-skel-foot" />
         </div>
@@ -269,7 +352,12 @@ function ReplaySession({
           />
           {mode === 'review' ? (
             <label className="replay-lap">
-              <span>Clean lap</span>
+              <span>
+                Clean lap
+                <Info label="the clean lap">
+                  The fastest lap without traffic, pit stops or flags, so the estimates come from a clean run.
+                </Info>
+              </span>
               <select
                 aria-label="Clean lap"
                 value={lap ?? ''}
@@ -290,6 +378,7 @@ function ReplaySession({
             </label>
           ) : (
             <div className="feed-control">
+              <span className="feed-eyebrow">View</span>
               <button
                 className="button button-secondary"
                 disabled={!connected}
@@ -299,7 +388,7 @@ function ReplaySession({
                 {paused ? 'Resume view' : 'Pause view'}
                 <span aria-hidden="true">{paused ? '▷' : 'Ⅱ'}</span>
               </button>
-              <span>Pauses this view; the source continues.</span>
+              <span className="feed-note">Pauses this view; the source continues.</span>
             </div>
           )}
           <div className="replay-state" role="status">
@@ -332,86 +421,20 @@ function ReplaySession({
               className={`replay-map-panel${dim ? ' is-loading' : ''}`}
               aria-busy={regimes.loading || undefined}
             >
-              <div
-                className="mode-pane mode-top"
-                aria-hidden={mode !== 'feed' || undefined}
-                {...(mode !== 'feed' ? ({ inert: '' } as Record<string, unknown>) : {})}
-              >
-                <div className="field-display">
-                  <div role="group" aria-label="Drivers displayed on track">
-                    <button aria-pressed={!showAll} onClick={() => setShowAll(false)}>
-                      Follow selected
-                    </button>
-                    <button aria-pressed={showAll} onClick={() => setShowAll(true)}>
-                      All drivers
-                    </button>
-                  </div>
-                  <span role="status">
-                    {receivedDrivers.length} / {drivers.length} driver states received
-                    {showAll ? ' · all received dots shown' : ''}
-                  </span>
-                </div>
-                {!receivedDrivers.length && (
-                  <div className="feed-waiting" role="status">
-                    <p>
-                      {feed.status === 'disabled'
-                        ? 'Replay is disabled on this server.'
-                        : feed.status === 'no-topic'
-                          ? 'No replay has started for this session.'
-                          : feed.status === 'error'
-                            ? 'Replay connection lost. Retrying…'
-                            : slow
-                              ? 'The replay is taking longer to respond. You can review a recorded lap while it connects.'
-                              : 'Waiting for driver positions from the replay…'}
-                    </p>
-                    <button
-                      className="button button-secondary"
-                      onClick={onReview}
-                      {...(slow ||
-                      feed.status === 'disabled' ||
-                      feed.status === 'no-topic' ||
-                      feed.status === 'error'
-                        ? {}
-                        : ({ inert: '', tabIndex: -1, 'aria-hidden': true } as Record<string, unknown>))}
-                    >
-                      Review a recorded lap <span aria-hidden="true">↗</span>
-                    </button>
-                  </div>
-                )}
-              </div>
               <div className="replay-map-head">
                 <h2>{meta?.name ?? data.session?.circuit_short_name}</h2>
                 <span>
                   {mode === 'review'
                     ? `Lap ${regimes.loading ? '—' : (lap ?? '—')} / model estimates`
                     : 'Approximate track position'}
+                  <Info label="the track position">
+                    Positions are interpolated from the recorded telemetry and the cut-off is an estimate, not
+                    a measured battery state.
+                  </Info>
                 </span>
               </div>
               <div className="skel-rule replay-rule" data-on={dim || undefined} aria-hidden="true" />
-              {data.outline ? (
-                <TrackMap
-                  ref={map}
-                  outline={data.outline}
-                  circuit={circuit}
-                  runs={mode === 'review' ? runs : []}
-                  tags={tags}
-                  corners={!smallMap}
-                  sf
-                  rotation={data.session?.circuit_key === 39 ? 85 : (meta?.rotation ?? undefined)}
-                  arrows={false}
-                  fill
-                  markerScale={showAll ? 1 : 1.15}
-                  className="replay-track"
-                  label={
-                    mode === 'review'
-                      ? 'Recorded lap regime map with a review cursor'
-                      : 'Recorded replay map with approximate position'
-                  }
-                />
-              ) : (
-                <p className="replay-empty">Circuit geometry is unavailable for this session.</p>
-              )}
-              <div className="mode-stack">
+              <div className="mode-stack replay-ctl">
                 <div
                   className="mode-pane"
                   aria-hidden={mode !== 'review' || undefined}
@@ -419,7 +442,13 @@ function ReplaySession({
                 >
                   <div className="review-distance">
                     <div className="distance-heading">
-                      <label htmlFor="review-distance">Inspect distance</label>
+                      <div className="distance-title">
+                        <label htmlFor="review-distance">Inspect distance</label>
+                        <Info label="the distance scrubber">
+                          Drag to inspect the estimates at a distance along the lap; positions are
+                          approximate.
+                        </Info>
+                      </div>
                       <span style={{ color: colours[selectedRegime ?? 'other'] }}>
                         {regimes.loading
                           ? '—'
@@ -444,6 +473,103 @@ function ReplaySession({
                       <span>Start / finish</span>
                       <span>{nf.format(data.lap ?? 0)} m</span>
                     </div>
+                  </div>
+                </div>
+                <div
+                  className="mode-pane mode-top"
+                  aria-hidden={mode !== 'feed' || undefined}
+                  {...(mode !== 'feed' ? ({ inert: '' } as Record<string, unknown>) : {})}
+                >
+                  <div className="field-display">
+                    <div className="field-lead">
+                      <div role="group" aria-label="Drivers displayed on track">
+                        <button aria-pressed={!showAll} onClick={() => setShowAll(false)}>
+                          Follow selected
+                        </button>
+                        <button aria-pressed={showAll} onClick={() => setShowAll(true)}>
+                          All drivers
+                        </button>
+                      </div>
+                      <Info label="the driver display">
+                        Follow keeps the chosen driver centred; All drivers shows every car's last received
+                        position.
+                      </Info>
+                    </div>
+                    <div className="field-count">
+                      <span role="status">
+                        {receivedDrivers.length} / {drivers.length} driver states received
+                        {showAll ? ' · all received dots shown' : ''}
+                      </span>
+                      <Info label="driver states received">
+                        How many of the field's cars have sent a position in this feed.
+                      </Info>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="replay-map-wrap">
+                {data.outline ? (
+                  <TrackMap
+                    ref={map}
+                    outline={data.outline}
+                    circuit={circuit}
+                    runs={mode === 'review' ? runs : []}
+                    tags={tags}
+                    corners={!smallMap}
+                    sf
+                    rotation={data.session?.circuit_key === 39 ? 85 : (meta?.rotation ?? undefined)}
+                    arrows={false}
+                    fill
+                    markerScale={showAll ? 1 : 1.15}
+                    className="replay-track"
+                    label={
+                      mode === 'review'
+                        ? 'Recorded lap regime map with a review cursor'
+                        : 'Recorded replay map with approximate position'
+                    }
+                  />
+                ) : (
+                  <p className="replay-empty">Circuit geometry is unavailable for this session.</p>
+                )}
+                <div
+                  className="feed-waiting"
+                  role="status"
+                  {...(mode !== 'feed' || receivedDrivers.length
+                    ? ({ inert: '', 'aria-hidden': true, hidden: true } as Record<string, unknown>)
+                    : {})}
+                >
+                  <p>
+                    {feed.status === 'disabled'
+                      ? 'Replay is disabled on this server.'
+                      : feed.status === 'no-topic'
+                        ? 'No replay has started for this session.'
+                        : feed.status === 'error'
+                          ? 'Replay connection lost. Retrying…'
+                          : slow
+                            ? 'The replay is taking longer to respond. You can review a recorded lap while it connects.'
+                            : 'Waiting for driver positions from the replay…'}
+                  </p>
+                  <button
+                    className="button button-secondary"
+                    onClick={onReview}
+                    {...(slow ||
+                    feed.status === 'disabled' ||
+                    feed.status === 'no-topic' ||
+                    feed.status === 'error'
+                      ? {}
+                      : ({ inert: '', tabIndex: -1, 'aria-hidden': true } as Record<string, unknown>))}
+                  >
+                    Review a recorded lap <span aria-hidden="true">↗</span>
+                  </button>
+                </div>
+              </div>
+              <div className="mode-stack">
+                <div
+                  className="mode-pane"
+                  aria-hidden={mode !== 'review' || undefined}
+                  {...(mode !== 'review' ? ({ inert: '' } as Record<string, unknown>) : {})}
+                >
+                  <div className="review-distance review-notes">
                     <p className="replay-small">
                       The cursor is a reading position, not a car. Regimes are model estimates in 50 m bins.
                     </p>
