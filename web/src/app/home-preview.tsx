@@ -71,7 +71,7 @@ function App() {
       <SiteHeader current="races" racesHref="#races" navId="home-nav" />
       <PageGround className="home-ground">
         <main className="session-main home-main">
-          <section aria-labelledby="home-title">
+          <section className="hero-band" aria-labelledby="home-title">
             <div className="home-hero wrap">
               <div className="home-screen" aria-hidden="true">
                 <canvas ref={canvas} data-screen="hero" />

@@ -517,7 +517,7 @@ function App() {
       />
       <PageGround>
         <main ref={main} className="session-main">
-          <section ref={hero} aria-labelledby="race-title">
+          <section ref={hero} className="hero-band" aria-labelledby="race-title">
             <div className="race-hero wrap">
               <div className="race-halftone" aria-hidden="true">
                 <canvas ref={background} data-screen="hero" />

@@ -168,7 +168,7 @@ function App() {
       <SiteHeader current="method" />
       <PageGround className="method-ground">
         <main className="session-main method-main">
-          <section ref={hero} aria-labelledby="method-title">
+          <section ref={hero} className="hero-band" aria-labelledby="method-title">
             <div className="wrap method-hero">
               <div className="method-screen" aria-hidden="true">
                 <canvas ref={canvas} data-screen="hero" />

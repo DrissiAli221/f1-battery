@@ -2344,24 +2344,21 @@
   initial-value: transparent;
 }
 @layer pages {
-  .home-hero::before,
-  .race-hero::before,
-  .finding-hero::before,
-  .method-hero::before {
+  .hero-band {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+  }
+  .hero-band::before {
     content: '';
     position: absolute;
-    inset: -12px;
+    inset: 0;
     z-index: -1;
     pointer-events: none;
-    background:
-      radial-gradient(ellipse 60% 70% at 100% 20%, rgb(225 6 0 / 0.22), transparent 70%),
-      radial-gradient(ellipse 90% 45% at 70% 100%, rgb(225 6 0 / 0.1), transparent 75%);
+    background: var(--hero-bloom);
   }
   @media (prefers-reduced-motion: no-preference) {
-    .home-hero::before,
-    .race-hero::before,
-    .finding-hero::before,
-    .method-hero::before {
+    .hero-band::before {
       animation: bloom-drift 18s ease-in-out infinite alternate;
     }
     .map-stage {

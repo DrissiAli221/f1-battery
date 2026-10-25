@@ -1282,3 +1282,22 @@
     }
   }
 }
+
+@layer overrides {
+  /* The wrap is narrower than the viewport here, so the dots fade out at their right edge instead of ending hard. */
+  @media (min-width: 1601px) {
+    .home-screen,
+    .race-halftone,
+    .finding-screen,
+    .method-screen {
+      mask-image:
+        linear-gradient(to right, transparent 0, #000 40%),
+        linear-gradient(to bottom, #000 45%, transparent 100%),
+        linear-gradient(to left, transparent 0, #000 48px);
+      -webkit-mask-image:
+        linear-gradient(to right, transparent 0, #000 40%),
+        linear-gradient(to bottom, #000 45%, transparent 100%),
+        linear-gradient(to left, transparent 0, #000 48px);
+    }
+  }
+}

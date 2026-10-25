@@ -228,7 +228,7 @@ function App() {
       <SiteHeader current="findings" />
       <PageGround className="findings-ground">
         <main className="session-main findings-main">
-          <section ref={hero} aria-labelledby="finding-title">
+          <section ref={hero} className="hero-band" aria-labelledby="finding-title">
             <div className="wrap finding-hero">
               <div className="finding-screen" aria-hidden="true">
                 <canvas ref={canvas} data-screen="hero" />

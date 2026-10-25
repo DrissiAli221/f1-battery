@@ -26,8 +26,16 @@
     --surface-1: #0b0b0a;
     --surface-2: #111110;
     --surface-3: #191615;
-    --band: linear-gradient(rgb(225 6 0 / 0.025), rgb(225 6 0 / 0.025)), rgb(255 255 248 / 0.025);
-    --band-line: rgb(255 226 216 / 0.085);
+    --band: rgb(255 255 248 / 0.025);
+    --band-line: rgb(255 255 255 / 0.07);
+    /* Red bloom behind each hero halftone, centred on it (the halftone is 360px wide at the wrap's right edge,
+       so its centre sits 180px in). closest-side keeps the ellipse inside the section, so alpha is 0 at every
+       edge at any viewport. Set to none to switch off. */
+    --hero-bloom: radial-gradient(
+      ellipse closest-side at calc(100% - max(0px, 50% - 800px) - 180px) 50%,
+      rgb(225 6 0 / 0.16),
+      transparent 100%
+    );
     --ink: #f4f4ef;
     --muted: #aaa99f;
     --line: #2c2c2b;
