@@ -7,6 +7,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import log from '../content/method-log.json';
 import logUrl from '../content/method-log.json?url';
+import { ModelStrip } from './model-strip';
 import { createPixelButton } from './hover.js';
 import { paintScreen } from './session-halftone';
 import './session.css';
@@ -327,6 +328,7 @@ function App() {
                   than rewriting the original outcome.
                 </p>
               </div>
+              <ModelStrip frozen="proxy-0.1" />
               <div className="record-intro">
                 <h3>{log.title}</h3>
                 <p>{log.intro}</p>
