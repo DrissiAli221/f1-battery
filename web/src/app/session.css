@@ -1573,8 +1573,13 @@
       900 86px/1 F1Black,
       sans-serif;
     letter-spacing: -0.06em;
-    color: var(--poster-ink);
-    opacity: 0.26;
+    color: transparent;
+    background: radial-gradient(circle, var(--poster-ink) 1.6px, transparent 1.85px) 0 0 / 6px 6px;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    opacity: 0.55;
   }
   .poster-car {
     position: absolute;
@@ -1684,6 +1689,13 @@
     letter-spacing: inherit;
     white-space: nowrap;
     display: inline-block;
+  }
+  /* F1Black digits have uneven side bearings; each digit sits in one fixed cell. */
+  .driver-poster .estimate-number .digit {
+    display: inline-block;
+    width: 0.76em;
+    text-align: center;
+    letter-spacing: 0;
   }
   .driver-poster .estimate-number > .estimate-unit {
     font:

@@ -98,7 +98,15 @@ function Flow({ value }: { value: number | null }) {
       className={`estimate-value ${value === null ? 'flow-missing' : ''}`}
       aria-label={value === null ? 'No estimate' : fmt(value)}
     >
-      {fmt(value)}
+      {[...fmt(value)].map((ch, i) =>
+        /\d/.test(ch) ? (
+          <span key={i} className="digit">
+            {ch}
+          </span>
+        ) : (
+          ch
+        )
+      )}
     </span>
   );
 }
