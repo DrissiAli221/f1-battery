@@ -1005,7 +1005,7 @@
     grid-column: span 3;
   }
   .cc.check-pass {
-    --pill: #3ddc97;
+    --pill: #9ad67a;
   }
   .cc.check-not-testable {
     --pill: var(--muted);
@@ -1113,7 +1113,7 @@
     fill: var(--red-text);
   }
   .cv-dot.is-pass {
-    fill: #3ddc97;
+    fill: #9ad67a;
   }
   .cv-hatch {
     stroke: #ffffff55;
@@ -1127,7 +1127,7 @@
     fill: #ffffff14;
   }
   .cv-flat {
-    stroke: #3ddc97;
+    stroke: #9ad67a;
     stroke-width: 2;
   }
   .cv-col {

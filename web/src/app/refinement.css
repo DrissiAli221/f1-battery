@@ -1449,3 +1449,129 @@
     color: #f0b429;
   }
 }
+
+@layer overrides {
+  /* Numbered section anchors, shared by findings and method; the number is the only colour. */
+  .section-no {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 20px;
+    font:
+      400 12px/1.4 KHF1,
+      monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .section-no b,
+  .page-sections a b {
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    color: var(--red-text);
+  }
+  .page-sections a b {
+    color: var(--muted);
+    transition: color 240ms var(--ease);
+  }
+  .page-sections a[aria-current] b {
+    color: var(--red-text);
+  }
+  .section-no.in-grid {
+    grid-column: 1 / -1;
+  }
+  .finding-provenance {
+    row-gap: 0;
+  }
+  /* Findings: one hairline between any two blocks. Bands, the rail and the footer own the lines. */
+  .findings-preview .model-strip {
+    box-shadow: none;
+    margin-bottom: 8px;
+    padding-bottom: 0;
+  }
+  .findings-preview .band + .band {
+    border-top: 0;
+  }
+  .findings-preview .finding-sample {
+    gap: 28px 40px;
+    background: none;
+    border: 0;
+  }
+  .findings-preview .finding-sample > div {
+    background: none;
+    padding: 0;
+  }
+  .findings-preview .finding-sample > .is-answer strong {
+    color: var(--red-text);
+  }
+  .finding-sample-verdict {
+    margin: 36px 0 0;
+    font:
+      400 15px/1.5 Geist,
+      sans-serif;
+    color: var(--ink);
+  }
+  .findings-preview .finding-block {
+    padding-top: 0;
+    border-top: 0;
+    margin-top: 56px;
+  }
+  .findings-preview .evidence-explanation > .finding-block {
+    margin-top: 0;
+  }
+  .findings-preview .finding-block-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .findings-preview .finding-block-title::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+  .findings-preview .permutation-copy .permutation-p {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .findings-preview .finding-limits dl > div {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .findings-preview .source-list > div {
+    border-top: 0;
+    padding: 10px 0;
+  }
+  .findings-preview .forest-row,
+  .findings-preview .forest-axis-row,
+  .findings-preview .term-row,
+  .findings-preview .maker-row,
+  .findings-preview .run-figure figcaption,
+  .findings-preview .cc-visual {
+    border-top: 0;
+  }
+  .findings-preview .finding-flags li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .findings-preview .finding-flags li i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .findings-preview .finding-flags li.is-neutral i {
+    display: none;
+  }
+  .findings-preview .finding-flags li.is-fail {
+    color: var(--red-text);
+    border-color: var(--red-text);
+  }
+  .findings-preview .finding-flags li.is-pass {
+    color: #9ad67a;
+    border-color: #9ad67a80;
+  }
+}

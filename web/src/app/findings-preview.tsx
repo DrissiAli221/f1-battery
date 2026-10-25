@@ -230,6 +230,8 @@ const verdictFlags = [
   findings.min_sample_ok ? 'Minimum sample met' : 'Minimum sample not met',
   findings.perm_ok ? 'Permutation control passed' : 'Permutation control failed',
 ];
+const flagState = (f: string) =>
+  /fail|not met|^no run/i.test(f) ? 'is-fail' : /pass|met\b/i.test(f) ? 'is-pass' : 'is-neutral';
 const SD_UNIT: Record<string, string> = {
   cutoff_dev_defender: 'm',
   deploy_rel_diff: 'relative units',
@@ -716,7 +718,10 @@ function App() {
                 </p>
                 <ul className="finding-flags" aria-label="Frozen test criteria" data-reveal>
                   {verdictFlags.map((f) => (
-                    <li key={f}>{f}</li>
+                    <li key={f} className={flagState(f)}>
+                      <i aria-hidden="true" />
+                      {f}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -736,10 +741,18 @@ function App() {
           <nav className="section-rail" aria-label="Findings sections">
             <div className="wrap page-sections">
               <div>
-                <a href="#evidence">Evidence</a>
-                <a href="#checks">Spot checks</a>
-                <a href="#limitations">Limits</a>
-                <a href="#provenance">Source</a>
+                <a href="#evidence">
+                  <b>01</b>Evidence
+                </a>
+                <a href="#checks">
+                  <b>02</b>Spot checks
+                </a>
+                <a href="#limitations">
+                  <b>03</b>Limits
+                </a>
+                <a href="#provenance">
+                  <b>04</b>Source
+                </a>
               </div>
               <a href="/method.html">
                 How it works <span aria-hidden="true">↗</span>
@@ -768,17 +781,25 @@ function App() {
                     'two-sided, ' + int(findings.permutation.n) + ' shuffles',
                   ],
                 ].map(([n, label, sub]) => (
-                  <div key={label}>
+                  <div key={label} className={label === 'Odds ratio, point run' ? 'is-answer' : undefined}>
                     <strong>{n}</strong>
                     <span>{label}</span>
                     {sub && <small>{sub}</small>}
                   </div>
                 ))}
               </div>
+              {findings.runs.point.or < 1 && (
+                <p className="finding-sample-verdict">
+                  Odds ratio below 1: opposite to the proposed direction.
+                </p>
+              )}
             </div>
           </section>
           <section id="evidence" tabIndex={-1} aria-labelledby="evidence-title" className="band">
             <div className="wrap finding-evidence">
+              <p className="section-no">
+                <b>01</b>Evidence
+              </p>
               <div className="finding-section-intro">
                 <h2 id="evidence-title">
                   Three runs.
@@ -846,6 +867,9 @@ function App() {
           </section>
           <section id="checks" tabIndex={-1} aria-labelledby="checks-title" className="band">
             <div className="wrap finding-checks">
+              <p className="section-no">
+                <b>02</b>Spot checks
+              </p>
               <div className="finding-section-intro">
                 <h2 id="checks-title">
                   The checks
@@ -866,6 +890,7 @@ function App() {
           </section>
           <section aria-labelledby="more-title">
             <div className="wrap finding-more">
+              <p className="section-no">In detail</p>
               <div className="finding-section-intro">
                 <h2 id="more-title">Look closer.</h2>
                 <p>
@@ -909,6 +934,9 @@ function App() {
           </section>
           <section id="limitations" tabIndex={-1} aria-labelledby="limits-title" className="band band-solid">
             <div className="wrap finding-limits">
+              <p className="section-no">
+                <b>03</b>Limits
+              </p>
               <div className="finding-section-intro">
                 <h2 id="limits-title">
                   What this
@@ -942,6 +970,9 @@ function App() {
           </section>
           <section id="provenance" tabIndex={-1} aria-labelledby="provenance-title">
             <div className="wrap finding-provenance">
+              <p className="section-no in-grid">
+                <b>04</b>Source
+              </p>
               <div>
                 <h2 id="provenance-title">Traceable to the run.</h2>
                 <p>
