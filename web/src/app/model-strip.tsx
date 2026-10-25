@@ -26,19 +26,19 @@ export function ModelStrip({ frozen }: { frozen: string }) {
   const ready = latest !== null && withResults !== null;
   return (
     <p className={`model-strip utility${ready ? '' : ' is-loading'}`} aria-live="polite">
-      {ready ? (
-        <>
-          <span className="model-strip-live">
+      <span className="model-strip-live">
+        {ready ? (
+          <>
             Explorer runs <b>{latest.model_version}</b> · {withResults} sessions ·{' '}
             {DATE.format(new Date(latest.created_at))}
-          </span>
-          <span className="model-strip-frozen">The test below is the frozen {frozen} record.</span>
-        </>
-      ) : (
-        <span className="model-strip-live">
-          {models.error ? 'Current model unavailable.' : 'Reading the current model…'}
-        </span>
-      )}
+          </>
+        ) : models.error ? (
+          'Current model unavailable.'
+        ) : (
+          'Reading the current model…'
+        )}
+      </span>
+      <span className="model-strip-frozen">The test below is the frozen {frozen} record.</span>
     </p>
   );
 }

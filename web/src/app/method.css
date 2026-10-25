@@ -940,3 +940,11 @@
     }
   }
 }
+
+@layer pages {
+  /* The steps sit on the ground under the rail; the first lifted surface is the estimator plate, so hero, rail and steps read as one layer. */
+  #process.band {
+    background: transparent;
+    border-block: 0;
+  }
+}

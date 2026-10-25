@@ -385,9 +385,13 @@ function App() {
                           <ul>
                             {e.sources.map((source) => (
                               <li key={source.path}>
-                                <a href={repoBlob + source.path} target="_blank" rel="noreferrer">
-                                  {source.label}
-                                </a>
+                                {'unpublished' in source && source.unpublished ? (
+                                  <code>{source.label}</code>
+                                ) : (
+                                  <a href={repoBlob + source.path} target="_blank" rel="noreferrer">
+                                    {source.label}
+                                  </a>
+                                )}
                               </li>
                             ))}
                           </ul>

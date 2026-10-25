@@ -2571,3 +2571,126 @@
     }
   }
 }
+
+@layer pages {
+  /* One driver keeps the two-card stage: the second slot is reserved, so the map never resizes. */
+  .driver-estimate.driver-poster.is-empty {
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: 1px dashed #ffffff24;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .driver-estimate.driver-poster.is-empty p {
+    margin: 0;
+    font:
+      400 var(--type-label)/1.4 KHF1,
+      monospace;
+    color: var(--muted);
+    text-align: center;
+  }
+  @media (min-width: 1000px) {
+    .estimate-stack[data-count='1'] {
+      grid-template-rows: repeat(2, minmax(412px, 1fr)) auto;
+      align-self: stretch;
+    }
+  }
+  @media (max-width: 999px) {
+    .driver-estimate.driver-poster.is-empty {
+      display: none;
+    }
+  }
+
+  /* Hover and focus info markers on the key readouts. */
+  .info {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-left: 8px;
+    text-transform: none;
+  }
+  .info-dot {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid #ffffff2e;
+    background: transparent;
+    color: var(--muted);
+    font:
+      400 10px/1 KHF1,
+      monospace;
+    display: grid;
+    place-items: center;
+    cursor: help;
+    transition:
+      border-color 160ms var(--ease),
+      color 160ms var(--ease);
+  }
+  .info-dot:hover,
+  .info-dot[aria-expanded='true'] {
+    border-color: #ffffff6b;
+    color: #f4f4ef;
+  }
+  .info-dot:focus-visible {
+    outline: 2px solid #f4f4ef;
+    outline-offset: 2px;
+  }
+  .info-tip {
+    position: fixed;
+    z-index: 60;
+    width: max-content;
+    max-width: min(260px, calc(100vw - 16px));
+    padding: 10px;
+    background: #141413;
+    border: 1px solid #ffffff1c;
+    box-shadow: 0 8px 24px #0008;
+    font:
+      400 12px/1.5 Geist,
+      system-ui,
+      sans-serif;
+    text-transform: none;
+    letter-spacing: normal;
+    color: #d6d6c8;
+    text-align: left;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(2px);
+    pointer-events: none;
+    transition:
+      opacity 160ms var(--ease),
+      transform 160ms var(--ease),
+      visibility 0s linear 160ms;
+  }
+  .info-tip[data-open='true'] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .info-tip,
+    .info-dot {
+      transition: none;
+    }
+    .info-tip {
+      transform: none;
+    }
+  }
+  .select-info {
+    position: relative;
+    min-width: 0;
+  }
+  .select-info > .info {
+    position: absolute;
+    top: -1px;
+    left: 9.5ch;
+    margin: 0;
+    font:
+      400 var(--type-label) KHF1,
+      monospace;
+  }
+  .analysis-heading h2 .info {
+    vertical-align: middle;
+  }
+}

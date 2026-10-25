@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useRef, useState, type ReactNode } from 'react';
+import './rail';
 
 export type SitePage = 'races' | 'replay' | 'findings' | 'method';
 

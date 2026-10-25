@@ -2689,6 +2689,17 @@
       margin-left: 0;
     }
   }
+  @media (max-width: 820px) {
+    .model-strip-live {
+      flex-basis: 100%;
+    }
+  }
+  /* The live line wraps to two rows on phones once the API answers; reserve both so the strip never grows. */
+  @media (max-width: 480px) {
+    .model-strip-live {
+      min-height: 2lh;
+    }
+  }
   /* Every section is a full-width outer element that owns its surface and hairlines; one inner .wrap holds the content. */
   .band {
     background: var(--band);

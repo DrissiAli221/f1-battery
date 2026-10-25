@@ -1310,3 +1310,80 @@
     }
   }
 }
+
+/* Session chips: F1 icons and a type colour. Icons are CSS masks so hover.js can replace the anchor children freely. */
+@layer overrides {
+  .home-preview .race-chips .button-chip,
+  .home-preview .race-chips .race-chip-off {
+    gap: 6px;
+    --chip-c: #6f6f68;
+  }
+  .home-preview .race-chips .button-chip::before,
+  .home-preview .race-chips .race-chip-off::before {
+    content: '';
+    flex: none;
+    width: 14px;
+    height: 14px;
+    background-color: var(--chip-c);
+    -webkit-mask: var(--chip-icon) center / contain no-repeat;
+    mask: var(--chip-icon) center / contain no-repeat;
+  }
+  .home-preview .race-chips .button-chip {
+    box-shadow: inset 2px 0 0 var(--chip-c);
+  }
+  .home-preview .race-chips .race-chip-off::before {
+    opacity: 0.4;
+  }
+  .home-preview .race-chips [data-kind='Race'] {
+    --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M5%2021V3M5%204h14v8H5M9.67%204v8M14.33%204v8M5%208h14%27/%3E%3C/svg%3E');
+  }
+  .home-preview .race-chips .button-chip[data-kind='Race'] {
+    --chip-c: var(--red);
+  }
+  .home-preview .race-chips [data-kind='Qualifying'] {
+    --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M10%203h4M12%203v3M12%2013V9M12%206a7%207%200%201%200%200%2014a7%207%200%200%200%200-14Z%27/%3E%3C/svg%3E');
+  }
+  .home-preview .race-chips .button-chip[data-kind='Qualifying'] {
+    --chip-c: #f4f4ef;
+  }
+  .home-preview .race-chips [data-kind='Sprint'] {
+    --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M13%202%205%2013.5h6L10%2022l9-12h-6Z%27/%3E%3C/svg%3E');
+  }
+  .home-preview .race-chips .button-chip[data-kind='Sprint'] {
+    --chip-c: #f0b429;
+  }
+  .home-preview .race-chips [data-kind='Sprint Qualifying'] {
+    --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M10%203h4M12%203v3M12%206a7%207%200%201%200%200%2014a7%207%200%200%200%200-14ZM12.6%209%209.4%2013.2h2.3l-.6%203.8%203.5-4.4h-2.4Z%27/%3E%3C/svg%3E');
+  }
+  .home-preview .race-chips .button-chip[data-kind='Sprint Qualifying'] {
+    --chip-c: #f0b429;
+  }
+  @media (max-width: 380px) {
+    .home-preview .race-chips .button-chip::before,
+    .home-preview .race-chips .race-chip-off::before {
+      width: 12px;
+      height: 12px;
+    }
+    .home-preview .race-chips .button-chip,
+    .home-preview .race-chips .race-chip-off {
+      gap: 3px;
+    }
+  }
+  .home-preview .race-single-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .home-preview .race-single-label .session-icon {
+    flex: none;
+  }
+  .home-preview .race-single-label [data-kind='Race'] {
+    color: var(--red);
+  }
+  .home-preview .race-single-label [data-kind='Qualifying'] {
+    color: #f4f4ef;
+  }
+  .home-preview .race-single-label [data-kind='Sprint'] {
+    color: #f0b429;
+  }
+}

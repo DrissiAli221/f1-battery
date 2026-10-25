@@ -2,7 +2,8 @@ import './reveal';
 import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
 import { useRateLimited } from '../lib/api';
-import { useEffect, useMemo, useRef, useState, useId, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useId, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -110,6 +111,83 @@ function Flow({ value }: { value: number | null }) {
     </span>
   );
 }
+function Info({ label, children }: { label: string; children: string }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btn = useRef<HTMLButtonElement>(null);
+  const tip = useRef<HTMLDivElement>(null);
+  const timer = useRef<number>();
+  const tipId = useId();
+  const hover = () => matchMedia('(hover:hover) and (pointer:fine)').matches;
+  const close = () => {
+    window.clearTimeout(timer.current);
+    setOpen(false);
+  };
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  useLayoutEffect(() => {
+    if (!open || !btn.current || !tip.current) return;
+    const b = btn.current.getBoundingClientRect();
+    const w = tip.current.offsetWidth;
+    const h = tip.current.offsetHeight;
+    let left = b.left;
+    if (left + w > innerWidth - 8) left = b.right - w;
+    left = Math.max(8, left);
+    let top = b.bottom + 8;
+    if (top + h > innerHeight - 8) top = Math.max(8, b.top - h - 8);
+    setPos({ top, left });
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
+    const onDown = (e: PointerEvent) => {
+      if (e.target !== btn.current) close();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('scroll', close, { passive: true });
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('scroll', close);
+    };
+  }, [open]);
+  return (
+    <span className="info">
+      <button
+        ref={btn}
+        type="button"
+        className="info-dot"
+        aria-label={`About ${label}`}
+        aria-describedby={tipId}
+        aria-expanded={open}
+        onMouseEnter={() => {
+          if (!hover()) return;
+          window.clearTimeout(timer.current);
+          timer.current = window.setTimeout(() => setOpen(true), 120);
+        }}
+        onMouseLeave={() => hover() && close()}
+        onFocus={() => setOpen(true)}
+        onBlur={close}
+        onClick={() => setOpen(true)}
+      >
+        i
+      </button>
+      {createPortal(
+        <div
+          ref={tip}
+          id={tipId}
+          role="tooltip"
+          className="info-tip"
+          data-open={open ? 'true' : 'false'}
+          style={{ top: pos.top, left: pos.left }}
+        >
+          {children}
+        </div>,
+        document.body
+      )}
+    </span>
+  );
+}
 function HelpDot() {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -202,7 +280,13 @@ function LapDistribution({
   return (
     <div className="lap-distribution">
       <div className="distribution-caption">
-        <span>{samples === null ? 'Loading lap estimates' : `${samples.length} lap estimates`}</span>
+        <span>
+          {samples === null ? 'Loading lap estimates' : `${samples.length} lap estimates`}
+          <Info label="the lap estimates">
+            One point per clean lap, placed by metres into the straight. Together they show how far the laps
+            spread around the median.
+          </Info>
+        </span>
         <span>Metres into straight</span>
       </div>
       <svg
@@ -315,7 +399,14 @@ function DriverEstimate({
       </div>
       <div className={`driver-poster-data ${busy ? 'is-loading' : ''}`} aria-busy={busy || undefined}>
         <div className="poster-readout">
-          <p className="estimate-label">{lap !== null ? `Lap ${lap} cut-off` : 'Median cut-off'}</p>
+          <p className="estimate-label">
+            {lap !== null ? `Lap ${lap} cut-off` : 'Median cut-off'}
+            <Info label="the cut-off">
+              {lap !== null
+                ? 'The estimated point on this straight where electrical deployment ends on the selected lap, in metres from its start. An estimate from public telemetry, not a battery reading.'
+                : 'The session median of where the model estimates electrical deployment ends on this straight, in metres from its start. An estimate from public telemetry, not a battery reading.'}
+            </Info>
+          </p>
           <p className="estimate-number">
             <Flow value={value} />
             {value !== null && <span className="estimate-unit">m est.</span>}
@@ -323,7 +414,13 @@ function DriverEstimate({
         </div>
         {ranged ? (
           <div className="rng" aria-label={`95% interval ${fmt(lo)} to ${fmt(hi)} metres`}>
-            <p className="rng-cap">95% interval</p>
+            <p className="rng-cap">
+              95% interval
+              <Info label="the 95% interval">
+                The range the cut-off falls in across laps, from a 95% bootstrap interval. A wide band means
+                the laps disagree.
+              </Info>
+            </p>
             <div className="rng-track">
               <i
                 style={{
@@ -741,7 +838,13 @@ function App() {
                 <div className="wrap analysis-layout">
                   <div className="driver-tower">
                     <div className="analysis-heading">
-                      <h2>Drivers.</h2>
+                      <h2>
+                        Drivers.
+                        <Info label="the driver tower">
+                          Session medians for every driver on the selected straight, in alphabetical order.
+                          Pick a row to set the driver.
+                        </Info>
+                      </h2>
                       <span className="utility">Cut-off / m est.</span>
                     </div>
                     <p className="quiet-note">Alphabetical order · session medians</p>
@@ -753,7 +856,13 @@ function App() {
                   </div>
                   <div className="lap-panel">
                     <div className="analysis-heading">
-                      <h2>Lap by lap.</h2>
+                      <h2>
+                        Lap by lap.
+                        <Info label="the lap chart">
+                          Each dot is one lap&apos;s estimated cut-off on the selected straight. Estimates,
+                          not measurements; pick a lap to compare both drivers on it.
+                        </Info>
+                      </h2>
                     </div>
                     <Rule on />
                     <p className="quiet-note">
@@ -817,18 +926,24 @@ function App() {
                         setLap(null);
                       }}
                     />
-                    <SessionSelect
-                      pending={!data.ready && !data.loadError && !data.sessionsError}
-                      label="Straight"
-                      value={String(sid)}
-                      items={data.straights.map((s) => ({
-                        value: String(s.straight_id),
-                        name: s.label ?? `Straight ${s.straight_id}`,
-                        code: `S${s.straight_id}`,
-                        detail: `${fmt(s.len)} m${straightsWithData.has(s.straight_id) ? '' : ' · No estimate for selection'}`,
-                      }))}
-                      onChange={(v) => selectStraight(Number(v))}
-                    />
+                    <div className="select-info">
+                      <SessionSelect
+                        pending={!data.ready && !data.loadError && !data.sessionsError}
+                        label="Straight"
+                        value={String(sid)}
+                        items={data.straights.map((s) => ({
+                          value: String(s.straight_id),
+                          name: s.label ?? `Straight ${s.straight_id}`,
+                          code: `S${s.straight_id}`,
+                          detail: `${fmt(s.len)} m${straightsWithData.has(s.straight_id) ? '' : ' · No estimate for selection'}`,
+                        }))}
+                        onChange={(v) => selectStraight(Number(v))}
+                      />
+                      <Info label="the straight">
+                        Which straight of the circuit the estimates refer to. Each one is a flat-out stretch
+                        where the model looks for the end of electrical deployment.
+                      </Info>
+                    </div>
                   </div>
                   <div
                     className="map-stage"
@@ -845,6 +960,10 @@ function App() {
                           <span className="utility">
                             S{sid} / {fmt(straight?.len)} m
                           </span>
+                          <Info label="the map tags">
+                            Each tag shows a driver code and its estimated cut-off on this straight, in metres
+                            from its start. A solid dot is the driver; a ring is the comparison.
+                          </Info>
                           <HelpDot />
                         </div>
                       </div>
@@ -916,6 +1035,11 @@ function App() {
                             busy={other ? cBusy : pBusy}
                           />
                         ) : null
+                      )}
+                      {!compared && (
+                        <div className="driver-estimate driver-poster is-empty" aria-hidden="true">
+                          <p>Pick a driver to compare</p>
+                        </div>
                       )}
                       <div className="estimate-actions">
                         <button

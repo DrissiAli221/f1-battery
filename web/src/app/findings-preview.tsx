@@ -68,7 +68,10 @@ function RunChart() {
   const [ref, w] = useWidth<HTMLDivElement>(300);
   const ROW_H = w < 400 ? 52 : 76;
   const x = (v: number) =>
-    OR_PAD + ((Math.log(v) - Math.log(OR_MIN)) / (Math.log(OR_MAX) - Math.log(OR_MIN))) * (w - OR_PAD * 2);
+    OR_PAD +
+    ((Math.log(Math.min(OR_MAX, Math.max(OR_MIN, v))) - Math.log(OR_MIN)) /
+      (Math.log(OR_MAX) - Math.log(OR_MIN))) *
+      (w - OR_PAD * 2);
   return (
     <figure
       className="run-figure forest"
@@ -105,7 +108,9 @@ function RunChart() {
                 className="forest-band"
               />
               <ForestLines x={x} y1={0} y2={ROW_H} />
-              <line x1={x(r.lo)} x2={x(r.hi)} y1={ROW_H / 2} y2={ROW_H / 2} className="forest-ci" />
+              {Number.isFinite(r.lo) && Number.isFinite(r.hi) && (
+                <line x1={x(r.lo)} x2={x(r.hi)} y1={ROW_H / 2} y2={ROW_H / 2} className="forest-ci" />
+              )}
               <rect x={x(r.or) - 3.5} y={ROW_H / 2 - 3.5} width={7} height={7} className="forest-point" />
             </svg>
             <div className="forest-value">
@@ -257,10 +262,11 @@ function RangeBar({
   ink: boolean;
   band?: boolean;
 }) {
+  const interval = Number.isFinite(lo) && Number.isFinite(hi);
   return (
     <svg className="range-bar" width={w} height={h} aria-hidden="true">
       <line x1={x(zero)} x2={x(zero)} y1={0} y2={h} className="range-zero" />
-      {band ? (
+      {!interval ? null : band ? (
         <rect x={x(lo)} y={h / 2 - 4} width={Math.max(1, x(hi) - x(lo))} height={8} className="range-band" />
       ) : (
         <line x1={x(lo)} x2={x(hi)} y1={h / 2} y2={h / 2} className={ink ? 'range-ci is-ink' : 'range-ci'} />
@@ -280,7 +286,10 @@ const TERM_W = 160,
   TERM_MAX = 3.5,
   TERM_TICKS = [0.5, 1, 2, 3];
 const termX = (v: number) =>
-  4 + ((Math.log(v) - Math.log(TERM_MIN)) / (Math.log(TERM_MAX) - Math.log(TERM_MIN))) * (TERM_W - 8);
+  4 +
+  ((Math.log(Math.min(TERM_MAX, Math.max(TERM_MIN, v))) - Math.log(TERM_MIN)) /
+    (Math.log(TERM_MAX) - Math.log(TERM_MIN))) *
+    (TERM_W - 8);
 function TermRows() {
   return (
     <div className="term-rows" role="list" aria-label="Full model odds ratios">
@@ -330,7 +339,8 @@ const MAKER_MIN = -100,
   MAKER_MAX = 100;
 function MakerRows() {
   const [ref, w] = useWidth<HTMLDivElement>(300);
-  const x = (v: number) => 8 + ((v - MAKER_MIN) / (MAKER_MAX - MAKER_MIN)) * (w - 16);
+  const x = (v: number) =>
+    8 + ((Math.min(MAKER_MAX, Math.max(MAKER_MIN, v)) - MAKER_MIN) / (MAKER_MAX - MAKER_MIN)) * (w - 16);
   return (
     <div className="maker-rows">
       <div className="maker-row maker-head" aria-hidden="true">
@@ -338,9 +348,9 @@ function MakerRows() {
         <div ref={ref}>
           <svg width={w} height={20}>
             {[
-              [MAKER_MIN, '−100 m'],
+              [MAKER_MIN, '−100 m · earlier'],
               [0, '0'],
-              [MAKER_MAX, '+100 m'],
+              [MAKER_MAX, '+100 m · later'],
             ].map(([n, label]) => (
               <text
                 key={label}

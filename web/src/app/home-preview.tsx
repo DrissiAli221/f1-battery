@@ -9,6 +9,7 @@ import { circuitHero, circuitMeta } from '../track/circuits';
 import { CircuitMini } from './circuit-mini';
 import { createPixelButton } from './hover.js';
 import { paintScreen } from './session-halftone';
+import { SessionIcon } from './session-icons';
 import './session.css';
 import './home.css';
 import './refinement.css';
@@ -267,7 +268,10 @@ function App() {
                             <div className="race-choice-bottom">
                               {single ? (
                                 <div className="race-single">
-                                  <span className="race-single-label">{filter}</span>
+                                  <span className="race-single-label">
+                                    <SessionIcon kind={filter === 'All sessions' ? '' : filter} />
+                                    {filter}
+                                  </span>
                                   {slots[0]?.has_results ? (
                                     // The anchor text must stay a constant string: hover.js owns its children.
                                     <a
@@ -299,6 +303,7 @@ function App() {
                                         data-pixel-active-text="#030303"
                                         data-pixel-icon="none"
                                         data-pixel-label={row.session_name}
+                                        data-kind={row.session_name}
                                         href={href(row)}
                                         aria-label={`View estimates, ${title} ${row.session_name}`}
                                       >
@@ -308,6 +313,7 @@ function App() {
                                       <span
                                         key={row.session_name}
                                         className="race-chip-off"
+                                        data-kind={row.session_name}
                                         title={filter === 'All sessions' ? 'Not held' : 'No results'}
                                       >
                                         {row.session_name}

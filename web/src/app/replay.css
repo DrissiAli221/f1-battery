@@ -795,4 +795,45 @@
   .feed-control {
     min-height: 83px;
   }
+
+  /* Panels in one row share a height; no dead band in the map panel or beside its controls. */
+  .replay-map-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .replay-map-panel > .mode-top {
+    position: absolute;
+    z-index: 3;
+    top: 62px;
+    left: 14px;
+    right: 14px;
+    background: linear-gradient(#151514f2 70%, #15151400);
+    padding-bottom: 14px;
+  }
+  .replay-map-panel > .mode-top .field-display {
+    margin-bottom: 0;
+  }
+  .replay-map-panel > .mode-top .feed-waiting {
+    margin: 14px 8px 0;
+  }
+  .replay-map-panel > .mode-top .feed-waiting > p {
+    min-height: 0;
+  }
+  .replay-map-panel > .tmap {
+    flex: 1 1 auto;
+  }
+  .replay-map-panel .mode-stack {
+    margin-top: auto;
+  }
+  .replay-field {
+    display: flex;
+    flex-direction: column;
+  }
+  .replay-field-rows {
+    flex: 1 1 auto;
+  }
+  .replay-context {
+    align-items: stretch;
+  }
 }

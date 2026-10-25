@@ -43,7 +43,7 @@ const PAGES: Record<string, string[]> = {
     '.method-plate',
     '.estimator-copy',
     '.record-filters',
-    '.method-entries>details',
+    '.method-timeline>li',
     '.method-boundaries>h2',
     '.method-boundaries>div',
     '.method-hero h1',
