@@ -2660,6 +2660,35 @@
     background: var(--grain) 0 0/220px 220px;
     opacity: 0.06;
   }
+  /* The live "which model runs the explorer" line above a frozen record (findings, method). */
+  .model-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 0 0 18px;
+    padding: 10px 14px;
+    border: 1px solid var(--band-line);
+    background: var(--surface-1);
+    font-size: var(--type-label);
+    color: var(--muted);
+    min-height: 40px;
+    transition: opacity var(--dur-ui) var(--ease);
+  }
+  .model-strip.is-loading {
+    opacity: 0.6;
+  }
+  .model-strip b {
+    font-weight: 400;
+    color: var(--ink);
+  }
+  .model-strip-frozen {
+    margin-left: auto;
+  }
+  @media (max-width: 720px) {
+    .model-strip-frozen {
+      margin-left: 0;
+    }
+  }
   /* Every section is a full-width outer element that owns its surface and hairlines; one inner .wrap holds the content. */
   .band {
     background: var(--band);
