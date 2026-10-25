@@ -62,7 +62,7 @@ function App() {
     document
       .querySelectorAll<HTMLAnchorElement>('.home-preview .button-grey')
       .forEach((el) => createPixelButton(el));
-  }, [meetings, all, remote.loading]);
+  }, [meetings, all, remote.loading, filter, search]);
   return (
     <div className="session-preview home-preview">
       <a className="skip" href="#races">
@@ -308,9 +308,12 @@ function App() {
                                       <span
                                         key={row.session_name}
                                         className="race-chip-off"
-                                        aria-disabled="true"
+                                        title={filter === 'All sessions' ? 'Not held' : 'No results'}
                                       >
                                         {row.session_name}
+                                        <span className="sr-only">
+                                          {filter === 'All sessions' ? ', not held' : ', no results'}
+                                        </span>
                                       </span>
                                     )
                                   )}

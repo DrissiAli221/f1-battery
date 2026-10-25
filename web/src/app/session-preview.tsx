@@ -202,7 +202,8 @@ function DriverEstimate({
   const car = teamCar(d.team_name, 262);
   const span = domain[1] - domain[0];
   const at = (v: number) => Math.min(100, Math.max(0, ((v - domain[0]) / (span || 1)) * 100));
-  const ranged = lap === null && value !== null && lo !== null && hi !== null;
+  const ranged =
+    lap === null && value !== null && lo !== null && hi !== null && [value, lo, hi].every(Number.isFinite);
   const rgb = colour
     .replace('#', '')
     .match(/.{2}/g)
@@ -234,8 +235,8 @@ function DriverEstimate({
         {car && (
           <img
             className="poster-car"
+            key={car}
             src={car}
-            loading="lazy"
             decoding="async"
             alt=""
             onError={(e) => {
@@ -256,7 +257,12 @@ function DriverEstimate({
           <div className="rng" aria-label={`95% interval ${fmt(lo)} to ${fmt(hi)} metres`}>
             <p className="rng-cap">95% interval</p>
             <div className="rng-track">
-              <i style={{ left: `${at(lo)}%`, width: `${Math.max(0.5, at(hi) - at(lo))}%` }} />
+              <i
+                style={{
+                  left: `${at(lo)}%`,
+                  width: `${Math.min(100 - at(lo), Math.max(0.5, at(hi) - at(lo)))}%`,
+                }}
+              />
               <b style={{ left: `${at(value)}%` }} />
             </div>
             <div className="rng-lab">
