@@ -2587,8 +2587,8 @@
       opacity: 1;
       transform: none;
       transition:
-        opacity 560ms var(--ease) calc(var(--reveal-i, 0) * 50ms),
-        transform 560ms var(--ease) calc(var(--reveal-i, 0) * 50ms);
+        opacity 360ms var(--ease) calc(var(--reveal-i, 0) * 30ms),
+        transform 360ms var(--ease) calc(var(--reveal-i, 0) * 30ms);
     }
     [data-reveal-state='in'][data-reveal-state][data-reveal-kind='enter'] {
       transition-duration: 300ms;

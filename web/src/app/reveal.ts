@@ -103,7 +103,7 @@ function start() {
         el.style.setProperty('--reveal-i', String(rank));
         el.dataset.revealState = 'in';
         const kind = el.dataset.revealKind;
-        const [dur, step] = kind === 'handoff' ? [200, 40] : kind === 'enter' ? [300, 50] : [560, 50];
+        const [dur, step] = kind === 'handoff' ? [200, 40] : kind === 'enter' ? [300, 50] : [360, 30];
         setTimeout(
           () => {
             delete el.dataset.revealState;
@@ -114,7 +114,8 @@ function start() {
         );
       });
     },
-    { rootMargin: '0px 0px -8% 0px', threshold: 0.12 }
+    // Reveal a quarter-viewport ahead of the fold so content is already in place when it scrolls into view.
+    { rootMargin: '0px 0px 25% 0px', threshold: 0 }
   );
 
   let handoff = false;
