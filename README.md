@@ -1,6 +1,7 @@
-# F1 Battery
-
-**Where does electrical deployment end on a straight? Estimated from public telemetry, then tested against real overtakes.**
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/banner-dark.svg">
+  <img alt="F1 Battery: where does electrical deployment end on a straight? Estimates, not measurements." src="docs/diagrams/banner-light.svg" width="100%">
+</picture>
 
 ![Java 21](https://img.shields.io/badge/Java-21-informational)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring%20Boot-3.4-informational)
@@ -10,9 +11,9 @@
 ![Status: findings written](https://img.shields.io/badge/status-findings%20written-success)
 ![Not deployed yet](https://img.shields.io/badge/deployment-not%20deployed%20yet-lightgrey)
 
-Status: Phases 0 to 6 are built and the findings are written (2026-10-18). The optional Phase 7 live replay (Kafka) is built. **Not deployed yet** (Phase 1.5).
+Estimates where electrical deployment ends on each straight from public telemetry, then tests one pre-registered question against real overtakes.
 
-![Findings page: verdict "No effect", 364 passes tested, odds ratio 0.92, 19 sessions, permutation p 0.208](docs/figures/readme/findings.png)
+Status: Phases 0 to 6 are built and the findings are written (2026-10-18). The optional Phase 7 live replay (Kafka) is built. **Not deployed yet** (Phase 1.5).
 
 **Estimates, not measurements.** F1 does not publish battery or active-aero data for 2026, so this project never measures battery state and never reports a state of charge. It estimates where electrical deployment ends on each straight from public speed, throttle and position telemetry, under stated assumptions, and says so everywhere it shows a number.
 
@@ -31,18 +32,36 @@ Several small per-race estimators already exist (DECISIONS.md D1). This project 
 - **Serves an explorer**: a read-only Spring Boot API and a React app with track maps, per-driver cut-offs, lap review, the findings, and a method log of every estimator that failed a check.
 - **Replays a session live (optional)**: telemetry paced through Kafka, labelled per driver, streamed to the browser.
 
+### The explorer
+
 <table>
   <tr>
-    <td width="50%"><img alt="Home: choose a race from the 2026 season" src="docs/figures/readme/home.png"></td>
-    <td width="50%"><img alt="Session page: Singapore, driver, straight, track map and median cut-off estimate with 95 percent interval" src="docs/figures/readme/session.png"></td>
+    <td width="33%"><img alt="Home: pick a 2026 session" src="docs/figures/readme/home.webp"></td>
+    <td width="33%"><img alt="Session page: Singapore, driver, straight, track map and median cut-off estimate with 95 percent interval" src="docs/figures/readme/session.webp"></td>
+    <td width="33%"><img alt="Findings page: verdict no effect, 364 passes tested, odds ratio 0.92, 19 sessions, permutation p 0.208" src="docs/figures/readme/findings.webp"></td>
   </tr>
   <tr>
-    <td><b>Races.</b> Pick a 2026 session; sessions without usable data are marked.</td>
-    <td><b>Session.</b> One driver on one straight: the estimated cut-off, its interval and the lap-by-lap scatter.</td>
+    <td><b>Races.</b> Pick a 2026 session.</td>
+    <td><b>Session.</b> One driver on one straight: the estimated cut-off and its interval.</td>
+    <td><b>Findings.</b> The frozen result, spot checks and limits.</td>
   </tr>
 </table>
 
+### What one estimate is
+
+Each estimate is the distance into a straight where deployment appears to end, with an interval across laps. The shape below is illustrative, not data.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/estimate-dark.svg">
+  <img alt="Illustrative speed trace along a straight with the deploy regime shaded, a red cut-off marker and a 95 percent lap-to-lap interval bar" src="docs/diagrams/estimate-light.svg" width="100%">
+</picture>
+
 ## The result
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/result-dark.svg">
+  <img alt="Forest plot of three odds ratios, all below the pre-registered 1.3 threshold; verdict no detectable effect; permutation p 0.208" src="docs/diagrams/result-light.svg" width="100%">
+</picture>
 
 The question, frozen on 2026-10-18 (see [HYPOTHESIS.md](HYPOTHESIS.md)): *does a defender's energy management before an attack predict being passed?* The recorded outcome, produced by `model/f1battery_model/hypothesis_test.py` from model run `proxy-0.1`:
 
@@ -57,6 +76,13 @@ The question, frozen on 2026-10-18 (see [HYPOTHESIS.md](HYPOTHESIS.md)): *does a
 An earlier cut-off on the approach straight did not predict being passed. Pace difference and Overtake availability did. "No effect" means none detectable with this estimator and sample, not proof of absence, and the test covers only passes whose approach straight carried a detectable defender cut-off. The permutation control failed, and three of the four testable spot checks failed too; both are reported rather than tuned away. Full write-up: [docs/findings.md](docs/findings.md).
 
 ## How it works
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/pipeline-dark.svg">
+  <img alt="Pipeline from OpenF1 through ingest, Postgres with TimescaleDB, the Python estimator, a versioned model run, the read-only API and the web app, with an optional Kafka replay lane" src="docs/diagrams/pipeline-light.svg" width="100%">
+</picture>
+
+The same flow as text:
 
 ```mermaid
 flowchart LR
@@ -150,6 +176,13 @@ See [docs/phase7-replay.md](docs/phase7-replay.md) for ports, cleanup and limits
 - **A caught artifact.** The spike's first "super-clip" segments were a smoothing artifact, and a hinge-ramp detector failed its Singapore check. Both are recorded in [docs/method-log.md](docs/method-log.md); the primary variable is the threshold-crossing cut-off.
 
 ## Project record
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/phases-dark.svg">
+  <img alt="Phase strip: S, 1 to 7 with outcomes and status, and Phase 1.5 cloud deploy marked not deployed yet" src="docs/diagrams/phases-light.svg" width="100%">
+</picture>
+
+Phase notes are linked in the table under How it works; the files below are the record.
 
 | File | Purpose |
 |---|---|
