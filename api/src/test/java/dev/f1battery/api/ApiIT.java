@@ -289,7 +289,7 @@ class ApiIT {
                 .andExpect(jsonPath("$.items[0].ci_low", is(690.0)));
         mvc.perform(get("/api/results?session=" + SESSION + "&size=3&page=1"))
                 .andExpect(jsonPath("$.items", hasSize(3)))
-                .andExpect(jsonPath("$.total", is(36)));
+                .andExpect(jsonPath("$.total", is(41)));
         mvc.perform(get("/api/results?model=nope")).andExpect(jsonPath("$.items", hasSize(0)));
     }
 
