@@ -20,7 +20,8 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
 RUN groupadd --system app && useradd --system --gid app --no-create-home --shell /usr/sbin/nologin app
 COPY --from=build /opt/venv /opt/venv
 WORKDIR /app
-COPY --chown=app:app model/f1battery_model /app/f1battery_model
+# --chmod: a clone made under umask 077 has 0600/0700 modes, which `app` could not read.
+COPY --chown=app:app --chmod=a+rX model/f1battery_model /app/f1battery_model
 COPY model/docker-entrypoint.sh /usr/local/bin/f1-model-run
 RUN chmod 0755 /usr/local/bin/f1-model-run && mkdir -p /app/out && chown app:app /app/out
 USER app
