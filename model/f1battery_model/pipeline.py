@@ -79,6 +79,31 @@ class Prepared:
     lap_no: np.ndarray
     med_len: float
     wins: list
+    tail_ok: np.ndarray                    # per lap: its last samples may serve a straight across the line
+
+
+def tail_usable(q: pd.DataFrame, bounds: pd.DataFrame) -> np.ndarray:
+    """Laps whose closing samples are trustworthy, whether or not the lap is green.
+
+    A straight across the start/finish line is placed by measuring back from
+    the next lap's own line crossing, so the previous lap only has to provide
+    real, continuous samples there: resolved bounds, not neutralised, not an
+    in-lap, no telemetry gap and enough samples. Out-laps and slow laps count
+    (an out-lap's last kilometre at full throttle is how every qualifying lap
+    starts); ``reason`` is not used because it names only the first failed
+    rule and would hide a gapped or neutralised lap behind ``out_lap``.
+    """
+    gap_ok = q["max_gap_s"].fillna(np.inf).to_numpy(dtype=float) <= al.MAX_GAP_S
+    return (bounds["resolved"].to_numpy(dtype=bool)
+            & ~q["neutralised"].to_numpy(dtype=bool)
+            & ~q["pit"].to_numpy(dtype=bool)
+            & gap_ok
+            & (q["n_samples"].to_numpy(dtype=int) >= al.MIN_SAMPLES))
+
+
+def wrap_ok(tail_ok: np.ndarray, lap_no: np.ndarray, i: int) -> bool:
+    """Whether lap row ``i`` may use the end of the previous row for a straight across the line."""
+    return i > 0 and int(lap_no[i - 1]) == int(lap_no[i]) - 1 and bool(tail_ok[i - 1])
 
 
 def _lap_windows(wins: list, scale: float, lap_len: float):
@@ -109,20 +134,33 @@ def prepare_driver(conn, ctx: SessionContext, driver: int) -> Prepared | None:
     lap_len = q["lap_length_m"].to_numpy(dtype=float)
     med_len = float(np.median(lap_len[green]))
     return Prepared(tr, derate.full_throttle_runs(tr), green, lap_len, q["lap_number"].to_numpy(),
-                    med_len, straights.straight_windows(conn, sk, med_len))
+                    med_len, straights.straight_windows(conn, sk, med_len), tail_usable(q, bounds))
 
 
-def sweep(prep: Prepared, ctx: SessionContext, cda: float, hinge: bool = True) -> list[dict]:
-    """Analyse every straight of every green lap with the given CdA."""
+def prev_green(prep: Prepared, i: int) -> bool:
+    """The strict gate: the previous row is a consecutive green lap."""
+    return i > 0 and bool(prep.green[i - 1]) and int(prep.lap_no[i - 1]) == int(prep.lap_no[i]) - 1
+
+
+def sweep(prep: Prepared, ctx: SessionContext, cda: float, hinge: bool = True, strict_wrap: bool = False) -> list[dict]:
+    """Analyse every straight of every green lap with the given CdA.
+
+    A straight across the line needs samples from the previous lap. With
+    ``strict_wrap`` the previous lap must be green (the gate used for the pooled
+    CdA, whose hinge fit does not hold on runs that start from an out-lap or a
+    cool-down lap, D33); otherwise it only has to be usable (``tail_usable``).
+    Each row records ``prev_green`` so the caller can tell the two apart.
+    """
     rows = []
     for i in np.flatnonzero(prep.green):
         for sid, s, e, wraps in _lap_windows(prep.wins, prep.lap_len[i] / prep.med_len, prep.lap_len[i]):
-            # A straight across the line needs the previous lap's tail to be a clean green lap too.
-            if wraps and not (i > 0 and prep.green[i - 1] and prep.lap_no[i - 1] == prep.lap_no[i] - 1):
+            strict = prev_green(prep, i)
+            if wraps and not (strict if strict_wrap else wrap_ok(prep.tail_ok, prep.lap_no, i)):
                 continue
             r = derate.straight_lap(prep.tr, i, (s, e), prep.runs, cda, ctx.rate_kw_s, hinge=hinge)
             if r is not None:
-                r.update(lap_row=int(i), lap_number=int(prep.lap_no[i]), straight_id=int(sid))
+                r.update(lap_row=int(i), lap_number=int(prep.lap_no[i]), straight_id=int(sid),
+                         prev_green=(strict or not wraps))
                 rows.append(r)
     return rows
 
@@ -136,7 +174,7 @@ def cda_profile(prep: Prepared, ctx: SessionContext, grid=CDA_GRID) -> tuple[np.
     """
     sse, n = np.zeros(len(grid)), np.zeros(len(grid))
     for k, cda in enumerate(grid):
-        for r in sweep(prep, ctx, cda):
+        for r in sweep(prep, ctx, cda, strict_wrap=True):
             if "sse" in r:
                 sse[k] += r["sse"]
                 n[k] += r["n_fit"]
@@ -179,6 +217,19 @@ def analyse_driver(prep: Prepared, ctx: SessionContext, driver: int, cda_hinge: 
     cda["cda_profile_m2"] = cda_profile_car
     cda["cda_used_m2"] = cda_hinge
     df = pd.DataFrame(rows)
+    # Rows whose window starts in a non-green lap (D33) keep the threshold cut-off and the
+    # entry speed only: the hinge model fits those runs badly (its residual rises with CdA),
+    # so their hinge fit is discarded before anything is derived from it. That keeps the
+    # per-straight plateau reference, and with it every pre-D33 row, unchanged.
+    relaxed = ~df["prev_green"].astype(bool) if len(df) else pd.Series(dtype=bool)
+    if relaxed.any():
+        for col in ("detected", "fit_ok", "hinge_valid"):
+            if col in df:
+                df.loc[relaxed, col] = False
+        for col in ("hinge_d", "hinge_v_kph", "p_deploy", "p_plateau", "delta_wkg", "tau_s", "sse", "n_fit",
+                    "sse_ratio", "delta_kw", "ramp_rate_kw_s", "plateau_accel"):
+            if col in df:
+                df.loc[relaxed, col] = np.nan
 
     # Relative deploy energy: integral of (p - p_plateau) dt over the deploy phase, J/kg (m^2/s^2).
     # p_plateau is the car's median fitted plateau level on that straight (any lap with a fit).
@@ -200,6 +251,9 @@ def analyse_driver(prep: Prepared, ctx: SessionContext, driver: int, cda_hinge: 
         refs = {int(sid): float(g["p_plateau"].median()) for sid, g in fit.groupby("straight_id")}
         df["p_ref"] = df["straight_id"].map(refs).fillna(glob)
         df["energy_rel"] = df["energy_p"] - df["p_ref"] * df["energy_dur"]
+        # The energy is measured against the hinge plateau, so it is not written for relaxed rows.
+        if relaxed.any():
+            df.loc[relaxed, "energy_rel"] = np.nan
 
     lap_bins: dict[int, np.ndarray] = {}
     agr = {"mean": np.nan, "min": np.nan, "pairs": 0}
