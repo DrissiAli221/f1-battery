@@ -155,13 +155,31 @@ mvn -pl ingest spring-boot:run -Dspring-boot.run.arguments="--source=local --yea
 Options: `--source=local|api` (required), `--year=2026`, `--session=<key>`,
 `--sessions=Race,Qualifying,Sprint,Sprint_Qualifying` (match on `session_name`;
 `_` or `-` stand for a space so the list survives shell splitting),
-`--dry-run` (fetch and count, write nothing). Environment: `DB_URL`,
+`--dry-run` (fetch and count, write nothing),
+`--refresh=drivers` (re-fetch the named session-wide endpoint even where the
+ingestion log marks it complete; only `drivers` is supported). Environment: `DB_URL`,
 `DB_USER`, `DB_PASSWORD`, `INGEST_LOCAL_ROOT`, `OPENF1_BASE_URL`, `API_DB_PASSWORD`
 (password given to the read-only `f1_api` role by migration V7). With
 `SPRING_PROFILES_ACTIVE=prod` the job refuses to start unless `DB_PASSWORD` is set.
 See `docs/ops.md`.
 
 `spring-boot:run` starts in `ingest/`, hence the absolute `INGEST_LOCAL_ROOT`.
+
+### Backfilling driver details (V8)
+
+Migration V8 adds `headshot_url, team_colour, first_name, last_name,
+broadcast_name, country_code` to `driver` (DECISIONS.md D24). Existing rows
+stay null, and the `drivers` units are already `complete` in `ingestion_log`,
+so a plain rerun would skip them. After merging, run once:
+
+```
+mvn -pl ingest spring-boot:run -Dspring-boot.run.arguments="--source=local --year=2026 --refresh=drivers"
+```
+
+`--refresh=drivers` bypasses the completed-unit skip for the `drivers`
+endpoint only, for every selected session (combine with `--session=`). The
+upserter's `ON CONFLICT DO UPDATE` fills the new columns of existing rows;
+nothing else is re-fetched. Re-running is idempotent.
 
 ## Tests
 

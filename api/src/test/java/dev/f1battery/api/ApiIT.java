@@ -55,7 +55,10 @@ class ApiIT {
                 "Testville", ts("2026-09-06T13:00:00Z"), ts("2026-09-06T15:00:00Z"), 2026);
         j.update("insert into session values (?,?,?,?,?,?,?,?,?,?)", EMPTY_SESSION, 501, 8, "Qualifying", "Qualifying",
                 "Italy", "Otherplace", ts("2026-09-05T13:00:00Z"), ts("2026-09-05T14:00:00Z"), 2026);
-        j.update("insert into driver values (?,?,?,?,?)", SESSION, 1, "AAA", "Alice A", "Team One");
+        j.update("insert into driver (session_key, driver_number, name_acronym, full_name, team_name, headshot_url, "
+                + "team_colour, first_name, last_name, broadcast_name, country_code) values (?,?,?,?,?,?,?,?,?,?,?)",
+                SESSION, 1, "AAA", "Alice A", "Team One", "https://img.example/aaa.png", "f47600", "Alice", "A",
+                "A ALICE", "GBR");
         j.update("insert into driver values (?,?,?,?,?)", SESSION, 44, "BBB", "Bob B", "Team Two");
         j.update("insert into session values (?,?,?,?,?,?,?,?,?,?)", BLIND_SESSION, 502, CIRCUIT_BLIND, "Qualifying",
                 "Qualifying", "Italy", "Blindtown", ts("2026-08-12T13:00:00Z"), ts("2026-08-12T14:00:00Z"), 2026);
@@ -202,7 +205,15 @@ class ApiIT {
     void driversAndLaps() throws Exception {
         mvc.perform(get("/api/sessions/" + SESSION + "/drivers"))
                 .andExpect(jsonPath("$.items", hasSize(2)))
-                .andExpect(jsonPath("$.items[1].team_name", is("Team Two")));
+                .andExpect(jsonPath("$.items[1].team_name", is("Team Two")))
+                .andExpect(jsonPath("$.items[0].headshot_url", is("https://img.example/aaa.png")))
+                .andExpect(jsonPath("$.items[0].team_colour", is("#F47600")))
+                .andExpect(jsonPath("$.items[0].first_name", is("Alice")))
+                .andExpect(jsonPath("$.items[0].last_name", is("A")))
+                .andExpect(jsonPath("$.items[0].broadcast_name", is("A ALICE")))
+                .andExpect(jsonPath("$.items[0].country_code", is("GBR")))
+                .andExpect(jsonPath("$.items[1].team_colour").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.items[1].headshot_url").value(org.hamcrest.Matchers.nullValue()));
         mvc.perform(get("/api/sessions/" + SESSION + "/laps?driver=1"))
                 .andExpect(jsonPath("$.total", is(3)))
                 .andExpect(jsonPath("$.items[0].green", is(true)))
@@ -316,6 +327,8 @@ class ApiIT {
         mvc.perform(get("/api/compare?session=" + SESSION + "&drivers=1,44&straight=1"))
                 .andExpect(jsonPath("$.drivers", hasSize(2)))
                 .andExpect(jsonPath("$.drivers[0].name_acronym", is("AAA")))
+                .andExpect(jsonPath("$.drivers[0].team_colour", is("#F47600")))
+                .andExpect(jsonPath("$.drivers[0].headshot_url", is("https://img.example/aaa.png")))
                 .andExpect(jsonPath("$.drivers[1].series[0].cutoff_distance_m", is(744.0)));
         mvc.perform(get("/api/compare?session=" + SESSION + "&drivers=1")).andExpect(status().isBadRequest());
         mvc.perform(get("/api/compare?session=" + EMPTY_SESSION + "&drivers=1,44"))

@@ -45,6 +45,12 @@ class IngestIT {
 
     private static final IngestOptions LOCAL = new IngestOptions("local", 2026, null, java.util.List.of(), false);
 
+    /** Tests share one database; each starts from an empty one. */
+    @org.junit.jupiter.api.BeforeEach
+    void clean() {
+        jdbc.execute("TRUNCATE session, ingestion_log CASCADE");
+    }
+
     private long count(String table) {
         return jdbc.queryForObject("SELECT count(*) FROM " + table, Long.class);
     }
@@ -92,6 +98,31 @@ class IngestIT {
         expected.forEach((table, rows) -> assertThat(count(table)).as("after run 2: " + table).isEqualTo(rows));
         assertThat(count("ingestion_log")).isEqualTo(logRows);
         assertThat(upserted()).as("no row inserted or changed by the second run").isEqualTo(changedAfterFirst);
+    }
+
+    @Test
+    void driverDetailsRoundTripAndRefreshBackfillsExistingRows() {
+        service.run(LOCAL);
+        Map<String, Object> row = jdbc.queryForMap("SELECT * FROM driver WHERE session_key = 11234 AND driver_number = 10");
+        assertThat(row.get("first_name")).isEqualTo("Pierre");
+        assertThat(row.get("last_name")).isEqualTo("Gasly");
+        assertThat(row.get("broadcast_name")).isEqualTo("P GASLY");
+        assertThat(row.get("team_colour")).isEqualTo("00A1E8");
+        assertThat((String) row.get("headshot_url")).startsWith("https://media.formula1.com/");
+
+        // Simulate rows stored before V8, then show a plain rerun skips them and --refresh=drivers fills them.
+        jdbc.update("UPDATE driver SET headshot_url = NULL, team_colour = NULL, first_name = NULL, last_name = NULL, "
+                + "broadcast_name = NULL, country_code = NULL");
+        service.run(LOCAL);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM driver WHERE team_colour IS NULL", Long.class)).isEqualTo(2L);
+
+        IngestService.Summary refreshed = service.run(new IngestOptions("local", 2026, null, java.util.List.of(), false,
+                java.util.Set.of("drivers")));
+        assertThat(refreshed.ok()).isTrue();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM driver WHERE team_colour IS NOT NULL AND headshot_url IS NOT NULL",
+                Long.class)).isEqualTo(2L);
+        assertThat(jdbc.queryForObject("SELECT first_name FROM driver WHERE session_key = 11234 AND driver_number = 10",
+                String.class)).isEqualTo("Pierre");
     }
 
     @Test

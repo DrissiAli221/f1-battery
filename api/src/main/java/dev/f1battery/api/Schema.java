@@ -12,6 +12,16 @@ import org.springframework.web.server.ResponseStatusException;
 @Component
 public class Schema {
 
+    /** Team colour as stored by OpenF1 (six hex digits) exposed as {@code #RRGGBB}; null stays null. */
+    static final String TEAM_COLOUR =
+            "case when team_colour is null then null else '#' || upper(team_colour) end as team_colour";
+    /** Driver detail columns for /drivers. Image URLs are passed through; images are never proxied. */
+    static final String DRIVER_DETAILS =
+            "headshot_url, " + TEAM_COLOUR + ", first_name, last_name, broadcast_name, country_code";
+    /** Subset used by the summary rows, qualified for the aliased table {@code d}. */
+    static final String DRIVER_DETAILS_D =
+            "d.headshot_url, case when d.team_colour is null then null else '#' || upper(d.team_colour) end as team_colour";
+
     private final JdbcTemplate jdbc;
 
     public Schema(JdbcTemplate jdbc) {
