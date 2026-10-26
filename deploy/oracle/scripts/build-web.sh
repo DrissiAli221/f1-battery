@@ -14,6 +14,20 @@ site_url="https://$domain"
 web="$REPO_DIR/web"
 [[ -f "$web/package-lock.json" ]] || die "web/package-lock.json not found"
 
+# Private assets (non-redistributable fonts and images) live in the S3 bucket, not in git:
+# web/private-assets.txt lists them and `web/scripts/private-assets.sh push` uploads them once.
+if [[ -f "$web/private-assets.txt" ]] && offhost_enabled; then
+    log "pulling private assets from s3"
+    bucket="$(env_get F1_S3_BUCKET)"
+    while IFS= read -r p; do
+        [[ -z "$p" || "$p" == \#* ]] && continue
+        [[ "$p" == web/public/* ]] || die "private-assets.txt: $p is outside web/public"
+        s3_run s3 cp "s3://$bucket/private-assets/$p" "/web/public/${p#web/public/}" --only-show-errors
+    done < "$web/private-assets.txt"
+elif [[ -f "$web/private-assets.txt" ]]; then
+    log "WARNING: private assets not pulled (F1_SKIP_OFFHOST=1); the site builds with the OFL fallback fonts"
+fi
+
 mkdir -p "$web/dist"
 rm -rf "$web/dist.new"
 log "building web for $site_url"

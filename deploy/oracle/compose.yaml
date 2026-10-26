@@ -333,6 +333,8 @@ services:
       - ../../data/raw:/data/raw:ro
       - ../../data/reference:/data/reference:ro
       - ./backups:/backups:ro
+      # Private web assets (fonts, wallpaper) are pulled here before the web build; see build-web.sh.
+      - ../../web/public:/web/public
     networks:
       - egress
     read_only: true

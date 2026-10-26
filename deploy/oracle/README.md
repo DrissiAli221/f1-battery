@@ -508,3 +508,15 @@ check on the first deploy: that the ingest `--dry-run` runs Flyway before it exi
 `amazon/aws-cli:2.17.0` tag; the `caddy file-server` flags in the `web` container; that the
 `model` entrypoint's `--register-existing-run --publish` step behaves as the lifecycle branch
 documents; the model's runtime and memory on the full dataset; and the size of a database dump.
+
+## Private web assets
+
+The Formula 1 and KH typefaces, the hero wallpaper and the pixel mask are not in git (PR #15).
+`web/private-assets.txt` lists them. Upload them once from a checkout that has the files:
+
+```
+F1_S3_BUCKET=<bucket> web/scripts/private-assets.sh push
+```
+
+`build-web.sh` pulls that list from `s3://<bucket>/private-assets/` into `web/public` before every
+build. With `F1_SKIP_OFFHOST=1` the pull is skipped and the site renders with the OFL fallback fonts.
