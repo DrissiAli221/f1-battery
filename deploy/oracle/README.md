@@ -8,10 +8,12 @@ files bind-mounted into the containers, systemd timers instead of cron, a memory
 service, local backups with 7-day retention plus an off-host copy, and Caddy as the only thing
 on ports 80/443.
 
-**Status: not yet executed; prepared only.** Nothing in this folder has been run on the VM, the
-Compose file has not been rendered with `docker compose config` (Docker was not running when it
-was written), and no image has been built. Treat the first deploy as a rehearsal and read each
-step before running it.
+**Status: not yet executed on the VM; pre-flighted on an arm64 Mac.** Nothing in this folder has
+been run on the VM. Verified on the Mac: `docker compose config` renders (all profiles), the four
+images build and start with the compose hardening flags (non-root uid, read-only, `cap_drop ALL`),
+the `web` Caddy serves with `cap_add: NET_BIND_SERVICE`, Kafka starts with `KAFKA_LOG_DIRS` on its
+volume, and the Caddy site template adapts with the 405 rule first. Treat the first deploy as a
+rehearsal and read each step before running it.
 
 ## What runs
 
@@ -24,7 +26,7 @@ step before running it.
 | `web` | `caddy:2.10.2-alpine` | static file server for `web/dist` | RCP's `edge` network as `f1-web:8080` |
 | `ingest` (jobs) | built from `ingest/Dockerfile` | run-once loader; owns the Flyway migrations | none, outbound to OpenF1 |
 | `model` (jobs) | built from `model/Dockerfile` | run-once: quality, estimate, profile, publish | none |
-| `replay-producer` (replay) | same image as the consumer | run-once: re-emits a recorded session onto Kafka | none |
+| `replay-producer` (`replay-run`, only via `run`) | same image as the consumer | run-once: re-emits a recorded session onto Kafka | none |
 | `s3` (jobs) | `amazon/aws-cli` | off-host copies, no host install of the AWS CLI | outbound to S3 |
 
 Nothing is published on the host. The only public path is RCP's Caddy:
@@ -70,8 +72,10 @@ Docker-forwarded 80/443. `/opt` is root-owned 755 and `/opt/rcp` is `ubuntu` 750
 
 Consequences at the surveyed 1 CPU (they ease after the resize to 2 OCPU / 12 GB): a single CPU already loaded at 2.5 means Maven builds and the model compete with
 RCP for CPU, not only memory; all f1 jobs get a low CPU weight (`cpu_shares: 256`) so RCP wins
-contention, but builds run in the Docker daemon and are not niced, so expect slow builds and some
-latency on RCP while they run. There is no swap, so memory pressure ends in the OOM killer.
+contention (the always-on services db, api, kafka, replay-consumer and web get `cpu_shares: 512`,
+below Docker's default of 1024), but builds run in the Docker daemon and are not niced, so
+expect slow builds and some latency on RCP while they run. **Build on the Mac instead**: see
+'Building on the Mac (recommended)' below. There is no swap, so memory pressure ends in the OOM killer.
 
 ## Memory budget
 
@@ -162,6 +166,9 @@ or images in use. `deploy.sh` never prunes on its own.
    - The web rebuild with `VITE_SITE_URL` (`feat/web-v2`, not pushed when this was written).
      `scripts/build-web.sh` sets it; an older web tree simply ignores it.
    - `fix/ingest-api-source`: the `--source=api` path used by the weekly job.
+
+   The VM tracks the **`deploy`** branch (`F1_BRANCH`, default `deploy`): `main` plus these
+   branches merged, with this folder. Bootstrap clones it and `deploy.sh` fast-forwards it.
 2. **The VM is bootstrapped as RCP's is** (surveyed: Docker 29.8.2, Compose v5.6.0): Docker Engine and the Compose plugin installed, the
    `ubuntu` user in the `docker` group, RCP's firewall service running. Only 80/443 are open
    (plus restricted SSH); this deployment opens nothing new, so no firewall change is needed. Do
@@ -204,35 +211,46 @@ up before f1's. The f1 containers reach Caddy only through the aliases `f1-api` 
 
 ### Changes to RCP (made once, by hand; this repository does not edit RCP)
 
-`caddy/f1-battery.caddy` in this folder is the site block. In RCP's `deploy/demo`:
+`caddy/f1-battery.caddy` in this folder is the site-block template. `bootstrap.sh` and
+`deploy.sh` render it with the domain from f1's own `.env` written **literally** (no variable, so
+RCP's `.env` is not touched and RCP's compose cannot break when something is unset) into
+`deploy/oracle/caddy/sites/f1-battery.caddy`. Do not use `${F1_DOMAIN:?}` or `${F1_DOMAIN:-}` in
+RCP's compose: the first stops RCP's whole compose from loading whenever the variable is
+missing, and neither is needed. In RCP's `deploy/demo`, three changes plus the recreate:
 
-1. `compose.yaml`, service `caddy`:
+1. `compose.yaml`, service `caddy`, `volumes:` (next to the Caddyfile mount):
 
    ```yaml
-       environment:
-         F1_DOMAIN: ${F1_DOMAIN:?Set F1_DOMAIN in .env}      # next to RCP_API_DOMAIN and ACME_EMAIL
        volumes:
-         - /opt/f1-battery/deploy/oracle/caddy:/etc/caddy/sites:ro    # next to the Caddyfile mount
+         - /opt/f1-battery/deploy/oracle/caddy/sites:/etc/caddy/sites:ro
    ```
 
-2. `.env` (RCP's): `F1_DOMAIN=f1.<your-domain>`.
-3. `Caddyfile`, at the end:
+2. `Caddyfile`, at the end:
 
    ```
    import /etc/caddy/sites/*.caddy
    ```
 
-4. Recreate Caddy (a plain `restart` would not re-read the mounts; expect a few seconds of
-   downtime for RCP's API):
+   (A glob with no match is not an error, so Caddy still starts if the f1 file is absent.)
+3. Step 4 below. The four lines to revert are the mount and the import (two lines each in
+   `compose.yaml` and `Caddyfile` if you added a comment), then recreate Caddy again.
+
+4. Validate the new configuration in a throwaway container first, then recreate Caddy (a plain
+   `restart` would not re-read the mounts; expect a few seconds of downtime for RCP's API).
+   `--no-deps` keeps the other RCP services untouched:
 
    ```sh
-   cd /opt/rcp/deploy/demo && docker compose up -d --force-recreate caddy
+   cd /opt/rcp/deploy/demo
+   docker compose run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+   docker compose up -d --no-deps --force-recreate caddy
    ```
+
+   If validation fails, nothing was changed yet: fix the import or revert the four lines.
 
 Do this after DNS points at the VM and after the f1 stack is up. With the import in place but
 the f1 stack down, Caddy still starts (it only fails to reach the upstream for that hostname).
-The block's default `f1-battery.invalid` is used if `F1_DOMAIN` is unset; it never matches a real
-request.
+After changing `F1_DOMAIN` in f1's `.env`, run `deploy.sh` (it re-renders the file) and repeat
+the validate and recreate step.
 
 Caddy sets `X-Forwarded-For` to the real client. `API_TRUSTED_PROXIES` is set by
 `scripts/deploy.sh` to the exact subnet of the `edge` network (the compose default is Docker's
@@ -240,16 +258,75 @@ Caddy sets `X-Forwarded-For` to the real client. `API_TRUSTED_PROXIES` is set by
 
 ## First deploy
 
-On the VM, as `ubuntu`, after the prerequisites:
+On the VM, as `ubuntu`, after the prerequisites. Before the first deploy, **either**
+`deploy/oracle/secrets/aws_credentials` exists **or** you set `F1_SKIP_OFFHOST=1` in `.env` on
+purpose (backups then stay on the VM, which Oracle may reclaim). `bootstrap.sh` and `deploy.sh`
+stop with that message otherwise.
 
 ```sh
 sudo install -d -o ubuntu -g ubuntu -m 750 /opt/f1-battery
-git clone <repository url> /opt/f1-battery
+(umask 022 && git clone -b deploy <repository url> /opt/f1-battery)
 /opt/f1-battery/deploy/oracle/scripts/bootstrap.sh
 ```
 
-(`F1_REPO_URL=<url> bootstrap.sh` run from any other copy of the script also clones to
-`/opt/f1-battery` and continues from there.)
+(`F1_REPO_URL=<url> bootstrap.sh` run from any other copy of the script also clones branch
+`$F1_BRANCH`, default `deploy`, to `/opt/f1-battery` and continues from there.) Always clone under
+`umask 022`: a 0600 working tree is unreadable to the non-root containers.
+
+### By hand, with a read-only deploy key (private repository)
+
+On the VM as `ubuntu`:
+
+```sh
+ssh-keygen -t ed25519 -f ~/.ssh/f1-battery -N '' -C 'f1-battery deploy key (oracle-arm-1)'
+cat ~/.ssh/f1-battery.pub     # GitHub: repo Settings > Deploy keys > Add; leave "Allow write access" OFF
+```
+
+`~/.ssh/config`:
+
+```
+Host github-f1
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/f1-battery
+  IdentitiesOnly yes
+```
+
+Pin github.com's host key instead of trusting on first use: write it to `~/.ssh/known_hosts` and
+compare with the fingerprints GitHub publishes
+(<https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints>):
+
+```sh
+ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
+ssh-keygen -lf ~/.ssh/known_hosts -F github.com    # must match the published ED25519 SHA256 fingerprint
+chmod 600 ~/.ssh/config ~/.ssh/known_hosts ~/.ssh/f1-battery
+```
+
+Then clone, with the alias as the host (this is also what `F1_REPO_URL` takes):
+
+```sh
+sudo install -d -o ubuntu -g ubuntu -m 750 /opt/f1-battery
+(umask 022 && git clone -b deploy git@github-f1:DrissiAli221/f1-battery.git /opt/f1-battery)
+/opt/f1-battery/deploy/oracle/scripts/bootstrap.sh
+# or, from any copy of the script:
+F1_REPO_URL=git@github-f1:DrissiAli221/f1-battery.git /path/to/bootstrap.sh
+```
+
+### Building on the Mac (recommended)
+
+Builds on the VM compete with RCP for CPU and memory. Build the four images on the Mac (arm64,
+the VM's architecture) and ship them over SSH instead. From a clean checkout of the pushed
+`deploy` commit:
+
+```sh
+deploy/oracle/scripts/build-on-mac.sh            # docker build x4, then docker save | ssh oracle-arm-1 docker load
+ssh oracle-arm-1 'F1_BUILD=0 /opt/f1-battery/deploy/oracle/scripts/deploy.sh'
+```
+
+The tags are hashes of the last commit touching each module, so the Mac and the VM agree as long
+as both are at the same commit. With `F1_BUILD=0` (environment, or in `.env`) the scripts do not
+build and stop with a clear message if an image has not been loaded. For the very first deploy
+run the loader before `bootstrap.sh` and set `F1_BUILD=0` in the environment of that run too.
 
 The script creates
 `secrets/` (0700) with generated `postgres_password` and `api_password` (0600), creates `.env`
@@ -366,7 +443,7 @@ expect the model step to take a while; measure it on the first run.
 
 ## Replay and Kafka
 
-- `kafka`: single node, KRaft (broker and controller in one process), replication factor 1, no
+- `kafka`: single node, KRaft (log directory `/var/lib/kafka/data`, the `kafka_data` volume) (broker and controller in one process), replication factor 1, no
   authentication, advertised as `kafka:9092`, heap `-Xms128m -Xmx384m`, on the internal `kafka`
   network (not reachable from `edge`, the host, or the internet).
 - Topics, created by the replay module (auto-create is off):
@@ -376,7 +453,8 @@ expect the model step to take a while; measure it on the first run.
 - The API relays `regime-state.<key>` to browsers over SSE at `/api/live/<key>`
   (`API_REPLAY_ENABLED=true`, at most `API_LIVE_MAX_STREAMS` concurrent streams, then 503).
 - `replay-consumer` runs always, for the session in `REPLAY_SESSION_KEY` (default 11361). Feed
-  it with the producer, which reads `car_data`/`location` as the read-only `f1_api` role:
+  it with the producer, which has its own profile (`replay-run`), so `up -d` never starts it; it
+  runs only when you ask, and reads `car_data`/`location` as the read-only `f1_api` role:
 
   ```sh
   scripts/dc.sh run --rm replay-producer                      # .env session, 20x
@@ -425,7 +503,7 @@ expect the model step to take a while; measure it on the first run.
 
 ## Not covered or not verified
 
-Not executed on a VM; no image built; `docker compose config` not run. Unverified assumptions to
+Not executed on a VM. Unverified assumptions to
 check on the first deploy: that the ingest `--dry-run` runs Flyway before it exits; the
 `amazon/aws-cli:2.17.0` tag; the `caddy file-server` flags in the `web` container; that the
 `model` entrypoint's `--register-existing-run --publish` step behaves as the lifecycle branch
