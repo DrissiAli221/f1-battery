@@ -1,8 +1,10 @@
-# Site block for f1-battery, imported by RCP's Caddyfile (README.md, "Caddy").
+# TEMPLATE for the f1-battery site block (README.md, "Caddy"). Not imported directly: bootstrap.sh
+# and deploy.sh render it, replacing __F1_DOMAIN__ with F1_DOMAIN from deploy/oracle/.env, into
+# caddy/sites/f1-battery.caddy (git-ignored). RCP's Caddy mounts caddy/sites/ and imports it, so
+# RCP's own .env and compose need no f1 variable.
 # Caddy runs in RCP's compose project; it reaches these containers over RCP's `edge` network by
 # their aliases: f1-api (Spring Boot, :8080) and f1-web (static files, :8080).
-# {$F1_DOMAIN} comes from the environment of RCP's caddy service.
-{$F1_DOMAIN:f1-battery.invalid} {
+__F1_DOMAIN__ {
 	header {
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
@@ -10,46 +12,48 @@
 		X-Frame-Options "DENY"
 	}
 
-	# The site is read-only.
-	@write not method GET HEAD OPTIONS
-	handle @write {
-		respond "Method not allowed" 405
-	}
+	# One route, so the order below is literal: Caddy sorts sibling handle blocks by path-matcher
+	# length, which could put `handle /api/*` ahead of the method check.
+	route {
+		# The site is read-only.
+		@write not method GET HEAD OPTIONS
+		respond @write "Method not allowed" 405
 
-	# Live replay is Server-Sent Events: no compression, no buffering.
-	handle /api/live/* {
-		reverse_proxy f1-api:8080 {
-			flush_interval -1
-			header_up -Authorization
-			header_up -Cookie
-			transport http {
-				dial_timeout 3s
+		# Live replay is Server-Sent Events: no compression, no buffering.
+		handle /api/live/* {
+			reverse_proxy f1-api:8080 {
+				flush_interval -1
+				header_up -Authorization
+				header_up -Cookie
+				transport http {
+					dial_timeout 3s
+				}
 			}
 		}
-	}
 
-	handle /api/* {
-		encode zstd gzip
-		reverse_proxy f1-api:8080 {
-			header_up -Authorization
-			header_up -Cookie
-			transport http {
-				dial_timeout 3s
-				response_header_timeout 30s
+		handle /api/* {
+			encode zstd gzip
+			reverse_proxy f1-api:8080 {
+				header_up -Authorization
+				header_up -Cookie
+				transport http {
+					dial_timeout 3s
+					response_header_timeout 30s
+				}
 			}
 		}
-	}
 
-	# Vite output: hashed files are immutable; index.html must be revalidated.
-	handle /assets/* {
-		encode zstd gzip
-		header Cache-Control "public, max-age=31536000, immutable"
-		reverse_proxy f1-web:8080
-	}
+		# Vite output: hashed files are immutable; index.html must be revalidated.
+		handle /assets/* {
+			encode zstd gzip
+			header Cache-Control "public, max-age=31536000, immutable"
+			reverse_proxy f1-web:8080
+		}
 
-	handle {
-		encode zstd gzip
-		header Cache-Control "no-cache"
-		reverse_proxy f1-web:8080
+		handle {
+			encode zstd gzip
+			header Cache-Control "no-cache"
+			reverse_proxy f1-web:8080
+		}
 	}
 }
