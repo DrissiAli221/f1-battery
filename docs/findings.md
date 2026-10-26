@@ -176,7 +176,9 @@ The three main variables were permuted jointly across rows within each session (
 }
 ```
 
-The observed coefficient (+0.086 log-odds per SD, wrong sign for the hypothesis) is less extreme than 79.2 % of permuted coefficients in absolute value (two-sided permutation p = 0.208); the frozen requirement was more than 95 %. The control fails.
+The observed coefficient (+0.086 log-odds per SD, wrong sign for the hypothesis) is more extreme than 79.2 % of permuted coefficients in absolute value (two-sided permutation p = 0.208); the frozen requirement was more than 95 %. The control fails.
+
+*Correction (2026-10-19): this sentence first said "less extreme than"; the script ranks the observed coefficient as more extreme than 79.2 % of permutations (p = 0.208). The numbers and the verdict are unchanged.*
 
 ![permutation](../model/out/findings/permutation.png)
 

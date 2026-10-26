@@ -20,7 +20,7 @@ List endpoints return `{items, page, size, total}`; `page` is zero-based,
 | `GET /circuits/{ck}/outline` | see below; 404 if the circuit has no race session or lap |
 | `GET /models` | published runs from `model_run` (`created_at` = `finished_at`); from `model_result` only while `model_run` is empty |
 | `GET /results?session=&driver=&variable=&straight=&lap=&model=` | one run only: the latest published run of `model` (default: latest published run overall), see Model runs |
-| `GET /sessions/{key}/summary?model=` | one item per driver: `straights[]` (`cutoff_distance_median_m`, `ci_low`, `ci_high`, from `lap_number = 0`) and `regime_shares` averaged over green laps (all laps if the session has no `lap_quality` rows) |
+| `GET /sessions/{key}/summary?model=` | one item per driver: `straights[]` (one entry per straight with per-lap rows: `laps_analysed`, `laps_detected` from `cutoff_detected`, and `cutoff_distance_median_m`, `ci_low`, `ci_high` from `lap_number = 0`, null below three detected laps) and `regime_shares` averaged over green laps (all laps if the session has no `lap_quality` rows) |
 | `GET /sessions/{key}/laps/{lap}/regimes?driver=&model=` | `[{bin, d_start_m, label}]` from `regime_bin_<n>` variables, value 0..3 = deploy, plateau, lift, brake; `d_start_m = bin * 50` |
 | `GET /sessions/{key}/straights/{straightId}/profile?driver=&model=` | not paginated: `{session_key, driver_number, straight_id, model_version, bin_m: 50, bins:[{bin, d_start_m, v_kph, a_ms2}], cutoff_median_m, ci_low_m, ci_high_m}` from lap-0 `speed_bin_<n>` (median kph, whole) and `accel_bin_<n>` (m/s², 1 decimal) rows (DECISIONS.md D30); `bins` empty (200) without profile rows; cut-off fields from `cutoff_distance_median_m`, null when absent; 404 for an unknown session |
 | `GET /compare?session=&drivers=a,b&straight=&model=` | not paginated: `{session_key, model_version, straight_id, drivers:[{driver_number, name_acronym, team_name, series:[{lap_number, straight_id, cutoff_distance_m, ci_low, ci_high}]}]}` |
@@ -141,3 +141,5 @@ until Phase 4 writes `model_result`).
 
 
 Units: `location` x/y/z are tenths of a metre (verified against the Monza lap length, see docs/data-quality-notes.md), so the outline's 500-unit spacing is 50 m.
+
+Straight speed profile: `python -m f1battery_model.profile --session <key> --run-id <uuid>` (or `--all-sessions`, from `model/` with the venv active) adds `speed_bin_<n>` (median kph) and `accel_bin_<n>` (median m/s²) rows with `lap_number` 0 per driver per straight to an existing run; bin n is [50n, 50n+50) m from the straight's start. It is a cross-lap aggregate over clean laps at the same 50 m resolution as the regime bins, never a single lap; re-running deletes and rewrites those variables.

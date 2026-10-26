@@ -477,3 +477,118 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   `team_colour`, `first_name`, `last_name`, `broadcast_name` and
   `country_code` from `drivers`; a migration and upserter change add them,
   and the API exposes them (separate pull request).
+
+## D25 — 2026-10-19 — Frontend rebuild stack
+- Dark first, light mode later. Tailwind for layout and styling only; GSAP
+  (MotionPath, DrawSVG) for track-map animations; Motion for UI
+  transitions; charts as hand-written SVG with d3-scale. React, Vite and
+  TypeScript stay. The project name and wordmark are decided later.
+- Before any page is built, three static mockup directions are produced
+  with real Monza data, and one is chosen.
+
+## D26 — 2026-10-19 — Frontend direction: Broadcast with Telemetry instruments
+- The rebuild uses the Broadcast mockup's shell, track and timing-tower
+  grammar with the Telemetry lab's mono numbers, linear distance strip,
+  scrubber and cursor readout. The Editorial direction is dropped.
+- None of the three mockups met the bar as built; the brief lists the
+  density, type-scale and chart problems and the rules that fix them. One
+  hybrid mockup validates those rules before the React build starts.
+
+## D27 — 2026-10-19 — Adopt the PRNDL design system
+- The frontend's tokens and components come from PRNDL, an unofficial,
+  student-made F1 design system on the Figma Community, used with its
+  author's permission and credited. Its terms (unofficial, no F1
+  affiliation, non-commercial) match this project.
+- Orbitron replaces Saira as the accent face; Geist and Geist Mono stay for
+  body and numbers. Logos, photos and renders in the file are not reused;
+  team colours still come from OpenF1.
+
+## D28 — 2026-10-19 — Spacious layout; hash routing kept
+- The rebuild drops D26 rule 1 (session explorer in one viewport with a
+  side panel). After the PRNDL mockup the layout was judged too condensed:
+  pages now use a wide container, large section spacing and one idea per
+  section, with the track map full width as the explorer's hero. Mockups
+  end here; work continues in `web/`.
+- Hash routing stays (static hosting needs no server rewrites); explorer
+  state is kept in the query string so views can be shared.
+- The page background stays PRNDL's for now and is to be revisited; it is
+  a single token.
+
+## D29 — 2026-10-20 — Art direction: everything read off the speed trace
+- The view's concept, replacing the broadcast/telemetry hybrid of D26 as the
+  art direction (PRNDL primitives from D27 and the spacious rule of D28 stay):
+  F1 hides the battery, so the site reads it the only way anyone can, off the
+  speed trace, metre by metre down the straight. One instrument, "the
+  straight" (a straight's speed profile with a cursor whose position drives
+  every readout, colour and map dot), is the landing hero, the session
+  page's core and the opener of every page. The full system (palette, type,
+  grid, motion, per-page composition, build order) is in `web/DESIGN.md`.
+- Considered and rejected as the main concept: the pre-registration as a
+  performed scientific method (kept as a detail: the dated verdict), and
+  measured-solid versus estimated-hatched (kept as the drawing rule).
+  ASCII-art renderings were proposed and rejected: decoration with no link
+  to the subject.
+- The page background becomes the broadcast near-black (`#0c0c11`, one
+  token); PRNDL's grey page bg was the disliked part of D27. Orbitron is
+  limited to the wordmark, driver codes and position numbers.
+- An isometric explainer figure of the cut-off detector (anatomy skill) is
+  optional scope on the method page only, so the landing keeps one
+  signature moment.
+
+## D30 — 2026-10-20 — Straight speed profiles are cross-lap aggregates at 50 m
+- The straight instrument needs a speed profile. A per-lap profile at 10 m
+  bins would be the raw trace under another name (at 3.7 Hz a car covers
+  20–25 m between samples), which D9 forbids. The site therefore serves,
+  per driver and per straight, the median speed over all clean laps in the
+  session per 50 m bin (whole kph) and the median per-lap mean acceleration
+  per bin, stored as `speed_bin_<n>` and `accel_bin_<n>` variables on lap 0
+  of the model run next to the regime bins, and served by
+  `GET /sessions/{key}/straights/{s}/profile?driver=`.
+- Nothing of it is committed to the repository; the view fetches it at
+  runtime. No per-lap profile endpoint is built; the per-lap view keeps the
+  regime bins and the per-lap cut-off tick.
+
+## D31 — 2026-10-20 — F1 imagery, logos and typefaces may be used in the view
+- The owner's call: this is a private, non-commercial portfolio project, so
+  the self-imposed ban on F1, FIA and FOM marks and on the official F1
+  typeface (D24, AGENTS.md) is lifted. Imagery is chosen by the owner (the
+  first is the F1 "digital presentation" wallpaper as the landing hero),
+  compressed to WebP/JPG under `web/public/`, and credited in the footer.
+- Caveat recorded for later: revisit before the site is linked publicly from
+  applications; trademark use that is fine for a private project can draw
+  attention once it is public.
+
+## D33 — 2026-10-21 — A straight across the line needs usable, not green, samples from the previous lap
+- The window of a straight that crosses the start/finish line is measured
+  back from the lap's own line crossing, so the previous lap only has to
+  supply real, continuous samples there. The gate was "previous lap green",
+  which in qualifying is never true (the lap before a flying lap is the
+  out-lap), so straight 1 had no rows and no speed profile in all 14
+  qualifying and sprint-qualifying sessions (docs/backend-review-2026-10-21.md).
+- **Decision:** for the per-lap threshold cut-off, the entry speed and the
+  speed profile, the gate is `pipeline.tail_usable`: consecutive, resolved,
+  not neutralised, not an in-lap, no telemetry gap over `MAX_GAP_S`, at least
+  `MIN_SAMPLES` samples. That accepts out-laps, cool-down (`slow`) laps,
+  `length` outliers, `no_start` laps and a race's standing-start lap 1 as the
+  previous lap; the length rule does not matter for a tail because the window
+  is placed from the next lap's own start. Flags are used rather than
+  `reason`, which names only the first failed rule and would hide a gapped or
+  neutralised lap behind `out_lap`. A gap straddling the line can still reach
+  about 4 s of interpolation (2 s on each side); that is unchanged.
+- **The pooled hinge CdA keeps the strict gate** (`sweep(strict_wrap=True)`).
+  The hinge model fits runs that start from an out-lap badly (their residual
+  rises with CdA), and with them pooled the CdA fell to the grid edge in six
+  qualifying sessions. The hinge outputs and `deploy_energy_rel` are not
+  written for the new rows either. So D33 is additive: every row of the
+  previous run is unchanged, the only new output is straight 1 after a
+  non-green lap.
+- Known effect to keep in mind when reading straight-1 medians: after an
+  out-lap the cut-off can sit earlier (Baku Q 11373: median −1,072 m after an
+  out-lap against −577 m after a green lap). Rows do not yet carry the kind of
+  previous lap; a `prev_lap_kind` variable is a candidate follow-up.
+- `MODEL_VERSION` becomes `proxy-0.2`, so the frozen findings run (`proxy-0.1`,
+  `6f9df732…`, docs/findings.md) stays reproducible and is not overwritten by
+  the recipe at HEAD. Results are recomputed for every session under run id
+  `26862846-4455-495b-98c0-3cb1dff4fcb3` and published; until the run lifecycle of PR #1 is
+  merged, publishing is a row in `model_run` written by hand.
+- Numbering: D32 is taken by the view rebuild on `feat/web-rebuild`.
