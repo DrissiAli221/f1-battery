@@ -271,6 +271,82 @@ public class ResultsController {
         return Page.of(bins, page, size);
     }
 
+    /**
+     * Speed and acceleration along one straight for one driver, per 50 m bin from the straight's
+     * start: variables speed_bin_n (median kph) and accel_bin_n (m/s2) at lap_number 0, plus the
+     * lap-0 cut-off median and its interval. Not paginated: a straight has tens of bins. A run
+     * without profile rows answers 200 with an empty bins list.
+     */
+    @GetMapping("/sessions/{key}/straights/{straightId}/profile")
+    public Map<String, Object> straightProfile(
+            @PathVariable int key,
+            @PathVariable int straightId,
+            @RequestParam int driver,
+            @RequestParam(required = false) String model) {
+        schema.requireSession(key);
+        Optional<ModelRuns.Run> run = runs.resolve(model);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("session_key", key);
+        body.put("driver_number", driver);
+        body.put("straight_id", straightId);
+        body.put("model_version", run.map(ModelRuns.Run::modelVersion).orElse(null));
+        body.put("bin_m", BIN_METRES);
+        java.util.TreeMap<Integer, Map<String, Object>> byBin = new java.util.TreeMap<>();
+        Object cutoff = null;
+        Object lo = null;
+        Object hi = null;
+        if (run.isPresent()) {
+            List<Map<String, Object>> rows = jdbc.query(
+                    "select variable, value, ci_low, ci_high from model_result where model_version = ? and run_id = ? "
+                            + "and session_key = ? and driver_number = ? and straight_id = ? and lap_number = 0 "
+                            + "and (variable like 'speed\\_bin\\_%' or variable like 'accel\\_bin\\_%' "
+                            + "or variable = 'cutoff_distance_median_m')",
+                    Rows.MAP,
+                    run.get().modelVersion(),
+                    run.get().runId(),
+                    key,
+                    driver,
+                    straightId);
+            for (Map<String, Object> r : rows) {
+                String v = (String) r.get("variable");
+                Object value = r.get("value");
+                if (v.equals("cutoff_distance_median_m")) {
+                    cutoff = value;
+                    lo = r.get("ci_low");
+                    hi = r.get("ci_high");
+                    continue;
+                }
+                boolean speed = v.startsWith("speed_bin_");
+                int bin;
+                try {
+                    bin = Integer.parseInt(v.substring(speed ? "speed_bin_".length() : "accel_bin_".length()));
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                Map<String, Object> b = byBin.computeIfAbsent(bin, n -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("bin", n);
+                    m.put("d_start_m", n * BIN_METRES);
+                    m.put("v_kph", null);
+                    m.put("a_ms2", null);
+                    return m;
+                });
+                if (value instanceof Number num) {
+                    if (speed) {
+                        b.put("v_kph", Math.round(num.doubleValue()));
+                    } else {
+                        b.put("a_ms2", Math.round(num.doubleValue() * 10.0) / 10.0);
+                    }
+                }
+            }
+        }
+        body.put("bins", new ArrayList<>(byBin.values()));
+        body.put("cutoff_median_m", cutoff);
+        body.put("ci_low_m", lo);
+        body.put("ci_high_m", hi);
+        return body;
+    }
+
     /** Per-lap cut-off series of two drivers on the same session (and optionally one straight). */
     @GetMapping("/compare")
     public Map<String, Object> compare(
