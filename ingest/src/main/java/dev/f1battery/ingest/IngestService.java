@@ -40,6 +40,8 @@ public class IngestService {
     private static final Logger log = LoggerFactory.getLogger(IngestService.class);
     private static final OffsetDateTime EPOCH = OffsetDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
 
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON = new com.fasterxml.jackson.databind.ObjectMapper();
+
     enum Outcome { DONE, SKIPPED, FAILED, DRY_RUN }
 
     /** Result of a whole run. */
@@ -92,7 +94,37 @@ public class IngestService {
         }
         Summary summary = new Summary(sessions.size(), done, skipped, failed);
         log.info("event=run_end sessions={} units_done={} units_skipped={} units_failed={}", sessions.size(), done, skipped, failed);
+        log.info("metrics_summary {}", metricsSummary(summary));
         return summary;
+    }
+
+    /**
+     * One-line JSON summary of the run. The job has no web server, so there is nothing to scrape; the
+     * counters live in the in-process registry and are written to the log once, at the end.
+     * Rows are the rows actually changed (an unchanged re-upsert counts 0).
+     */
+    String metricsSummary(Summary s) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("event", "run_metrics");
+        out.put("sessions", s.sessions());
+        out.put("units_done", s.unitsDone());
+        out.put("units_skipped", s.unitsSkipped());
+        out.put("units_failed", s.unitsFailed());
+        Map<String, Long> rows = new java.util.TreeMap<>();
+        metrics.find("ingest.rows.upserted").counters().forEach(c -> {
+            String table = c.getId().getTag("table");
+            if (table != null) {
+                rows.merge(table, (long) c.count(), Long::sum);
+            }
+        });
+        out.put("rows_upserted", rows);
+        var c429 = metrics.find("ingest.http.429").counter();
+        out.put("http_429", c429 == null ? 0L : (long) c429.count());
+        try {
+            return JSON.writeValueAsString(out);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            return "{\"event\":\"run_metrics\",\"error\":\"serialisation failed\"}";
+        }
     }
 
     private Stats ingestSession(OpenF1Source src, SessionRecord s, boolean dry, Set<String> refresh) {
@@ -159,7 +191,7 @@ public class IngestService {
         int rows = 0;
         String status = null;
         try {
-            if (!refresh.contains(u.endpoint()) && ingestionLog.isComplete(u)) {
+            if (!refresh.contains(u.endpoint()) && ingestionLog.isComplete(u, src.name())) {
                 outcome = Outcome.SKIPPED;
             } else if (dry) {
                 rows = fetch.get().size();
