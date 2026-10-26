@@ -597,3 +597,38 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   aggregates only, labelled as medians of clean laps in 50 m bins).
 - Dev: `web/vite.config.ts` proxies `/api` to the API so the dev server can
   run on any port with `VITE_API_BASE=""`.
+
+## D33 — 2026-10-21 — A straight across the line needs usable, not green, samples from the previous lap
+- The window of a straight that crosses the start/finish line is measured
+  back from the lap's own line crossing, so the previous lap only has to
+  supply real, continuous samples there. The gate was "previous lap green",
+  which in qualifying is never true (the lap before a flying lap is the
+  out-lap), so straight 1 had no rows and no speed profile in all 14
+  qualifying and sprint-qualifying sessions (docs/backend-review-2026-10-21.md).
+- **Decision:** for the per-lap threshold cut-off, the entry speed and the
+  speed profile, the gate is `pipeline.tail_usable`: consecutive, resolved,
+  not neutralised, not an in-lap, no telemetry gap over `MAX_GAP_S`, at least
+  `MIN_SAMPLES` samples. That accepts out-laps, cool-down (`slow`) laps,
+  `length` outliers, `no_start` laps and a race's standing-start lap 1 as the
+  previous lap; the length rule does not matter for a tail because the window
+  is placed from the next lap's own start. Flags are used rather than
+  `reason`, which names only the first failed rule and would hide a gapped or
+  neutralised lap behind `out_lap`. A gap straddling the line can still reach
+  about 4 s of interpolation (2 s on each side); that is unchanged.
+- **The pooled hinge CdA keeps the strict gate** (`sweep(strict_wrap=True)`).
+  The hinge model fits runs that start from an out-lap badly (their residual
+  rises with CdA), and with them pooled the CdA fell to the grid edge in six
+  qualifying sessions. The hinge outputs and `deploy_energy_rel` are not
+  written for the new rows either. So D33 is additive: every row of the
+  previous run is unchanged, the only new output is straight 1 after a
+  non-green lap.
+- Known effect to keep in mind when reading straight-1 medians: after an
+  out-lap the cut-off can sit earlier (Baku Q 11373: median −1,072 m after an
+  out-lap against −577 m after a green lap). Rows do not yet carry the kind of
+  previous lap; a `prev_lap_kind` variable is a candidate follow-up.
+- `MODEL_VERSION` becomes `proxy-0.2`, so the frozen findings run (`proxy-0.1`,
+  `6f9df732…`, docs/findings.md) stays reproducible and is not overwritten by
+  the recipe at HEAD. Results are recomputed for every session under run id
+  `26862846-4455-495b-98c0-3cb1dff4fcb3` and published; until the run lifecycle of PR #1 is
+  merged, publishing is a row in `model_run` written by hand.
+- Numbering: D32 is taken by the view rebuild on `feat/web-rebuild`.

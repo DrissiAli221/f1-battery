@@ -8,7 +8,8 @@ straight (bin n covers [50 n, 50 n + 50) m from the straight's start), with
 lap_number 0 and the straight's id:
 
 * ``speed_bin_<n>``  median over the driver's clean (green) laps of the lap's mean
-  speed in the bin, whole kph;
+  speed in the bin, whole kph (for the straight across the line the part before
+  the line comes from the previous lap, which only has to be usable, D33);
 * ``accel_bin_<n>``  median over the same laps of the lap's mean acceleration in
   the bin, m/s^2, 1 decimal.
 
@@ -44,8 +45,8 @@ def straight_profiles(prep: pl.Prepared) -> dict[int, dict[str, np.ndarray]]:
         if not np.isfinite(c0):
             continue
         for sid, s, e, wraps in pl._lap_windows(prep.wins, prep.lap_len[i] / prep.med_len, prep.lap_len[i]):
-            # same rule as pipeline.sweep: a wrapping straight needs the previous lap clean too
-            if wraps and not (i > 0 and prep.green[i - 1] and prep.lap_no[i - 1] == prep.lap_no[i] - 1):
+            # same rule as pipeline.sweep: a wrapping straight needs usable samples from the previous lap
+            if wraps and not pl.wrap_ok(prep.tail_ok, prep.lap_no, i):
                 continue
             lo = int(np.searchsorted(tr.cum, c0 + s, side="left"))
             hi = int(np.searchsorted(tr.cum, c0 + e, side="right"))

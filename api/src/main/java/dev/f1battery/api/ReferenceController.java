@@ -3,6 +3,7 @@ package dev.f1battery.api;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,11 +21,13 @@ public class ReferenceController {
     private final JdbcTemplate jdbc;
     private final Schema schema;
     private final OutlineService outlines;
+    private final ModelRuns runs;
 
-    public ReferenceController(JdbcTemplate jdbc, Schema schema, OutlineService outlines) {
+    public ReferenceController(JdbcTemplate jdbc, Schema schema, OutlineService outlines, ModelRuns runs) {
         this.jdbc = jdbc;
         this.schema = schema;
         this.outlines = outlines;
+        this.runs = runs;
     }
 
     @GetMapping("/sessions")
@@ -118,13 +121,37 @@ public class ReferenceController {
             return new Page<>(List.of(), page, size, 0);
         }
         long total = jdbc.queryForObject("select count(*) from straight where circuit_key = ?", Long.class, circuitKey);
+        // has_results: the published run has per-lap rows on this straight in some session of the
+        // circuit. The curated section files label stretches of 120-250 m "Straight" that the
+        // detector (a full-throttle run of at least 4 s) usually cannot use, but a short section
+        // inside a longer flat-out run does get rows, so what was produced is the honest answer, not
+        // the section's length. Null when the circuit has no results at all (nothing to compare).
+        Optional<ModelRuns.Run> run = runs.resolve(null);
+        boolean any = run.isPresent()
+                && Boolean.TRUE.equals(jdbc.queryForObject(
+                        "select exists(select 1 from model_result m join session x on x.session_key = m.session_key "
+                                + "where x.circuit_key = ? and m.model_version = ? and m.run_id = ?)",
+                        Boolean.class,
+                        circuitKey,
+                        run.get().modelVersion(),
+                        run.get().runId()));
+        List<Object> args = new ArrayList<>();
+        String has = "null::boolean as has_results";
+        if (any) {
+            has = "exists(select 1 from model_result m join session x on x.session_key = m.session_key "
+                    + "where x.circuit_key = s.circuit_key and m.straight_id = s.straight_id and m.lap_number > 0 "
+                    + "and m.model_version = ? and m.run_id = ?) as has_results";
+            args.add(run.get().modelVersion());
+            args.add(run.get().runId());
+        }
+        args.add(circuitKey);
+        args.add(size);
+        args.add((long) page * size);
         List<Map<String, Object>> items = jdbc.query(
-                "select straight_id, label, start_pct, end_pct from straight where circuit_key = ? "
-                        + "order by straight_id limit ? offset ?",
+                "select s.straight_id, s.label, s.start_pct, s.end_pct, " + has + " from straight s "
+                        + "where s.circuit_key = ? order by s.straight_id limit ? offset ?",
                 Rows.MAP,
-                circuitKey,
-                size,
-                (long) page * size);
+                args.toArray());
         return new Page<>(items, page, size, total);
     }
 
