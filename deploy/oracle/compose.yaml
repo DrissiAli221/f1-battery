@@ -230,7 +230,7 @@ services:
     networks:
       - database
       - egress   # OpenF1 API (--source=api)
-    # One OCPU shared with RCP: jobs get a low CPU weight so RCP's latency wins contention.
+    # The CPUs are shared with RCP (2 OCPU after the resize): jobs get a low CPU weight so RCP's latency wins contention.
     cpu_shares: 256
     mem_limit: 640m
     cpus: 1.0

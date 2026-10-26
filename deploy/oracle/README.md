@@ -34,9 +34,32 @@ Networks: `database` and `kafka` are `internal: true`; `egress` is the outbound-
 the two jobs that call the internet; `edge` is RCP's existing network, joined as an external
 network.
 
-## The VM as surveyed
+## The machine and how to reach it
 
-Read-only survey of the real VM (host `rcpdemo`): Ubuntu 24.04.5 LTS aarch64, kernel 6.17
+The VM's display name in Oracle is `oracle-arm-1` (it was `rcp-demo`). The Linux hostname stays
+`rcpdemo` and the login stays `ubuntu`. On the operator's Mac the SSH key is `~/.ssh/oracle-arm-1`
+and `~/.ssh/config` has an alias, so every command reads `ssh oracle-arm-1`:
+
+```
+Host oracle-arm-1
+  HostName 84.8.217.209
+  User ubuntu
+  IdentityFile ~/.ssh/oracle-arm-1
+  IdentitiesOnly yes
+```
+
+Convention: the machine is named after its role, not after a project. Each project lives in its
+own `/opt/<name>` with its own compose project, secrets directory and systemd unit prefix
+(`/opt/rcp`, `/opt/f1-battery`). One login and one key per machine.
+
+Account facts, verified read-only with the OCI CLI (profile `rcp-operator`, browser session):
+home region `af-casablanca-1`; the A1 service limit is 41 OCPU / 277 GB in AD-1, of which 1 OCPU /
+6 GB is used; compute cost is 0.00 for the last 30 days. The Always Free A1 amount is 4 OCPU /
+24 GB in total, so at 2 OCPU / 12 GB for this VM another 2 / 12 stays free.
+
+### The VM as surveyed
+
+Read-only survey of the real VM, before the resize below (host `rcpdemo`): Ubuntu 24.04.5 LTS aarch64, kernel 6.17
 (oracle), **1 CPU (`nproc` = 1), 5903 MB RAM, no swap**, load average about 2.5 on that single CPU
 (RCP's drill timer fires every minute), `/` 48 GB with 36 GB free. Docker 29.8.2, Compose v5.6.0.
 RCP's project is `rcp-demo` (networks `rcp-demo_edge`, `_database`, `_drill`; containers
@@ -45,7 +68,7 @@ running. Caddy 2.10.2 publishes 80/443 with `admin off`. The host firewall allow
 Docker-forwarded 80/443. `/opt` is root-owned 755 and `/opt/rcp` is `ubuntu` 750, so
 `/opt/f1-battery` is created the same way (`sudo install -d -o ubuntu -g ubuntu -m 750`).
 
-Consequences: a single CPU already loaded at 2.5 means Maven builds and the model compete with
+Consequences at the surveyed 1 CPU (they ease after the resize to 2 OCPU / 12 GB): a single CPU already loaded at 2.5 means Maven builds and the model compete with
 RCP for CPU, not only memory; all f1 jobs get a low CPU weight (`cpu_shares: 256`) so RCP wins
 contention, but builds run in the Docker daemon and are not niced, so expect slow builds and some
 latency on RCP while they run. There is no swap, so memory pressure ends in the OOM killer.
@@ -72,17 +95,24 @@ heap `-Xms128m -Xmx384m`):
 
 The weekly run is ingest then model, never both; the biggest job is the model at 1536 MB.
 
+**Decision: option A, resize in place to 2 OCPU / 12 GB.** At 2 / 12 both stacks plus the model
+job fit without swap: 4064 MB steady and 5600 MB at the model peak, against 12 GB. The resize
+is done from the console (Edit, then shape configuration; one reboot, a few minutes of RCP
+downtime) before the first f1-battery deploy. Options B and C stay documented below as
+fallbacks if the resize is not possible.
+
 | Option | RCP | f1 steady | Steady total | Peak (model running) | Fits |
 |---|---|---|---|---|---|
-| **A. Resize to 2 OCPU / 12 GB (recommended)**, replay on | 2112 | 1952 | 4064 MB | 5600 MB | comfortably |
+| **A. Resize to 2 OCPU / 12 GB (chosen)**, replay on | 2112 | 1952 | 4064 MB | 5600 MB | comfortably |
 | **B. Stay on 1 / 6 GB, replay off** | 2112 | 1120 | 3232 MB | 4768 MB of 5903 | yes, no swap; run the model at night |
 | **C. Stay on 1 / 6 GB, replay on, 4 GB swapfile** | 2112 | 1952 | 4064 MB | 5600 MB of 5903 + 4096 swap | tight; risky for RCP latency |
 
 Per-option setup, all through `.env` and the swap file, with no edits to `compose.yaml`:
 
-- **A.** Resize the instance (shape VM.Standard.A1.Flex, in the console or through RCP's Terraform
-  root; stop the instance if asked), then deploy with the defaults (`F1_REPLAY=1`,
-  `API_REPLAY_ENABLED=true`). Before resizing, check the Always Free allowance in the Oracle
+- **A. (chosen)** Resize the instance in the console to 2 OCPU / 12 GB (shape VM.Standard.A1.Flex:
+  Edit, then shape configuration; one reboot, a few minutes of RCP downtime; or through RCP's
+  Terraform root), then deploy with the defaults (`F1_REPLAY=1`,
+  `API_REPLAY_ENABLED=true`). Allowance check, done: see the account facts above. If you redo it, check the Always Free allowance in the Oracle
   console (Governance, Limits, Quotas and Usage, or Billing, Free Tier usage). The sources
   disagree: RCP's `infra/oracle-demo/README.md` says 2 OCPU / 12 GB account-wide (1,500
   OCPU-hours and 9,000 GB-hours a month), Oracle's current page says 4 OCPU / 24 GB, and the
@@ -146,8 +176,8 @@ or images in use. `deploy.sh` never prunes on its own.
 6. **Data that is not in git** (the repository ignores `data/`), copied once from your laptop:
 
    ```sh
-   rsync -a data/raw/openf1/ ubuntu@<vm>:/opt/f1-battery/data/raw/openf1/                  # skips hours of API ingest
-   rsync -a data/reference/tracinginsights/ ubuntu@<vm>:/opt/f1-battery/data/reference/tracinginsights/   # straight definitions the model needs
+   rsync -a data/raw/openf1/ oracle-arm-1:/opt/f1-battery/data/raw/openf1/                  # skips hours of API ingest
+   rsync -a data/reference/tracinginsights/ oracle-arm-1:/opt/f1-battery/data/reference/tracinginsights/   # straight definitions the model needs
    ```
 
    `bootstrap.sh` refuses to continue without `data/reference/tracinginsights/sections`. The
