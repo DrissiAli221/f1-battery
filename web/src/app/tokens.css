@@ -59,8 +59,8 @@
     --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 2.2 0 0 0 -.9'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
 
     /* Type roles: labels, controls, data values, section headings */
-    --utility: KHF1;
-    --font-display: KHF1, monospace;
+    --utility: KHF1, GeistMono;
+    --font-display: KHF1, GeistMono, monospace;
     --font-body: Geist, Arial, sans-serif;
     --font-mono: GeistMono, monospace;
     --type-label: 12px;

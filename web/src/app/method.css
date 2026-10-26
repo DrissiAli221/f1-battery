@@ -17,6 +17,7 @@
   .method-hero h1 {
     font:
       900 clamp(64px, 8vw, 118px)/0.91 F1Black,
+      Archivo,
       sans-serif;
     text-transform: uppercase;
     letter-spacing: -0.018em;
@@ -50,6 +51,7 @@
   .method-hero-copy h2 {
     font:
       400 22px/1.25 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 20px;
@@ -64,6 +66,7 @@
   .method-hero-copy .method-small {
     font:
       400 11px/1.65 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     margin-top: 18px;
@@ -78,6 +81,7 @@
     margin-top: 16px;
     font:
       400 12px KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -111,6 +115,7 @@
   .method-process h2 {
     font:
       400 15px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 12px;
@@ -161,6 +166,7 @@
     position: relative;
     font:
       900 clamp(30px, 8.5cqw, 64px)/0.98 F1Black,
+      Archivo,
       sans-serif;
     text-transform: uppercase;
     letter-spacing: -0.015em;
@@ -185,6 +191,7 @@
   .method-plate > p {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #d0d0c6;
@@ -193,6 +200,7 @@
   .estimator-copy h3 {
     font:
       400 22px/1.3 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 20px;
@@ -225,6 +233,7 @@
     display: block;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     letter-spacing: 0;
     text-transform: uppercase;
@@ -234,6 +243,7 @@
   .estimator-rules dd {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     color: #bcbcb2;
     margin: 12px 0 0;
@@ -251,6 +261,7 @@
     list-style: none;
     font:
       400 12px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     cursor: pointer;
@@ -277,6 +288,7 @@
   .estimator-copy > .method-small {
     font:
       400 11px/1.65 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
   }
@@ -289,6 +301,7 @@
   .method-boundaries h2 {
     font:
       400 28px/1.15 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: -0.025em;
@@ -312,6 +325,7 @@
     background: none;
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -333,6 +347,7 @@
   .record-count {
     font:
       400 11px/1.6 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     margin-block: 18px 22px;
@@ -371,6 +386,7 @@
     display: block;
     font:
       400 18px/1.35 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -380,6 +396,7 @@
     gap: 10px;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -403,6 +420,7 @@
     align-items: center;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--outcome);
@@ -437,6 +455,7 @@
   .entry-detail dt {
     font:
       400 11px/1.6 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -458,6 +477,7 @@
   .entry-sources > span {
     font:
       400 11px/1.6 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -507,6 +527,7 @@
   .method-download {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     display: flex;
@@ -652,6 +673,7 @@
   .regulation-reference {
     font:
       400 11px/1.7 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     margin-top: 20px;
@@ -666,6 +688,7 @@
   .record-intro h3 {
     font:
       400 11px/1.6 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -709,6 +732,7 @@
     margin: 0;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -801,6 +825,7 @@
   .tl-chip {
     font:
       400 10px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -827,6 +852,7 @@
     flex: none;
     font:
       400 10px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -869,6 +895,7 @@
   .tl-sources > span {
     font:
       400 10px/1.6 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #88887e;
@@ -911,6 +938,7 @@
     list-style: none;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #bcbcb2;
@@ -948,6 +976,7 @@
   .tl-details dt {
     font:
       400 11px/1.6 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);

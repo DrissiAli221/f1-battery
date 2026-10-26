@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/check-private-assets.mjs",
     "build": "tsc --noEmit -p . && eslint src && vite build",
     "preview": "vite preview",
     "format": "prettier --write .",
