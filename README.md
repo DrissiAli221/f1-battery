@@ -1,4 +1,4 @@
-<img alt="F1 Battery: where does electrical deployment end on a straight? Estimates, not measurements." src="docs/figures/readme/banner.webp" width="100%">
+<img alt="F1 Battery: four driver posters with the car, number and team colour, and the notice that values are estimates, not measurements" src="docs/figures/readme/banner.webp" width="100%">
 
 # f1-battery
 
