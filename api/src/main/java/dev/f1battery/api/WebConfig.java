@@ -35,8 +35,10 @@ public class WebConfig {
     }
 
     @Bean
-    FilterRegistrationBean<RateLimitFilter> rateLimitFilter(@Value("${api.rate-per-min:60}") int perMinute) {
-        FilterRegistrationBean<RateLimitFilter> reg = new FilterRegistrationBean<>(new RateLimitFilter(perMinute));
+    FilterRegistrationBean<RateLimitFilter> rateLimitFilter(@Value("${api.rate-per-min:60}") int perMinute,
+            @Value("${api.trusted-proxies:}") String trustedProxies) {
+        FilterRegistrationBean<RateLimitFilter> reg =
+                new FilterRegistrationBean<>(new RateLimitFilter(perMinute, trustedProxies));
         reg.addUrlPatterns("/api/*");
         reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
         return reg;

@@ -1,8 +1,13 @@
+server:
+  # Honour X-Forwarded-Proto/Host from a reverse proxy. The client address for rate limiting is
+  # resolved separately (api.trusted-proxies); with none configured the socket peer is used.
+  forward-headers-strategy: framework
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:55432/f1battery}
-    username: ${DB_USER:f1}
-    password: ${DB_PASSWORD:f1dev}
+    username: ${DB_USER:f1_api}
+    password: ${DB_PASSWORD:f1api}
   flyway:
     enabled: false
   jackson:
@@ -11,6 +16,10 @@ spring:
 api:
   cors-origin: ${API_CORS_ORIGIN:http://localhost:5173}
   rate-per-min: ${API_RATE_PER_MIN:60}
+  # Comma-separated addresses or CIDR ranges of reverse proxies whose X-Forwarded-For is believed.
+  trusted-proxies: ${API_TRUSTED_PROXIES:}
+  live:
+    max-streams: ${API_LIVE_MAX_STREAMS:20}
   outline:
     # Stored location units between kept outline points (OpenF1 x/y are 1/10 m, so 500 = 50 m).
     spacing-units: 500

@@ -36,7 +36,7 @@ import pandas as pd
 
 from . import db, pipeline as pl, regimes
 
-MODEL_VERSION = "proxy-0.1"
+MODEL_VERSION = "proxy-0.2"   # 0.1: the frozen findings run (docs/findings.md); 0.2: D33 wrapping-straight gate
 EXCLUDED_SESSIONS = {11342}
 BATCH = 5000
 

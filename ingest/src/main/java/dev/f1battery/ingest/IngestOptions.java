@@ -12,6 +12,13 @@ import org.springframework.boot.ApplicationArguments;
  */
 public record IngestOptions(String source, int year, Integer sessionKey, List<String> sessionNames, boolean dryRun) {
 
+    /**
+     * Sessions the model uses. The API source pulls only these unless {@code --sessions} or
+     * {@code --session} says otherwise, so a first run does not fetch practice or future sessions.
+     */
+    public static final List<String> API_DEFAULT_SESSIONS =
+            List.of("race", "qualifying", "sprint", "sprint qualifying");
+
     public IngestOptions {
         if (!source.equals("local") && !source.equals("api")) {
             throw new IllegalArgumentException("--source must be local or api, got '" + source + "'");
@@ -24,7 +31,7 @@ public record IngestOptions(String source, int year, Integer sessionKey, List<St
         Integer key = first(args, "session").map(Integer::valueOf).orElse(null);
         List<String> names = first(args, "sessions")
                 .map(v -> List.of(v.split(",")).stream().map(IngestOptions::normalise).filter(s -> !s.isEmpty()).toList())
-                .orElse(List.of());
+                .orElse(source.equals("api") && key == null ? API_DEFAULT_SESSIONS : List.of());
         return new IngestOptions(source, year, key, names, args.containsOption("dry-run"));
     }
 

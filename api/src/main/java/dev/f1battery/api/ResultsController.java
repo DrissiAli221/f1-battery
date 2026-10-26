@@ -45,6 +45,17 @@ public class ResultsController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + Page.DEFAULT_SIZE) int size) {
         Page.validate(page, size);
+        if (runs.tracksRuns()) {
+            // Published runs only; no scan of model_result.
+            long published = jdbc.queryForObject("select count(*) from model_run where published", Long.class);
+            List<Map<String, Object>> rows = jdbc.query(
+                    "select model_version, run_id, coalesce(finished_at, started_at) as created_at from model_run "
+                            + "where published order by finished_at desc nulls last, started_at desc limit ? offset ?",
+                    Rows.MAP,
+                    size,
+                    (long) page * size);
+            return new Page<>(rows, page, size, published);
+        }
         long total = jdbc.queryForObject(
                 "select count(*) from (select 1 from model_result group by model_version, run_id) t", Long.class);
         List<Map<String, Object>> items = jdbc.query(
@@ -109,9 +120,10 @@ public class ResultsController {
     }
 
     /**
-     * Per driver: the bootstrap median cut-off per straight (stored at lap_number 0) and the
-     * regime shares averaged over green laps. When the session has no lap_quality rows the
-     * average is over every lap, which is the only option available.
+     * Per driver: one entry per straight with per-lap rows, carrying the number of laps analysed
+     * and detected and the bootstrap median cut-off (stored at lap_number 0; null below three
+     * detected laps), and the regime shares averaged over green laps. When the session has no
+     * lap_quality rows the average is over every lap, which is the only option available.
      */
     @GetMapping("/sessions/{key}/summary")
     public Page<Map<String, Object>> summary(
@@ -140,18 +152,33 @@ public class ResultsController {
                 run.modelVersion(),
                 run.runId());
 
-        Map<Integer, List<Map<String, Object>>> straights = new LinkedHashMap<>();
+        // One entry per straight the driver has per-lap rows on. The median needs three detected
+        // laps (pipeline.MIN_LAPS_FOR_SUMMARY), which qualifying rarely gives, so the lap counts
+        // let a client tell "two laps, no median" from "no data".
+        Map<Integer, Map<Integer, Map<String, Object>>> straights = new LinkedHashMap<>();
+        jdbc.query(
+                // cutoff_detected is written (0 or 1) for every analysed lap and straight, so it is
+                // both the count of analysed laps and, summed, the count of detected ones.
+                "select driver_number, straight_id, count(*) as laps_analysed, "
+                        + "coalesce(sum(value), 0)::int as laps_detected "
+                        + "from model_result where model_version = ? and run_id = ? and session_key = ? "
+                        + "and lap_number > 0 and straight_id is not null and variable = 'cutoff_detected' "
+                        + "group by driver_number, straight_id order by driver_number, straight_id",
+                rs -> {
+                    Map<String, Object> s = straightEntry(straights, rs.getInt("driver_number"), rs.getInt("straight_id"));
+                    s.put("laps_analysed", rs.getInt("laps_analysed"));
+                    s.put("laps_detected", rs.getInt("laps_detected"));
+                },
+                runArgs);
         jdbc.query(
                 "select driver_number, straight_id, value, ci_low, ci_high from model_result "
                         + "where model_version = ? and run_id = ? and session_key = ? and lap_number = 0 "
                         + "and variable = 'cutoff_distance_median_m' order by driver_number, straight_id",
                 rs -> {
-                    Map<String, Object> s = new LinkedHashMap<>();
-                    s.put("straight_id", rs.getObject("straight_id"));
+                    Map<String, Object> s = straightEntry(straights, rs.getInt("driver_number"), rs.getInt("straight_id"));
                     s.put("cutoff_distance_median_m", rs.getObject("value"));
                     s.put("ci_low", rs.getObject("ci_low"));
                     s.put("ci_high", rs.getObject("ci_high"));
-                    straights.computeIfAbsent(rs.getInt("driver_number"), k -> new ArrayList<>()).add(s);
                 },
                 runArgs);
 
@@ -177,11 +204,25 @@ public class ResultsController {
         for (Map<String, Object> d : drivers) {
             int n = ((Number) d.get("driver_number")).intValue();
             Map<String, Object> item = new LinkedHashMap<>(d);
-            item.put("straights", straights.getOrDefault(n, List.of()));
+            item.put("straights", new ArrayList<>(straights.getOrDefault(n, Map.of()).values()));
             item.put("regime_shares", shares.getOrDefault(n, Map.of()));
             items.add(item);
         }
         return Page.of(items, page, size);
+    }
+
+    private static Map<String, Object> straightEntry(
+            Map<Integer, Map<Integer, Map<String, Object>>> straights, int driver, int straightId) {
+        return straights.computeIfAbsent(driver, k -> new java.util.TreeMap<>()).computeIfAbsent(straightId, k -> {
+            Map<String, Object> s = new LinkedHashMap<>();
+            s.put("straight_id", k);
+            s.put("laps_analysed", 0);
+            s.put("laps_detected", 0);
+            s.put("cutoff_distance_median_m", null);
+            s.put("ci_low", null);
+            s.put("ci_high", null);
+            return s;
+        });
     }
 
     @GetMapping("/sessions/{key}/laps/{lap}/regimes")

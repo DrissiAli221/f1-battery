@@ -20,7 +20,7 @@ class MigrationsIT {
 
     @Container
     static final PostgreSQLContainer<?> DB = new PostgreSQLContainer<>(
-            DockerImageName.parse("timescale/timescaledb:latest-pg16")
+            DockerImageName.parse("timescale/timescaledb:2.30.2-pg16")
                     .asCompatibleSubstituteFor("postgres"));
 
     @DynamicPropertySource

@@ -6,12 +6,8 @@ import { Card, Empty, fmt, label } from "./ui";
 type LiveRegime = RegimeLabel | "other";
 
 interface LiveState {
-  session_key: number;
   driver_number: number;
   ts: string;
-  x: number | null;
-  y: number | null;
-  speed: number;
   regime: LiveRegime;
   lap_distance_est: number;
 }
@@ -222,7 +218,7 @@ export function LivePage({ sessionKey }: { sessionKey: number }) {
                     <tr>
                       <th>Driver</th>
                       <th>Regime</th>
-                      <th className="num">Speed km/h</th>
+                      <th className="num">Est. lap distance m</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -233,7 +229,7 @@ export function LivePage({ sessionKey }: { sessionKey: number }) {
                           <i className="dot" style={{ background: COLORS[s.regime] ?? COLORS.other }} />
                           {s.regime}
                         </td>
-                        <td className="num">{fmt(s.speed)}</td>
+                        <td className="num">{fmt(s.lap_distance_est)}</td>
                       </tr>
                     ))}
                   </tbody>

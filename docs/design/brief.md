@@ -1,6 +1,7 @@
 # Frontend rebuild: design brief (draft, 2026-10-19)
 
-Status: preparation. No code until the direction is chosen.
+Status: direction chosen (D26), a hybrid of Broadcast and Telemetry lab.
+One more static mockup validates it before the React build.
 
 ## What the reference set says
 
@@ -72,6 +73,8 @@ driver tags, not as a widget in a card.
 
 ### Pages and what each must show
 
+(The session page's hero is the track map with the cut-off markers below.)
+
 1. **Landing:** the question in one line, the hidden-data fact, the result
    in one sentence with its caveat, three entry points (Findings, Explorer,
    Method log), the honest banner.
@@ -84,12 +87,76 @@ driver tags, not as a widget in a card.
    (pass / fail / not demonstrated / explained).
 5. **Live replay:** the map as hero with driver tags, a tower on the side.
 
-### Open decisions for the owner
-- Dark-first with a poster-style light mode, or dark only.
-- Tailwind or CSS variables (the current build is CSS variables).
-- Charts: keep hand-written SVG or adopt visx for the bump chart and the
-  cut-off chart.
-- Project wordmark.
+### Technical stack (decided 2026-10-19, D25)
+- **Theme:** dark first; light mode later, tokens prepared for it.
+- **Tailwind** for layout and styling only (tokens from this brief as the
+  Tailwind theme: colours, type scale, tracking, radii, spacing).
+- **GSAP** (MotionPath, DrawSVG) for track-map animations: the outline
+  drawing in, cut-off ticks and range bands appearing along the line,
+  driver dots following the path in the live replay.
+- **Motion** for UI transitions: page and panel enter/exit, layout
+  animations on tables and pills, hover and focus states.
+- **Charts:** hand-written SVG with d3-scale for scales and ticks, so GSAP
+  can animate every path directly and there is one rendering model.
+- **Name/wordmark:** later.
+
+## Signature element: the cut-off marker on the track
+
+The one visual specific to this project: where the selected driver's
+electrical deployment stops on each straight, drawn on the track map.
+
+**References that informed it** (collected and viewed 2026-10-19; nothing
+published marks battery cut-offs on a map, so this borrows proven
+grammars):
+- FIA 2026 circuit maps (Canada, Albert Park): straight-mode zones as a thin
+  coloured stripe hugging one edge of the track, a short tick across the
+  track where the zone starts, a short rotated code label ("SM A1"), and a
+  table of exact positions ("100m after T14"). Fans already read this.
+- MultiViewer's dark track map: corner numbers as small badges pushed
+  outside the line on leaders; a partial-line overlay for a zone.
+- Cycling route profiles: point events as a tick with a badge, labels
+  lifted into a row clear of the data.
+- Hurricane-forecast cones: uncertainty as a band along a path.
+
+**Encoding**
+1. **Median cut-off:** a white tick across the track with a dark casing,
+   on every straight where the driver has a cut-off. Neutral colour, so it
+   never clashes with the regime colours already on the line.
+2. **Uncertainty:** the bootstrap interval as a thin band hugging the
+   *inner* edge of the track from `ci_low` to `ci_high`, minimum 6 px
+   visible so a ±20 m interval still reads, labelled "range" in the legend
+   (not a hazard area).
+3. **Selected lap:** a small filled chevron on the inner edge pointing in
+   the direction of travel, at that lap's cut-off. When the lap has no
+   cut-off, no chevron. The scrubber moves it.
+4. **Second driver (compare):** the same tick, hollow, on the *outer* edge
+   with a thin ring in that driver's team colour; its range band on the
+   outer edge. Shape (filled vs hollow) and side separate the two drivers,
+   not colour alone.
+5. **Label:** a compact badge beside the tick on the selected straight
+   only, e.g. "CUT 1,458 m · 470 m before Roggia"; other straights show the
+   tick alone. Corner numbers sit outside the track, cut-off marks inside,
+   so they never collide.
+6. **No cut-off on a straight:** no tick; the straight's name in the
+   selector is greyed (already in the current view).
+
+**Companions**
+- **Straight strip:** selecting a straight opens a one-dimensional strip
+  under the map: distance along that straight, the range bracket, the
+  median tick, one dot per lap (the selected lap highlighted), and a second
+  row for the compared driver. Exact numbers live here, not on the map.
+- **Cut-off table** (FIA-style): per straight, median cut, range, selected
+  lap, metres before the braking zone, for one or two drivers.
+
+**Data.** Already served: per-lap `cutoff_distance_m` per straight
+(`/api/results`) and the per-driver median with CI (`/api/sessions/{key}/summary`).
+Distances are mapped onto the outline by fraction of lap length.
+
+**Pitfalls to avoid** (seen in the references): labels crowding at
+chicanes and hairpins (only straights get marks, and only the selected
+straight gets a label); offsets computed along the normal near high
+curvature (straights only, so none); reusing a regime hue for a marker;
+range bands so thin they read as a point.
 
 ## Imagery
 
@@ -102,8 +169,23 @@ driver tags, not as a widget in a card.
   three-letter code is the fallback when an image fails.
 - **Team logos** on summary rows, the compare header, the sessions list
   grouped by team, and the power-unit comparison. Same rule: runtime URLs
-  from the source, not committed. Source being confirmed (formula1.com team
-  pages first).
+  from the source, not committed.
+- **Confirmed sources (checked 2026-10-19; all 200, `Access-Control-Allow-Origin: *`,
+  no referer check, one-year cache headers):**
+  - Headshots: OpenF1 `headshot_url`, with size chosen by swapping the
+    transform segment: `1col` 93 px, `2col` 206 px, `2col-retina` 412 px
+    (default for UI), `4col` 432 px, or no transform for the 840 px original.
+  - Team logos: `https://media.formula1.com/image/upload/q_auto/v1740000001/common/f1/2026/{slug}/2026{slug}logo{variant}.webp`
+    with variant `` (colour), `white` (for dark surfaces) or `black`; slugs
+    alpine, astonmartin, audi, cadillac, ferrari, haasf1team, mclaren,
+    mercedes, racingbulls, redbullracing, williams. **They are 96 × 96 px
+    and cannot be upscaled**, so logos are only used at 16–48 px (rows,
+    chips, compare header), never as large artwork.
+  - Car side views for decoration: same CDN, 3840 × 845 px original
+    (~370 KB) or a 224 px-tall transform (~46 KB); use the transform on
+    pages and lazy-load.
+  - The slug map lives in one front-end constant keyed by OpenF1
+    `team_name`, so a renamed team is a one-line change.
 - **What stays out:** the Formula 1, FIA and FOM logos and wordmark, and the
   proprietary F1 typeface. The site states it is not affiliated, and the
   footer credits image sources.
@@ -152,3 +234,78 @@ Navbar spec: 64 px, sticky, canvas colour at 85 % with backdrop blur,
 Explorer, Method log, Live; far right: theme toggle and one pill CTA
 ("Open the explorer" on the landing, "Sessions" elsewhere). Collapses to
 a sheet menu under 720 px.
+
+## Chosen direction (D26): Broadcast shell, Telemetry instruments
+
+Three mockups were built (Broadcast, Editorial, Telemetry lab). Editorial is
+dropped. None was good enough as built; the two kept are the most workable
+starting points.
+
+### Taken from Broadcast
+- Navbar, footer, section headers and the timing-tower row grammar: 44 px
+  rows, team-colour bar, Saira three-letter codes, flag-style pills.
+- The track: neon regime-segmented line on near-black, DrawSVG draw-in, lead
+  dot on MotionPath, cut-off ticks landing in order of travel.
+- Driver cards with headshot, number and team colour; compare card with the
+  median delta.
+- One red accent, never used for data.
+
+### Taken from Telemetry lab
+- Geist Mono for every number, tabular figures.
+- The linear distance strip under the map (regimes, straights, corner
+  numbers on a distance axis), linked to the map by one cursor.
+- Lap scrubber with a play button; cursor readout panel; scale bar and
+  corner badges outside the track.
+- The measurement grid only behind the map, faint; not page-wide.
+
+### What made all three look bad, and the rules that fix it
+1. **Too much per screen.** One idea per section. The session view is an
+   app-style screen of one viewport height: map as hero (at least 60 % of
+   the width on desktop), a side panel with the two drivers and the selected
+   straight, the distance strip and scrubber under it. Everything else is
+   below the fold or behind tabs.
+2. **Text too small and too uniform.** Minimum 13 px body, 11 px mono
+   labels; a real scale (display 64–96, h2 32, h3 20, body 15, label 11),
+   with weight and colour doing the hierarchy, not more pills.
+3. **Pill and chip inflation.** Pills only for state (verdict, flag,
+   selected). Labels are plain text.
+4. **Spaghetti chart.** Cut-off by lap shows the selected and compare
+   drivers as points with a median line and range band; no 21-line
+   overlays.
+5. **The table dominates.** Summary table shows ten rows with an expand;
+   per-straight columns become one sparkline-style range bar per straight.
+6. **Dead space.** No trailing empty page height; sections end on content.
+7. **Landing.** One headline, the verdict, three stats, one call to action.
+   The three page cards stay but smaller.
+
+## Design system: PRNDL (D27)
+
+The visual foundation is PRNDL, an unofficial, student-made Formula 1 design
+system published on the Figma Community and used with its author's
+permission. Its own terms: unofficial, not affiliated with or endorsed by
+Formula 1, not for commercial use. This project meets all three. Credited in
+the footer.
+
+Taken from PRNDL:
+- Colour tokens (Primitive, Alias, Semantic, Modes with Dark and Light):
+  background `#1a1a24`, surface `#15151d`, text `#f7f4f1`, brand red
+  `#e10600` (pressed `#710300`), accent pink `#e51073`, success `#27983e`,
+  warning `#ffd100`.
+- Spacing on a 4 px step; radii 4 / 8 / 12 / 16 / 20 / 24 plus full pills.
+- Type ramp: headings 32/40, 24/32, 20/28, 18/24, caption 14/20; body 24,
+  20, 16, 12.
+- Components: header with livery stripes, pill buttons and selectors,
+  underline tabs, ranking tables, badges, toasts, team-colour-filled driver
+  cards, section headings, accordions.
+- Orbitron (uppercase) for headings and labels, replacing Saira as the F1
+  accent face.
+
+Not taken:
+- F1, TAG Heuer and other third-party logos, driver photos and car renders
+  in the file.
+- Team colours: PRNDL's are pre-2026 and incomplete; OpenF1's
+  `team_colour` stays the source.
+- Body face: Geist and Geist Mono stay for body text and numbers (D24);
+  PRNDL's Titillium Web is the drop-in alternative.
+- PRNDL is mobile-first (393 px, 5 columns). Desktop layout, the track map,
+  charts and the cut-off marker remain this brief's own.

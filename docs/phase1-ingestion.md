@@ -82,9 +82,26 @@ the key and tells them apart: the file suffix for the current layout
 endpoints. Row timestamps are untouched and the overlap is deduplicated by the
 upsert.
 
-A unit completed through the local source is not recognised by an API run
-(different windows). That is harmless: the API run would refetch and the
-upsert would change nothing.
+Coverage rule (`IngestionLog.isComplete`). A unit is done when a `complete` row
+exists with the same endpoint, session, driver and `window_label`. In addition, a
+row written by the *other* source counts when its window contains the requested
+one (`window_start <= start` and `window_end >= end`), whatever its label. A
+local whole-session row (`w180_00`) therefore satisfies every ten-minute API
+window inside the scheduled session, so the first API run after a local load does
+not refetch the season. An API window that runs past the scheduled end (see
+below) is not covered and is fetched. Within one source labels stay strict: the
+backup's 20-minute files exist because the whole-session responses were
+truncated (D13), so they must not be skipped on account of the larger window.
+
+API windows end at `max(date_end, last lap end + 5 min)`. `ApiSource` fetches
+the session's laps first (the laps unit reuses that response), so a red-flag
+overrun is no longer cut at the scheduled end. Sessions whose `date_end` is less
+than six hours before now (or unknown) are skipped with
+`event=session_skipped reason="too recent, provisional"`, because a unit marked
+complete is never refetched and results are still being revised.
+
+`--source=api` without `--session`/`--sessions` defaults to `Race`, `Qualifying`,
+`Sprint` and `Sprint Qualifying`.
 
 ## Rate limiting and backoff (API source)
 
@@ -99,6 +116,13 @@ upsert would change nothing.
   least `Retry-After` when the header is present. 404 returns an empty list;
   other 4xx fail at once. The request advertises `Accept-Encoding: gzip`.
 - Counters: `ingest.http.429`, `ingest.http.responses{status}`.
+- Time filter wire format: OpenF1 documents `date>=2026-03-08T04:10:00Z&date<2026-03-08T04:20:00Z`.
+  `java.net.URI` rejects a literal `<` or `>`, so those are sent percent-encoded
+  and the `=` of `>=` raw: `date%3E=2026-03-08T04%3A10%3A00Z&date%3C2026-03-08T04%3A20%3A00Z`,
+  which decodes to exactly the documented form (`ApiSourceWireMockTest` asserts
+  the raw request line). An earlier version sent `date%3E%3D=...`, which decodes
+  to `date>==...`; that was a bug. Still untested against the live service (no
+  live calls were made).
 
 A full 2026 pull from the API is roughly one request per driver per ten
 minutes per telemetry endpoint, about 2 s each; the local source is the normal
@@ -112,7 +136,10 @@ file at a time (about 25,000 rows), not one session at a time.
 ## Metrics and logs
 
 `ingest.rows.upserted{table}`, `ingest.fetch.units{status=done|skipped|failed|dry_run}`,
-`ingest.http.429`. Log lines are `event=... key=value` (`run_start`,
+`ingest.http.429`. The job has no web server and Micrometer has no exporting
+registry, so at `run_end` it also logs one JSON line:
+`metrics_summary {"event":"run_metrics","sessions":..,"units_done":..,"units_skipped":..,"units_failed":..,"rows_upserted":{"<table>":n,...},"http_429":n}`
+(rows are rows actually changed). Log lines are `event=... key=value` (`run_start`,
 `session_start`, `session_summary` with rows per endpoint, `unit_failed`,
 `retry`, `run_end`). Per-unit lines are at DEBUG.
 
@@ -129,7 +156,10 @@ Options: `--source=local|api` (required), `--year=2026`, `--session=<key>`,
 `--sessions=Race,Qualifying,Sprint,Sprint_Qualifying` (match on `session_name`;
 `_` or `-` stand for a space so the list survives shell splitting),
 `--dry-run` (fetch and count, write nothing). Environment: `DB_URL`,
-`DB_USER`, `DB_PASSWORD`, `INGEST_LOCAL_ROOT`, `OPENF1_BASE_URL`.
+`DB_USER`, `DB_PASSWORD`, `INGEST_LOCAL_ROOT`, `OPENF1_BASE_URL`, `API_DB_PASSWORD`
+(password given to the read-only `f1_api` role by migration V7). With
+`SPRING_PROFILES_ACTIVE=prod` the job refuses to start unless `DB_PASSWORD` is set.
+See `docs/ops.md`.
 
 `spring-boot:run` starts in `ingest/`, hence the absolute `INGEST_LOCAL_ROOT`.
 
@@ -144,8 +174,11 @@ Options: `--source=local|api` (required), `--year=2026`, `--session=<key>`,
   window queries; fake clock, no real sleeping.
 - `IngestIT` (failsafe, Testcontainers): runs the fixture twice; asserts row
   counts, zero change on run 2, log statuses and that complete units were
-  skipped. Needs Docker; with recent Docker Desktop the bundled docker-java API
-  version is rejected, so run with `-DargLine=-Dapi.version=1.44`.
+  skipped; the coverage rule across sources; the metrics summary line. Needs
+  Docker. Testcontainers is pinned to 1.21.4 in the root pom, which works with
+  Docker 29 without `-Dapi.version`. The database image is
+  `timescale/timescaledb:2.30.2-pg16`.
+- `IngestOptionsTest`: API default session names and their overrides.
 
 The fixture files are gzip, which `.gitignore` excludes; a negation for
 `ingest/src/test/resources/backup/` was added.
@@ -177,8 +210,8 @@ The fixture files are gzip, which `.gitignore` excludes; a negation for
 6. Local source lists only sessions that have a backup directory (practice
    sessions are in `sessions_2026` but not backed up).
 7. Per-minute burst of 1 (strict 30/min) rather than a capacity of 30.
-8. The API windowed query uses `date>=` and `date<` parameters, URL-encoded.
-   This is untested against the live service (no live calls were made).
+8. The API windowed query uses `date>=` and `date<`, encoded as described under
+   rate limiting. This is untested against the live service (no live calls were made).
 9. `IngestIT` and `MigrationsIT` need `ingest.run-on-startup=false` so the
    runner does not start during context tests.
 10. The row counts in DECISIONS.md (exit condition) are not yet recorded; that
