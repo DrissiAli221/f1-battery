@@ -3,7 +3,8 @@
 # up afterwards; one is generated when it is omitted. DB_URL, DB_USER and DB_PASSWORD come from
 # the environment (compose passes the password through a secret file).
 #
-#   1. quality   lap_quality for every session (estimate only sees sessions with green laps)
+#   1. quality   lap_quality for every session (estimate only sees sessions with green laps),
+#                then straights and regulation (inputs of the estimator and the profile)
 #   2. estimate  per-straight results, run registered in model_run but NOT yet published
 #   3. profile   cross-lap speed/acceleration bins, attached to the same run
 #   4. publish   mark the run published, so the API never serves a run without its profiles
@@ -22,6 +23,10 @@ fi
 echo "RUN_ID=$run_id"
 
 python -m f1battery_model.quality --all
+# Straight definitions and regulation events are inputs of the estimator and the profile; both are
+# idempotent upserts (the quick start runs them in this order too).
+python -m f1battery_model.straights
+python -m f1battery_model.regulation
 
 if python -m f1battery_model.estimate --help 2>&1 | grep -q -- '--no-publish'; then
     python -m f1battery_model.estimate --all --run-id "$run_id" --no-publish
