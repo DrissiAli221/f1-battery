@@ -1,0 +1,13 @@
+{
+  "11299": "The position feed from OpenF1 ends at 14:00 UTC for this session, so only the laps before it could be placed on the track.",
+  "11295": "The position feed from OpenF1 ends at 14:00 UTC for this session, so only the laps before it could be placed on the track.",
+  "11342": "Excluded from the model: lap and pit timestamps disagree with the telemetry by several minutes (decision D17).",
+  "11257": "OpenF1 has no telemetry for this session.",
+  "11261": "OpenF1 has no telemetry for this session.",
+  "11265": "OpenF1 has no telemetry for this session.",
+  "11269": "OpenF1 has no telemetry for this session.",
+  "11379": "Street circuit: most straights are too short for the 250 km/h rule; estimates exist only on the longest ones.",
+  "11383": "Street circuit: most straights are too short for the 250 km/h rule; estimates exist only on the longest ones.",
+  "11384": "Street circuit: most straights are too short for the 250 km/h rule; estimates exist only on the longest ones.",
+  "11388": "Street circuit: most straights are too short for the 250 km/h rule; estimates exist only on the longest ones."
+}

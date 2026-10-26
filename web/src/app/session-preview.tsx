@@ -19,6 +19,7 @@ import { createPixelButton } from './hover.js';
 import { paintScreen } from './session-halftone';
 import { SessionSelect, type SelectItem } from './session-select';
 import { cssPx } from './css-tokens';
+import sessionNotes from '../content/session-notes.json';
 import './session.css';
 import './refinement.css';
 
@@ -29,8 +30,9 @@ const fmt = (v: number | null | undefined) =>
 const query = new URLSearchParams(location.search);
 const sessionKey = Number(query.get('session')) || 11361;
 /** The one place the page's selection is written to the URL. */
-const selectionUrl = (driver: number, compare: number | null, straight: number) => {
-  const q = new URLSearchParams({ driver: String(driver), straight: String(straight) });
+const selectionUrl = (driver: number, compare: number | null, straight: number | null) => {
+  const q = new URLSearchParams({ driver: String(driver) });
+  if (straight !== null) q.set('straight', String(straight));
   q.set('compare', compare === null ? '0' : String(compare));
   q.set('session', String(sessionKey));
   return `${location.pathname}?${q}${location.hash}`;
@@ -393,6 +395,8 @@ function App() {
     query.has('compare') ? Number(query.get('compare')) || null : 3
   );
   const [sid, setSid] = useState(Number(query.get('straight')) || 2);
+  // The URL only carries a straight the visitor chose or arrived with; the coverage default stays implicit.
+  const [pickedStraight, setPickedStraight] = useState(query.has('straight'));
   const [lap, setLap] = useState<number | null>(null);
   const [compactMap, setCompactMap] = useState(() => matchMedia('(max-width:720px)').matches);
   useEffect(() => {
@@ -478,6 +482,23 @@ function App() {
       )
       .map((s) => s.straight_id)
   );
+  /** Drivers with a published cut-off on each straight, from the session summary. */
+  const driversPerStraight = useMemo(() => {
+    const out = new Map<number, number>();
+    for (const m of data.medians.values()) for (const id of m.keys()) out.set(id, (out.get(id) ?? 0) + 1);
+    return out;
+  }, [data.medians]);
+  const coveredStraights = data.straights.filter((s) => driversPerStraight.has(s.straight_id)).length;
+  const selectedCoverage = driversPerStraight.get(sid) ?? 0;
+  const coverageLow =
+    data.ready &&
+    !data.summaryError &&
+    data.straights.length > 0 &&
+    (coveredStraights * 2 < data.straights.length || selectedCoverage < 12);
+  const coverageNote = coverageLow
+    ? ((sessionNotes as Record<string, string>)[String(sessionKey)] ??
+      `Few estimates here: most straights on this circuit are too short for the 250 km/h cut-off rule, so only ${coveredStraights} of ${data.straights.length} straights carry results.`)
+    : null;
   const pool = useMemo(
     () =>
       [...(data.withResults.length ? data.withResults : data.drivers)].sort((a, b) =>
@@ -503,8 +524,8 @@ function App() {
     }
   }
   useEffect(() => {
-    history.replaceState(null, '', selectionUrl(driver, compare, sid));
-  }, [driver, compare, sid]);
+    history.replaceState(null, '', selectionUrl(driver, compare, pickedStraight ? sid : null));
+  }, [driver, compare, sid, pickedStraight]);
   useEffect(() => {
     if (!data.ready) return;
     if (pool.length && !pool.some((d) => d.driver_number === driver)) setDriver(pool[0].driver_number);
@@ -518,11 +539,18 @@ function App() {
     if (initialStraight.current || !data.ready || !data.straights.length) return;
     initialStraight.current = true;
     if (!query.has('straight')) {
-      const n = pool.some((d) => d.driver_number === driver) ? driver : pool[0]?.driver_number;
-      const available = data.straights.find((s) => data.medians.get(n)?.has(s.straight_id));
-      if (available) setSid(available.straight_id);
+      let best: number | null = null;
+      let most = 0;
+      for (const s of data.straights) {
+        const n = driversPerStraight.get(s.straight_id) ?? 0;
+        if (n > most) {
+          most = n;
+          best = s.straight_id;
+        }
+      }
+      if (best !== null) setSid(best);
     }
-  }, [data.ready, data.straights, data.medians, pool, driver]);
+  }, [data.ready, data.straights, driversPerStraight]);
   useEffect(() => {
     document
       .querySelectorAll<HTMLAnchorElement>('.session-preview a.button-light, .session-preview a.button-grey')
@@ -598,6 +626,7 @@ function App() {
     setLap(null);
   };
   const selectStraight = (n: number) => {
+    setPickedStraight(true);
     setSid(n);
     setLap(null);
   };
@@ -741,6 +770,13 @@ function App() {
                       </div>
                     ))}
                   </div>
+                  <div className="coverage-note" aria-hidden={!coverageNote}>
+                    <span className="coverage-ghost" aria-hidden="true">
+                      Few estimates here: most straights on this circuit are too short for the 250 km/h
+                      cut-off rule, so only 00 of 00 straights carry results.
+                    </span>
+                    {coverageNote && <p role="note">{coverageNote}</p>}
+                  </div>
                   <div className="map-stage">
                     <div className="map-surface skel map-skel" />
                     <aside className="estimate-stack" data-count="2" aria-hidden="true">
@@ -845,7 +881,11 @@ function App() {
                           value: String(s.straight_id),
                           name: s.label ?? `Straight ${s.straight_id}`,
                           code: `S${s.straight_id}`,
-                          detail: `${fmt(s.len)} m${straightsWithData.has(s.straight_id) ? '' : ' · No estimate for selection'}`,
+                          detail: `${fmt(s.len)} m · ${
+                            driversPerStraight.get(s.straight_id)
+                              ? `${driversPerStraight.get(s.straight_id)} drivers`
+                              : 'no estimates'
+                          }`,
                         }))}
                         onChange={(v) => selectStraight(Number(v))}
                       />
@@ -854,6 +894,13 @@ function App() {
                         where the model looks for the end of electrical deployment.
                       </Info>
                     </div>
+                  </div>
+                  <div className="coverage-note" aria-hidden={!coverageNote}>
+                    <span className="coverage-ghost" aria-hidden="true">
+                      Few estimates here: most straights on this circuit are too short for the 250 km/h
+                      cut-off rule, so only 00 of 00 straights carry results.
+                    </span>
+                    {coverageNote && <p role="note">{coverageNote}</p>}
                   </div>
                   <div
                     className="map-stage"

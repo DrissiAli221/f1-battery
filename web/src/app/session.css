@@ -2322,6 +2322,29 @@
     opacity: 1;
     max-width: none;
   }
+  /* Coverage note: the ghost copy of the longest text reserves the height, so the stage never shifts. */
+  .coverage-note {
+    display: grid;
+    margin-bottom: 20px;
+  }
+  .coverage-note > * {
+    grid-area: 1 / 1;
+    display: block;
+    margin: 0;
+    padding: 12px 20px;
+    font:
+      400 14px/1.5 Geist,
+      sans-serif;
+    border-left: 3px solid transparent;
+  }
+  .coverage-note .coverage-ghost {
+    visibility: hidden;
+  }
+  .coverage-note p {
+    background: #121211;
+    border-left-color: #f1c600;
+    color: #c0c0b7;
+  }
   /* Tower: bottom fade signals more rows below. */
   .tower-rows {
     -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
