@@ -11,8 +11,8 @@ need docker git curl
 cd "$REPO_DIR"
 
 [[ -f "$ENV_FILE" ]] || die "deploy/oracle/.env is missing; run scripts/bootstrap.sh first"
-domain="$(env_get F1_DOMAIN)"
-[[ -n "$domain" ]] || die "F1_DOMAIN is not set in deploy/oracle/.env"
+site_preflight
+site_url="https://$(site_host)"
 
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
     die "working tree has local changes; commit or discard them (image tags come from commits)"
@@ -45,8 +45,8 @@ while read -r svc; do
     build_service "$svc"
 done < <(app_services)
 
-# The web build is skipped when neither web/ nor the domain changed.
-web_stamp="$(image_tag web)@$domain"
+# The web build is skipped when neither web/ nor the site URL changed.
+web_stamp="$(image_tag web)@$site_url"
 if [[ ! -f "$REPO_DIR/web/dist/index.html" || "$(cat "$DEPLOY_DIR/.web-built" 2>/dev/null || true)" != "$web_stamp" ]]; then
     "$LIB_DIR/build-web.sh"
     printf '%s' "$web_stamp" > "$DEPLOY_DIR/.web-built"
@@ -74,11 +74,12 @@ if [[ "$ok" != 1 ]]; then
 fi
 log "api healthy: $(dc exec -T api curl -fsS http://localhost:8080/api/health)"
 
-# Through Caddy: informational, because RCP's Caddyfile import is a separate step.
-if curl -fsS --max-time 10 "https://$domain/api/health" >/dev/null 2>&1; then
-    log "public check OK: https://$domain/api/health"
+# Through CloudFront and Caddy: informational, because RCP's Caddyfile import is a separate step and
+# a new distribution takes minutes to deploy.
+if curl -fsS --max-time 15 "$site_url/api/health" >/dev/null 2>&1; then
+    log "public check OK: $site_url/api/health"
 else
-    log "WARNING: https://$domain/api/health did not answer (DNS, TLS, or the Caddy import is not in place yet)"
+    log "WARNING: $site_url/api/health did not answer (CloudFront still deploying, the Caddy import is not in place, or the origin secret differs)"
 fi
 
 git rev-parse HEAD > "$DEPLOY_DIR/.deployed-commit"

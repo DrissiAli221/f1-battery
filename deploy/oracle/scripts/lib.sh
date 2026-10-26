@@ -112,19 +112,41 @@ build_service() {
     dc build "$svc"
 }
 
-# render_caddy_site: caddy/f1-battery.caddy (template) -> caddy/sites/f1-battery.caddy with the
-# domain from .env written literally. RCP's Caddy mounts caddy/sites/, so RCP needs no f1 variable.
+# site_host: the hostname of F1_SITE_URL (https://<id>.cloudfront.net).
+site_host() {
+    local url
+    url="$(env_get F1_SITE_URL)"
+    [[ "$url" =~ ^https://[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ && "$url" != *example* ]] \
+        || die "F1_SITE_URL must be the distribution origin, https://<id>.cloudfront.net (no path, no slash); got: ${url:-empty}"
+    printf '%s' "${url#https://}"
+}
+
+# site_preflight: the CloudFront settings every deploy needs.
+site_preflight() {
+    site_host >/dev/null
+    local k
+    for k in F1_WEB_BUCKET F1_CF_DISTRIBUTION F1_ORIGIN_HOST F1_ORIGIN_SECRET; do
+        [[ -n "$(env_get "$k")" ]] || die "$k is not set in deploy/oracle/.env (infra/aws-f1 README)"
+    done
+}
+
+# render_caddy_site: caddy/f1-battery.caddy (template) -> caddy/sites/f1-battery.caddy with the origin
+# host and secret from .env written literally. RCP's Caddy mounts caddy/sites/, so RCP needs no f1
+# variable. The rendered file holds the secret and must be readable by Caddy, hence 644.
 render_caddy_site() {
-    local domain out
-    domain="$(env_get F1_DOMAIN)"
-    [[ "$domain" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || die "F1_DOMAIN is not a plain hostname: $domain"
+    local host secret out
+    host="$(env_get F1_ORIGIN_HOST)"
+    secret="$(env_get F1_ORIGIN_SECRET)"
+    [[ "$host" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || die "F1_ORIGIN_HOST is not a plain host name or IPv4: $host"
+    [[ "$secret" =~ ^[A-Za-z0-9]{24,}$ ]] || die "F1_ORIGIN_SECRET must be 24+ letters/digits (openssl rand -hex 24)"
     out="$DEPLOY_DIR/caddy/sites"
     mkdir -p "$out"
-    sed "s/__F1_DOMAIN__/$domain/g" "$DEPLOY_DIR/caddy/f1-battery.caddy" > "$out/f1-battery.caddy.new"
+    sed -e "s/__F1_ORIGIN_HOST__/$host/g" -e "s/__F1_ORIGIN_SECRET__/$secret/g" \
+        "$DEPLOY_DIR/caddy/f1-battery.caddy" > "$out/f1-battery.caddy.new"
     chmod 644 "$out/f1-battery.caddy.new"
     chmod 755 "$out"
     mv "$out/f1-battery.caddy.new" "$out/f1-battery.caddy"
-    log "rendered caddy/sites/f1-battery.caddy for $domain"
+    log "rendered caddy/sites/f1-battery.caddy for http://$host"
 }
 
 # Keep API_TRUSTED_PROXIES equal to RCP's edge subnet so Caddy (and only the edge network)

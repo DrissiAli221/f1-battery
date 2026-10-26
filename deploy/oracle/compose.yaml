@@ -1,7 +1,7 @@
 # f1-battery production stack for the shared Oracle ARM VM (see README.md).
 # Pattern follows RCP's deploy/demo/compose.yaml: images built on the VM, secrets as files,
 # memory limits per service, nothing published to the host. Public traffic arrives through
-# RCP's Caddy, which reaches `web` and `api` over RCP's external `edge` network.
+# RCP's Caddy, which reaches `api` (and the optional `web-local` fallback) over RCP's external `edge` network.
 #
 # Use scripts/dc.sh instead of plain `docker compose`: it exports the per-image tags
 # (API_IMAGE, INGEST_IMAGE, REPLAY_IMAGE, MODEL_IMAGE) that the scripts derive from git.
@@ -126,7 +126,7 @@ services:
       DB_URL: jdbc:postgresql://db:5432/f1battery
       DB_USER: f1_api
       DB_PASSWORD_FILE: /run/secrets/api_password
-      API_CORS_ORIGIN: https://${F1_DOMAIN:?Set F1_DOMAIN in .env}
+      API_CORS_ORIGIN: ${F1_SITE_URL:?Set F1_SITE_URL in .env (the https://<id>.cloudfront.net origin)}
       API_RATE_PER_MIN: ${API_RATE_PER_MIN:-60}
       # Must include the Caddy container (it reaches the api over `edge`). scripts/deploy.sh
       # narrows this to the exact edge subnet; the default is Docker's private range.
@@ -176,7 +176,11 @@ services:
     mem_limit: 192m
     cpus: 0.5
 
+  # Optional no-AWS fallback: `scripts/dc.sh --profile web-local up -d web`. The public site is
+  # served from S3 through CloudFront; this container is not started by default and nothing routes to it
+  # unless you add a f1-web handler to the Caddy site block yourself.
   web:
+    profiles: [web-local]
     image: caddy:2.10.2-alpine
     restart: unless-stopped
     user: "${F1_UID:-1000}:${F1_GID:-1000}"
@@ -335,6 +339,8 @@ services:
       - ./backups:/backups:ro
       # Private web assets (fonts, wallpaper) are pulled here before the web build; see build-web.sh.
       - ../../web/public:/web/public
+      # The built site, synced to the web bucket by build-web.sh.
+      - ../../web/dist:/web/dist:ro
     networks:
       - egress
     read_only: true

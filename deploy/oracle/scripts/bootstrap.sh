@@ -57,10 +57,11 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 env_set F1_UID "$(id -u)"
 env_set F1_GID "$(id -g)"
-domain="$(env_get F1_DOMAIN)"
-if [[ -z "$domain" || "$domain" == *example* ]]; then
-    die "edit deploy/oracle/.env (F1_DOMAIN, F1_S3_BUCKET, AWS_REGION), then run this script again"
+if [[ "$(env_get F1_SITE_URL)" == *example* || -z "$(env_get F1_WEB_BUCKET)" ]]; then
+    die "edit deploy/oracle/.env (F1_SITE_URL, F1_WEB_BUCKET, F1_CF_DISTRIBUTION, F1_S3_BUCKET, F1_ORIGIN_*, AWS_REGION; infra/aws-f1 README), then run this script again"
 fi
+site_preflight
+site_url="https://$(site_host)"
 
 offhost_preflight
 render_caddy_site
@@ -106,7 +107,7 @@ dc --profile jobs run --rm -T ingest "--source=$ingest_src" "--year=$INGEST_YEAR
     || die "migration (ingest --dry-run) failed: the API role f1_api and the schema may be missing; fix it (scripts/dc.sh --profile jobs logs ingest) and re-run"
 
 "$SELF_DIR/build-web.sh"
-printf '%s' "$(image_tag web)@$domain" > "$DEPLOY_DIR/.web-built"
+printf '%s' "$(image_tag web)@$site_url" > "$DEPLOY_DIR/.web-built"
 
 dc up -d --remove-orphans
 
@@ -122,10 +123,10 @@ run_model "$run_id"
 cat >&2 <<NEXT
 
 Stack is up. Remaining manual steps (README.md, sections 'Caddy' and 'Timers'):
-  1. DNS: A record for $domain -> this VM's public IPv4.
+  1. CloudFront: infra/aws-f1 applied; $site_url is the public address (no DNS record needed).
   2. RCP: mount deploy/oracle/caddy/sites into its Caddy, import the site file, validate and
      recreate its caddy container (README, 'Changes to RCP').
-  3. Check:   curl -fsS https://$domain/api/health
+  3. Check:   curl -fsS $site_url/api/health
   4. Timers:  sudo install -m 644 $DEPLOY_DIR/systemd/f1-*.{service,timer} /etc/systemd/system/
               sudo systemctl daemon-reload && sudo systemctl enable --now f1-backup.timer f1-weekly.timer
   5. Run the first backup and confirm the object arrives in the S3 bucket.

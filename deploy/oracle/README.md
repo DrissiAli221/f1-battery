@@ -6,7 +6,8 @@ VM. It follows the pattern of RCP's [`deploy/demo`](../../../RCP/deploy/demo/REA
 app root `/opt/f1-battery`, images built on the VM from source (no registry), secrets as 0700
 files bind-mounted into the containers, systemd timers instead of cron, a memory limit on every
 service, local backups with 7-day retention plus an off-host copy, and Caddy as the only thing
-on ports 80/443.
+on ports 80/443. The public front door is a CloudFront `*.cloudfront.net` URL
+(`../../infra/aws-f1`): the site is in S3 and `/api/*` reaches the VM over plain HTTP.
 
 **Status: not yet executed on the VM; pre-flighted on an arm64 Mac.** Nothing in this folder has
 been run on the VM. Verified on the Mac: `docker compose config` renders (all profiles), the four
@@ -23,14 +24,17 @@ rehearsal and read each step before running it.
 | `kafka` (replay) | `apache/kafka:3.8.0` | KRaft single node, advertises `kafka:9092`, 384 MB heap | internal network only |
 | `api` | built from `api/Dockerfile` | read-only Spring Boot API, `prod` profile, SSE replay relay | RCP's `edge` network as `f1-api:8080` |
 | `replay-consumer` (replay) | built from `replay/Dockerfile` | regime consumer for one session (`telemetry.N` to `regime-state.N`) | none |
-| `web` | `caddy:2.10.2-alpine` | static file server for `web/dist` | RCP's `edge` network as `f1-web:8080` |
+| `web` (`web-local`, optional) | `caddy:2.10.2-alpine` | no-AWS fallback: static file server for `web/dist`; not started by default | RCP's `edge` network as `f1-web:8080` |
 | `ingest` (jobs) | built from `ingest/Dockerfile` | run-once loader; owns the Flyway migrations | none, outbound to OpenF1 |
 | `model` (jobs) | built from `model/Dockerfile` | run-once: quality, estimate, profile, publish | none |
 | `replay-producer` (`replay-run`, only via `run`) | same image as the consumer | run-once: re-emits a recorded session onto Kafka | none |
 | `s3` (jobs) | `amazon/aws-cli` | off-host copies, no host install of the AWS CLI | outbound to S3 |
 
-Nothing is published on the host. The only public path is RCP's Caddy:
-`https://<F1_DOMAIN>/` goes to `f1-web`, `/api/*` to `f1-api` (`/api/live/*` unbuffered for SSE).
+Nothing is published on the host. The site (`web/dist`) is served from a private S3 bucket by
+CloudFront at `F1_SITE_URL` (`https://<id>.cloudfront.net`). CloudFront forwards `/api/*` over HTTP
+port 80 to RCP's Caddy with an `X-Origin-Secret` header; the f1 site block there answers only requests
+that carry it (403 otherwise) and proxies to `f1-api` (`/api/live/*` unbuffered for SSE, though
+CloudFront may chunk it; see `infra/aws-f1/README.md`).
 
 Networks: `database` and `kafka` are `internal: true`; `egress` is the outbound-only network for
 the two jobs that call the internet; `edge` is RCP's existing network, joined as an external
@@ -174,10 +178,14 @@ or images in use. `deploy.sh` never prunes on its own.
    (plus restricted SSH); this deployment opens nothing new, so no firewall change is needed. Do
    not open 5432, 9092 or 8080.
 3. **RCP's stack is running** (its Caddy owns 80/443 and creates the `rcp-demo_edge` network).
-4. **A hostname** on the domain you already use: an `A` record for `f1.<your-domain>` pointing at
-   the VM's public IPv4 (no AAAA unless IPv6 routing works). Placeholder below: `F1_DOMAIN`.
-5. **A private S3 bucket** with all public access blocked, an IAM user limited to that bucket
-   (see `secrets/README.md`), and a lifecycle rule that expires `db-backups/` after 14 days. This
+4. **The CloudFront front door**, applied from `infra/aws-f1` on your Mac (`terraform apply`, see its
+   README). No domain, DNS record or certificate: it outputs `F1_SITE_URL`, the two buckets and the
+   distribution id, and you choose `F1_ORIGIN_SECRET`. Port 80 of the VM must be reachable from the
+   internet (RCP's Caddy already publishes it; the firewall must allow 80 from anywhere, since
+   CloudFront edge addresses vary).
+5. **The private data bucket and its IAM user**, created by the same Terraform (all public access
+   blocked, user limited to `private-assets/`, `db-backups/`, `raw/` plus the web bucket and one
+   invalidation, `db-backups/` expiring after 14 days; see `secrets/README.md`). This
    is the off-host copy: Oracle may reclaim idle Always Free instances, and the database is
    rebuildable only from the raw JSON that this bucket holds (D9).
 6. **Data that is not in git** (the repository ignores `data/`), copied once from your laptop:
@@ -211,12 +219,21 @@ up before f1's. The f1 containers reach Caddy only through the aliases `f1-api` 
 
 ### Changes to RCP (made once, by hand; this repository does not edit RCP)
 
-`caddy/f1-battery.caddy` in this folder is the site-block template. `bootstrap.sh` and
-`deploy.sh` render it with the domain from f1's own `.env` written **literally** (no variable, so
-RCP's `.env` is not touched and RCP's compose cannot break when something is unset) into
-`deploy/oracle/caddy/sites/f1-battery.caddy`. Do not use `${F1_DOMAIN:?}` or `${F1_DOMAIN:-}` in
-RCP's compose: the first stops RCP's whole compose from loading whenever the variable is
-missing, and neither is needed. In RCP's `deploy/demo`, three changes plus the recreate:
+`caddy/f1-battery.caddy` in this folder is the origin site-block template. `bootstrap.sh` and
+`deploy.sh` render it with `F1_ORIGIN_HOST` and `F1_ORIGIN_SECRET` from f1's own `.env` written
+**literally** (no variable, so RCP's `.env` is not touched and RCP's compose cannot break when
+something is unset) into `deploy/oracle/caddy/sites/f1-battery.caddy`. The rendered file contains
+the secret and is mode 644 so Caddy can read it; it is git-ignored. Do not use `${F1_...:?}` in RCP's compose.
+
+The block is a separate `http://<F1_ORIGIN_HOST>` site: plain HTTP, no certificate, no static files.
+RCP's Caddy owns port 80 and redirects its own hosts to https; an explicit `http://` site address is
+exempt from that redirect and is matched by Host (CloudFront sends the origin host as `Host`), so it
+sits beside RCP's https sites without touching them. It returns 403 unless `X-Origin-Secret` equals
+the secret, 405 for write methods, and proxies only `/api/*` to `f1-api:8080`. Because Caddy
+sees CloudFront's edge as the client, the API's per-visitor rate limit becomes per edge location; keep
+`API_RATE_PER_MIN` generous. In RCP's `deploy/demo`, three changes plus the recreate:
+
+In RCP's `deploy/demo`, three changes plus the recreate:
 
 1. `compose.yaml`, service `caddy`, `volumes:` (next to the Caddyfile mount):
 
@@ -247,9 +264,9 @@ missing, and neither is needed. In RCP's `deploy/demo`, three changes plus the r
 
    If validation fails, nothing was changed yet: fix the import or revert the four lines.
 
-Do this after DNS points at the VM and after the f1 stack is up. With the import in place but
-the f1 stack down, Caddy still starts (it only fails to reach the upstream for that hostname).
-After changing `F1_DOMAIN` in f1's `.env`, run `deploy.sh` (it re-renders the file) and repeat
+Do this after the f1 stack is up. With the import in place but
+the f1 stack down, Caddy still starts (it only fails to reach the upstream).
+After changing `F1_ORIGIN_HOST` or `F1_ORIGIN_SECRET` in f1's `.env` (and Terraform's `origin_host` / `origin_secret`), run `deploy.sh` (it re-renders the file) and repeat
 the validate and recreate step.
 
 Caddy sets `X-Forwarded-For` to the real client. `API_TRUSTED_PROXIES` is set by
@@ -330,12 +347,12 @@ run the loader before `bootstrap.sh` and set `F1_BUILD=0` in the environment of 
 
 The script creates
 `secrets/` (0700) with generated `postgres_password` and `api_password` (0600), creates `.env`
-from `.env.example` and stops so you can set `F1_DOMAIN`, `F1_S3_BUCKET`, `AWS_REGION`. Then:
+from `.env.example` and stops so you can set `F1_SITE_URL`, `F1_WEB_BUCKET`, `F1_CF_DISTRIBUTION`, `F1_S3_BUCKET`, `F1_ORIGIN_HOST`, `F1_ORIGIN_SECRET`, `AWS_REGION` (all from `infra/aws-f1`). Then:
 
 1. Put `secrets/aws_credentials` in place (`secrets/README.md`) and edit `.env`.
 2. Run the script again. It builds the four images one at a time (the `api`, `ingest`,
    `replay-consumer`, `model` services), pulls the three public images, starts the database,
-   runs the migrations through an ingest dry run, builds `web/dist`, brings the stack up, runs
+   runs the migrations through an ingest dry run, builds `web/dist` and publishes it to S3 (sync plus CloudFront invalidation), brings the stack up, runs
    the ingest (from the raw backup if `data/raw/openf1/manifest.json` exists, else from the API),
    runs the model, and checks that the run is published with its profile rows.
 3. Run it inside `tmux`: the API ingest takes hours. Re-running is safe; ingest and the model
@@ -343,7 +360,7 @@ from `.env.example` and stops so you can set `F1_DOMAIN`, `F1_S3_BUCKET`, `AWS_R
 4. Apply the RCP changes above, then check:
 
    ```sh
-   curl -fsS https://<F1_DOMAIN>/api/health
+   curl -fsS <F1_SITE_URL>/api/health   # CloudFront takes up to 15 minutes to deploy a new distribution
    scripts/dc.sh ps
    ```
 
@@ -364,8 +381,8 @@ Approximate image build cost: each Java image is about 0.5 GB and its Maven stag
 
 Pulls (fast-forward only, clean tree required), refreshes `API_TRUSTED_PROXIES`, takes a
 database backup, builds only images whose inputs changed (an image tag is the hash of the last
-commit touching its module, so unchanged modules are skipped), rebuilds `web/dist` when `web/`
-or the domain changed, runs `compose up -d`, and waits for `/api/health` inside the api
+commit touching its module, so unchanged modules are skipped), rebuilds and re-publishes `web/dist` when `web/`
+or the site URL changed, runs `compose up -d`, and waits for `/api/health` inside the api
 container. Then it tries the public URL and warns (not fails) if that does not answer.
 Rollback: on the VM, `git reset --hard <previous commit>` in `/opt/f1-battery` (not `deploy.sh`,
 which pulls) and `scripts/dc.sh up -d`; the previous images are still on disk under their own
@@ -488,7 +505,8 @@ expect the model step to take a while; measure it on the first run.
   the database: `ALTER ROLE f1_api PASSWORD '<content of secrets/api_password>'`.
 - API starts but every page errors: migrations have not run (the ingest job owns Flyway). Run
   `scripts/dc.sh --profile jobs run --rm ingest --source=local --dry-run`.
-- 502 from the site: `scripts/dc.sh ps`; Caddy reaches `f1-api:8080` and `f1-web:8080` over `edge`.
+- 403 on `/api/*` through CloudFront: the origin secret differs between Terraform (`origin_secret`) and `.env` (`F1_ORIGIN_SECRET`), or the rendered site file is stale (`deploy.sh`, then recreate Caddy). A 403 from `curl http://<VM>/api/health` without the header is correct.
+- 502/504 from the site: `scripts/dc.sh ps`; Caddy reaches `f1-api:8080` over `edge`.
   `docker exec <rcp caddy container> wget -qO- http://f1-api:8080/api/health` tests the path.
 - Everyone shares one rate limit: `API_TRUSTED_PROXIES` does not include Caddy's address. Run
   `deploy.sh` (it rewrites it from the `edge` subnet) and check the value in `.env`.

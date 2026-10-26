@@ -15,9 +15,10 @@ run as that user's UID/GID (`F1_UID`/`F1_GID` in `.env`), which is what keeps 06
 
 ## aws_credentials
 
-An INI file for an IAM user that can only write to the private backup bucket. Create the user
-and a policy limited to `s3:PutObject`, `s3:GetObject`, `s3:ListBucket` on that one bucket, then
-write the file from your own terminal (not from a chat or a repo):
+An INI file for the IAM user `f1-battery-vm` created by `infra/aws-f1` (least privilege: the data
+bucket paths, the web bucket sync, one CloudFront invalidation). Take the key id from
+`terraform output vm_access_key_id` and the secret from `terraform output -raw vm_secret_access_key`,
+then write the file from your own terminal (not from a chat or a repo):
 
 ```ini
 [default]
