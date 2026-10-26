@@ -883,7 +883,7 @@ function App() {
                           code: `S${s.straight_id}`,
                           detail: `${fmt(s.len)} m · ${
                             driversPerStraight.get(s.straight_id)
-                              ? `${driversPerStraight.get(s.straight_id)} drivers`
+                              ? `${driversPerStraight.get(s.straight_id)} ${driversPerStraight.get(s.straight_id) === 1 ? 'driver' : 'drivers'}`
                               : 'no estimates'
                           }`,
                         }))}
