@@ -22,7 +22,8 @@ if [[ -f "$web/private-assets.txt" ]] && offhost_enabled; then
     while IFS= read -r p; do
         [[ -z "$p" || "$p" == \#* ]] && continue
         [[ "$p" == web/public/* ]] || die "private-assets.txt: $p is outside web/public"
-        s3_run s3 cp "s3://$bucket/private-assets/$p" "/web/public/${p#web/public/}" --only-show-errors
+        # </dev/null: the compose run inside the loop must not swallow the rest of the list.
+        s3_run s3 cp "s3://$bucket/private-assets/$p" "/web/public/${p#web/public/}" --only-show-errors </dev/null
     done < "$web/private-assets.txt"
 elif [[ -f "$web/private-assets.txt" ]]; then
     log "WARNING: private assets not pulled (F1_SKIP_OFFHOST=1); the site builds with the OFL fallback fonts"
