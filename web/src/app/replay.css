@@ -16,6 +16,7 @@
   .replay-hero h1 {
     font:
       900 clamp(56px, 7.5vw, 110px)/0.91 F1Black,
+      Archivo,
       sans-serif;
     letter-spacing: -0.018em;
     text-transform: uppercase;
@@ -26,6 +27,7 @@
   .replay-hero > div > p {
     font:
       400 22px/1.35 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 26px;
@@ -50,6 +52,7 @@
     color: var(--muted);
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -68,6 +71,7 @@
   .replay-modes > span {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-transform: uppercase;
@@ -84,6 +88,7 @@
     display: block;
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #c0c0b7;
@@ -100,6 +105,7 @@
     border-radius: 0;
     font:
       400 12px KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -110,6 +116,7 @@
     gap: 10px;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     min-height: 58px;
@@ -136,6 +143,7 @@
   .feed-control > span {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
   }
@@ -164,12 +172,14 @@
   .replay-map-head h2 {
     font:
       400 18px/1.3 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
   .replay-map-head > span {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-transform: uppercase;
@@ -192,6 +202,7 @@
     gap: 20px;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -220,6 +231,7 @@
     gap: 15px;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-transform: uppercase;
@@ -227,6 +239,7 @@
   .replay-small {
     font:
       400 11px/1.65 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     margin-top: 16px;
@@ -234,6 +247,7 @@
   .replay-error {
     font:
       400 12px/1.6 KHF1,
+      GeistMono,
       monospace;
     color: #ef7567;
     margin-top: 16px;
@@ -241,6 +255,7 @@
   .replay-empty {
     font:
       400 12px/1.6 KHF1,
+      GeistMono,
       monospace;
     color: #bcbcb2;
     margin-top: 16px;
@@ -256,6 +271,7 @@
   .feed-readout > span {
     font:
       400 16px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #f4f4ef;
@@ -284,12 +300,14 @@
   .replay-field-heading h2 {
     font:
       400 22px/1.2 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
   .replay-field-heading > span {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-align: right;
@@ -333,6 +351,7 @@
   .field-identity > span {
     font:
       400 12px/1.3 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     overflow: hidden;
@@ -342,6 +361,7 @@
   .field-identity small {
     font:
       400 11px/1.3 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-transform: uppercase;
@@ -352,6 +372,7 @@
   .field-code {
     font:
       400 11px/1.3 KHF1,
+      GeistMono,
       monospace;
     color: var(--team);
   }
@@ -359,6 +380,7 @@
     grid-column: 3/-1;
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -377,6 +399,7 @@
   .replay-context h2 {
     font:
       400 28px/1.2 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 20px;
@@ -412,6 +435,7 @@
     gap: 10px;
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -433,6 +457,7 @@
     min-height: 400px;
     font:
       400 14px/1.6 KHF1,
+      GeistMono,
       monospace;
   }
   .replay-load .button {
@@ -620,6 +645,7 @@
     color: var(--muted);
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     min-height: 38px;
@@ -633,6 +659,7 @@
   .field-display > span {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-align: right;
@@ -675,6 +702,7 @@
   .feed-waiting {
     font:
       400 12px/1.6 KHF1,
+      GeistMono,
       monospace;
     color: #d9bd64;
     margin: 0 8px 22px;
@@ -692,6 +720,7 @@
   .replay-load-line {
     font:
       400 12px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -888,6 +917,7 @@
     row-gap: 4px;
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #c0c0b7;
@@ -952,6 +982,7 @@
   .field-count > span {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-align: right;
@@ -1000,6 +1031,7 @@
     display: block;
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #c0c0b7;
@@ -1113,6 +1145,7 @@
   .replay-field-rows .field-code > b {
     font:
       900 26px/1 F1Black,
+      Archivo,
       sans-serif;
     color: var(--team);
     opacity: 0.85;
@@ -1122,6 +1155,7 @@
   .replay-field-rows .field-code > small {
     font:
       400 10px/1.2 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-transform: uppercase;

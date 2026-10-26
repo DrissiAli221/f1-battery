@@ -20,6 +20,12 @@
     font-display: swap;
   }
   @font-face {
+    font-family: Archivo;
+    src: url('/fonts/archivo-var.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: swap;
+  }
+  @font-face {
     font-family: Geist;
     src: url('/fonts/geist-var.woff2') format('woff2');
     font-weight: 100 900;
@@ -103,6 +109,7 @@
   .display {
     font:
       900 clamp(54px, 7.8vw, 125px)/0.93 F1Black,
+      Archivo,
       sans-serif;
     text-transform: uppercase;
     letter-spacing: 0;
@@ -578,6 +585,7 @@
   .session-card h3 {
     font:
       900 clamp(25px, 12cqw, 72px)/0.94 F1Black,
+      Archivo,
       sans-serif;
     letter-spacing: 0;
     text-transform: uppercase;
@@ -1475,6 +1483,7 @@
     gap: 12px;
     font:
       900 18px/1 F1Black,
+      Archivo,
       sans-serif;
     letter-spacing: 0;
     font-feature-settings: 'calt' 1;
@@ -1628,6 +1637,7 @@
       min-height: 52px;
       font:
         900 20px/1 F1Black,
+        Archivo,
         sans-serif;
       letter-spacing: 0;
     }
@@ -1960,6 +1970,7 @@
   .session-strip-name h3 {
     font:
       900 25px/1 F1Black,
+      Archivo,
       sans-serif;
     letter-spacing: 0;
     text-transform: uppercase;

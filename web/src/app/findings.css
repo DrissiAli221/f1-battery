@@ -22,6 +22,7 @@
   .finding-hero h1 {
     font:
       900 clamp(72px, 8vw, 118px)/0.88 F1Black,
+      Archivo,
       sans-serif;
     text-transform: uppercase;
     letter-spacing: -0.018em;
@@ -47,6 +48,7 @@
   .finding-answer h2 {
     font:
       400 22px/1.25 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 18px;
@@ -72,6 +74,7 @@
     margin-top: 18px;
     font:
       400 12px KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -91,6 +94,7 @@
   .permutation-copy h2 {
     font:
       400 28px/1.13 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: -0.025em;
@@ -130,6 +134,7 @@
   .finding-block-title {
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 18px;
@@ -183,6 +188,7 @@
   .source-list dt {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -221,6 +227,7 @@
   .permutation-p span {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -235,6 +242,7 @@
   .permutation-copy .finding-small {
     font:
       400 11px/1.6 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     margin-top: 18px;
@@ -255,6 +263,7 @@
   .finding-limits dt {
     font:
       400 16px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 12px;
@@ -301,6 +310,7 @@
   .finding-provenance h2 {
     font:
       400 22px/1.2 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     margin-bottom: 14px;
@@ -308,6 +318,7 @@
   .finding-provenance > div > p {
     font:
       400 11px/1.7 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     margin-bottom: 24px;
@@ -330,6 +341,7 @@
     gap: 24px;
     font:
       400 11px KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #bcbcb2;
@@ -488,6 +500,7 @@
   .finding-sample strong {
     font:
       900 clamp(34px, 3.8vw, 54px)/1 F1Black,
+      Archivo,
       sans-serif;
     letter-spacing: -0.015em;
     font-feature-settings: 'calt' 0;
@@ -496,6 +509,7 @@
   .finding-sample span {
     font:
       400 12px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -527,6 +541,7 @@
     padding-bottom: 4px;
     font:
       400 12px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -554,6 +569,7 @@
     margin: 0;
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -621,6 +637,7 @@
   .perm-tag {
     font:
       400 11px KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -646,6 +663,7 @@
     border-top: 1px solid #ffffff14;
     font:
       400 12px/1.5 KHF1,
+      GeistMono,
       monospace;
     letter-spacing: 0.04em;
     color: var(--muted);
@@ -829,6 +847,7 @@
     padding: 10px 0 6px;
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -840,6 +859,7 @@
   .term-label {
     font:
       400 12px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -888,6 +908,7 @@
   .maker-name {
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -972,6 +993,7 @@
     border-radius: 99px;
     font:
       400 10px/1.4 KHF1,
+      GeistMono,
       monospace;
     letter-spacing: 0.07em;
     text-transform: uppercase;
@@ -1019,6 +1041,7 @@
   .cc-number {
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
   }
@@ -1032,6 +1055,7 @@
     color: var(--pill);
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -1060,6 +1084,7 @@
   .cc-expected span {
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     letter-spacing: 0.05em;
     text-transform: uppercase;

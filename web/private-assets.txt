@@ -1,0 +1,8 @@
+web/public/fonts/Formula1-Black.woff2
+web/public/fonts/KHInterference-Regular.woff2
+web/public/fonts/KHInterferenceF1-Regular.woff2
+web/public/hero.jpg
+web/public/hero.webp
+web/public/hero-1280.webp
+web/public/og.png
+web/public/assets/heron-pixel-mask.svg

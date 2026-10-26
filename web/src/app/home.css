@@ -18,6 +18,7 @@
   .home-hero h1 {
     font:
       900 clamp(64px, 7.7vw, 118px)/0.91 F1Black,
+      Archivo,
       sans-serif;
     text-transform: uppercase;
     letter-spacing: -0.018em;
@@ -71,6 +72,7 @@
     white-space: nowrap;
     font:
       400 12px KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -82,6 +84,7 @@
   .race-choice .card-meta {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -98,12 +101,14 @@
   .home-section-heading h2 {
     font:
       400 28px/1.2 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
   .home-section-heading p {
     font:
       400 11px/1.6 KHF1,
+      GeistMono,
       monospace;
     color: var(--muted);
     text-transform: uppercase;
@@ -128,6 +133,7 @@
     color: var(--muted);
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -163,6 +169,7 @@
     color: #f4f4ef;
     font:
       400 12px KHF1,
+      GeistMono,
       monospace;
     padding: 14px 0;
     border-radius: 0;
@@ -174,6 +181,7 @@
   .race-count {
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -209,6 +217,7 @@
   .race-venue-name {
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #c0c0b7;
@@ -231,6 +240,7 @@
   .home-empty h3 {
     font:
       400 22px KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -248,6 +258,7 @@
   .home-research h2 {
     font:
       900 clamp(32px, 4vw, 60px)/1 F1Black,
+      Archivo,
       sans-serif;
     text-transform: uppercase;
     letter-spacing: -0.015em;
@@ -264,6 +275,7 @@
   .research-copy > p:first-child {
     font:
       400 18px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #eee;
@@ -286,6 +298,7 @@
     min-height: 56px;
     font:
       400 11px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     list-style: none;
@@ -311,6 +324,7 @@
     min-height: 44px;
     font:
       400 12px KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -507,6 +521,7 @@
   .race-single-label {
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--ink);
@@ -514,6 +529,7 @@
   .race-unavailable-note {
     font:
       400 11px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #6d6d66;

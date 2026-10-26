@@ -89,6 +89,7 @@
     min-height: 44px;
     font:
       400 12px/1.45 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -300,6 +301,7 @@
   .replay-load h2 {
     font:
       400 26px/1.25 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
   }
@@ -321,6 +323,7 @@
   .recovery-actions a {
     font:
       400 12px/1.5 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     min-height: 44px;
@@ -346,6 +349,7 @@
   .availability-notice button {
     font:
       400 12px/1.5 KHF1,
+      GeistMono,
       monospace;
     flex-shrink: 0;
     min-height: 44px;
@@ -452,6 +456,7 @@
     min-height: 44px;
     font:
       400 13px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: #d0d0c5;
@@ -511,6 +516,7 @@
     .nav-island a {
       font:
         900 20px/1.2 F1Black,
+        Archivo,
         sans-serif;
       min-height: 56px;
       padding-block: 14px;
@@ -893,6 +899,7 @@
   .race-facts {
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--muted);
@@ -1289,6 +1296,7 @@
     padding: 0 10px;
     font:
       400 11px/1 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     white-space: nowrap;
@@ -1459,6 +1467,7 @@
     margin: 0 0 20px;
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1615,6 +1624,7 @@
     margin: 0 0 14px;
     font:
       400 12px/1.4 KHF1,
+      GeistMono,
       monospace;
     text-transform: uppercase;
     color: var(--ink);
