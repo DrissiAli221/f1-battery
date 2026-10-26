@@ -2,7 +2,15 @@
 
 Code: `model/f1battery_model/estimate.py` (writer), `pipeline.py`, `derate.py`, `regimes.py`, `physics.py`.
 Run: `cd model && PYTHONPATH=. ../.venv/bin/python -m f1battery_model.estimate --all [--run-id UUID]`
-(or `--session KEY`). Method and Phase 3 numbers: `docs/phase3-regimes.md`.
+(or `--session KEY`).
+
+Run lifecycle: each run writes a `model_run` row (migration V6, applied by the ingester). `--all` runs that finish
+with no failed session are marked published; `--no-publish` skips that; `--session` runs are published only with an
+explicit `--publish`; the process exits 1 if any session failed. The API serves the latest published run, so a
+partial run is never served. The run below predates the table; register it once with
+`python -m f1battery_model.estimate --register-existing-run 6f9df732-b7d1-42b5-b084-a2dc08f91662 --publish`
+(no recomputation). Re-using a `--run-id` resets that run to unpublished while it is recomputed. Dependencies are pinned in
+`model/pyproject.toml` and `model/requirements.lock`. Method and Phase 3 numbers: `docs/phase3-regimes.md`.
 
 ## Run
 
@@ -118,6 +126,24 @@ values at the grid edge 0.4 or 1.6 are bounds, not estimates, and 16 of 45 sessi
 Expected signs were not changed. Three of four testable checks fail; this is a plain result, not an artifact fix.
 Caveats: single-car laps include tow and traffic (entry speed is stored for controlling); the cut-off in checks
 1-2 is a distance with lap-to-lap std 15-60 m, so effects under ~2 std are not resolvable.
+
+## Car-sessions with telemetry but no results (2026-10-19)
+
+51 (session, driver) pairs have `car_data` rows and no `model_result` rows. 22 are the whole of the
+excluded Hungary race 11342 (D17). The other 29 are listed below; none is a bug. `pipeline.prepare_driver`
+returns nothing for a car with no green lap (`lap_quality.green`), by design, and every one of the 29 has
+zero green laps. Query: `car_data` pairs not present in `model_result` (driver > 0), joined to `lap` and
+`lap_quality`.
+
+| Class | Pairs | Count | Reason |
+|---|---|---|---|
+| No lap rows at all | 11230 Melbourne Q: #18, #55; 11236 Shanghai SQ: #11; 11245 Shanghai R: #1, #23; 11275 Miami Sprint: #41; 11282 Montreal SQ: #23, #30; 11365 Madring Q: #87 | 9 | The lap table has no row for the car (no completed or started lap recorded), so there is nothing to align; telemetry exists only for the stationary or aborted outing |
+| Retired on lap 1 | 11234 Melbourne R: #27, #81; 11245 Shanghai R: #5, #81; 11275 Miami Sprint: #27; 11291 Montreal R: #41; 11299 Monaco R: #3; 11334 Spa R: #63; 11353 Zandvoort R: #3; 11383 Singapore Sprint: #18 | 10 | One lap, flagged `no_start` or `standing_start` (race lap 1 is not analysed, Phase 2 rules) |
+| Retired within 2-7 laps, no green lap | 11230 Melbourne Q: #3 (out lap, slow lap); 11353 Zandvoort R: #87 (standing start, pit, out lap); 11361 Monza R: #16 (standing start, slow); 11383 Singapore Sprint: #5, #77 (7 laps), #6, #43 (3), #11, #63 (2); 11384 Singapore Q: #6 (out lap, pit, out lap) | 10 | Every lap is a standing start, pit, out lap, neutralised or slow lap; none passes the green filter |
+
+The "retired" wording is an inference from the lap count against the session's maximum lap number
+(for example 1-7 laps against 20 in the Singapore sprint); the database holds no retirement field.
+The sprint rows are consistent with cars that left the track on the first laps, but that is not verified here.
 
 ## Open decisions
 
