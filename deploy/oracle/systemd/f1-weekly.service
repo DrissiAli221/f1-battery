@@ -1,0 +1,20 @@
+[Unit]
+Description=f1-battery weekly refresh (raw backup, ingest, model, off-host sync)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Unlike RCP's backup unit this runs as ubuntu, so files under /opt/f1-battery stay owned by the
+# user that deploys; ubuntu is in the docker group.
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/f1-battery/deploy/oracle
+ExecStart=/opt/f1-battery/deploy/oracle/scripts/weekly.sh
+# A full OpenF1 pull is rate limited to 30 requests/minute.
+TimeoutStartSec=12h
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=yes

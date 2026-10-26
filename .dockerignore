@@ -9,3 +9,7 @@ spike/cache/
 **/target/
 .git/
 out/
+# Deployment state and secrets never go into a build context.
+deploy/oracle/secrets/
+deploy/oracle/backups/
+deploy/oracle/.env
