@@ -271,6 +271,8 @@ services:
     volumes:
       - ./scripts/entrypoint-secrets.sh:/opt/f1/entrypoint-secrets.sh:ro
       - ../../data/reference:/data/reference:ro
+      # regulation.py reads docs/regulation-events.csv relative to the repo root, which is / in the image.
+      - ../../docs:/docs:ro
     tmpfs:
       - /tmp:size=256m,mode=1777
       - /app/out:size=64m,mode=1777   # quality.py writes its per-session reports under the package
