@@ -7,7 +7,7 @@ import org.testcontainers.utility.DockerImageName;
 final class TestDb {
 
     static final PostgreSQLContainer<?> DB = new PostgreSQLContainer<>(
-            DockerImageName.parse("timescale/timescaledb:latest-pg16").asCompatibleSubstituteFor("postgres"));
+            DockerImageName.parse("timescale/timescaledb:2.30.2-pg16").asCompatibleSubstituteFor("postgres"));
 
     static {
         DB.start();

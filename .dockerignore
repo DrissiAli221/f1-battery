@@ -1,0 +1,11 @@
+# Keeps the build context small and keeps data and private notes out of images.
+data/
+.venv/
+web/node_modules/
+web/dist/
+model/out/
+private/
+spike/cache/
+**/target/
+.git/
+out/
