@@ -22,6 +22,14 @@ export interface Driver {
   name_acronym: string | null;
   full_name: string | null;
   team_name: string | null;
+  /** `#RRGGBB`, or null if not ingested yet. */
+  team_colour: string | null;
+  /** Source URL of the headshot (not proxied), or null. */
+  headshot_url: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  broadcast_name: string | null;
+  country_code: string | null;
 }
 
 export interface Lap {
@@ -87,6 +95,8 @@ export interface CompareDriver {
   driver_number: number;
   name_acronym: string | null;
   team_name: string | null;
+  team_colour: string | null;
+  headshot_url: string | null;
   series: {
     lap_number: number;
     straight_id: number | null;

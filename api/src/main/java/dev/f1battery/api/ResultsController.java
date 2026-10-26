@@ -143,7 +143,8 @@ public class ResultsController {
     private Page<Map<String, Object>> summaryFor(int key, ModelRuns.Run run, int page, int size) {
         Object[] runArgs = {run.modelVersion(), run.runId(), key};
         List<Map<String, Object>> drivers = jdbc.query(
-                "select d.driver_number, d.name_acronym, d.full_name, d.team_name from driver d "
+                "select d.driver_number, d.name_acronym, d.full_name, d.team_name, "
+                        + Schema.DRIVER_DETAILS_D + " from driver d "
                         + "where d.session_key = ? and exists (select 1 from model_result m "
                         + "where m.model_version = ? and m.run_id = ? and m.session_key = d.session_key "
                         + "and m.driver_number = d.driver_number) order by d.driver_number",
@@ -270,6 +271,82 @@ public class ResultsController {
         return Page.of(bins, page, size);
     }
 
+    /**
+     * Speed and acceleration along one straight for one driver, per 50 m bin from the straight's
+     * start: variables speed_bin_n (median kph) and accel_bin_n (m/s2) at lap_number 0, plus the
+     * lap-0 cut-off median and its interval. Not paginated: a straight has tens of bins. A run
+     * without profile rows answers 200 with an empty bins list.
+     */
+    @GetMapping("/sessions/{key}/straights/{straightId}/profile")
+    public Map<String, Object> straightProfile(
+            @PathVariable int key,
+            @PathVariable int straightId,
+            @RequestParam int driver,
+            @RequestParam(required = false) String model) {
+        schema.requireSession(key);
+        Optional<ModelRuns.Run> run = runs.resolve(model);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("session_key", key);
+        body.put("driver_number", driver);
+        body.put("straight_id", straightId);
+        body.put("model_version", run.map(ModelRuns.Run::modelVersion).orElse(null));
+        body.put("bin_m", BIN_METRES);
+        java.util.TreeMap<Integer, Map<String, Object>> byBin = new java.util.TreeMap<>();
+        Object cutoff = null;
+        Object lo = null;
+        Object hi = null;
+        if (run.isPresent()) {
+            List<Map<String, Object>> rows = jdbc.query(
+                    "select variable, value, ci_low, ci_high from model_result where model_version = ? and run_id = ? "
+                            + "and session_key = ? and driver_number = ? and straight_id = ? and lap_number = 0 "
+                            + "and (variable like 'speed\\_bin\\_%' or variable like 'accel\\_bin\\_%' "
+                            + "or variable = 'cutoff_distance_median_m')",
+                    Rows.MAP,
+                    run.get().modelVersion(),
+                    run.get().runId(),
+                    key,
+                    driver,
+                    straightId);
+            for (Map<String, Object> r : rows) {
+                String v = (String) r.get("variable");
+                Object value = r.get("value");
+                if (v.equals("cutoff_distance_median_m")) {
+                    cutoff = value;
+                    lo = r.get("ci_low");
+                    hi = r.get("ci_high");
+                    continue;
+                }
+                boolean speed = v.startsWith("speed_bin_");
+                int bin;
+                try {
+                    bin = Integer.parseInt(v.substring(speed ? "speed_bin_".length() : "accel_bin_".length()));
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                Map<String, Object> b = byBin.computeIfAbsent(bin, n -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("bin", n);
+                    m.put("d_start_m", n * BIN_METRES);
+                    m.put("v_kph", null);
+                    m.put("a_ms2", null);
+                    return m;
+                });
+                if (value instanceof Number num) {
+                    if (speed) {
+                        b.put("v_kph", Math.round(num.doubleValue()));
+                    } else {
+                        b.put("a_ms2", Math.round(num.doubleValue() * 10.0) / 10.0);
+                    }
+                }
+            }
+        }
+        body.put("bins", new ArrayList<>(byBin.values()));
+        body.put("cutoff_median_m", cutoff);
+        body.put("ci_low_m", lo);
+        body.put("ci_high_m", hi);
+        return body;
+    }
+
     /** Per-lap cut-off series of two drivers on the same session (and optionally one straight). */
     @GetMapping("/compare")
     public Map<String, Object> compare(
@@ -295,12 +372,15 @@ public class ResultsController {
             Map<String, Object> d = new LinkedHashMap<>();
             d.put("driver_number", n);
             List<Map<String, Object>> names = jdbc.query(
-                    "select name_acronym, team_name from driver where session_key = ? and driver_number = ?",
+                    "select name_acronym, team_name, headshot_url, " + Schema.TEAM_COLOUR + " from driver "
+                            + "where session_key = ? and driver_number = ?",
                     Rows.MAP,
                     session,
                     n);
             d.put("name_acronym", names.isEmpty() ? null : names.get(0).get("name_acronym"));
             d.put("team_name", names.isEmpty() ? null : names.get(0).get("team_name"));
+            d.put("team_colour", names.isEmpty() ? null : names.get(0).get("team_colour"));
+            d.put("headshot_url", names.isEmpty() ? null : names.get(0).get("headshot_url"));
             List<Map<String, Object>> series = List.of();
             if (run.isPresent()) {
                 List<Object> args = new ArrayList<>(
