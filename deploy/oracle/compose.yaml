@@ -60,6 +60,7 @@ services:
       timeout: 5s
       retries: 6
       start_period: 30s
+    cpu_shares: 512
     mem_limit: 640m
     cpus: 1.0
     security_opt:
@@ -92,6 +93,8 @@ services:
       # Replay data is disposable: keep the log small.
       KAFKA_LOG_RETENTION_HOURS: 6
       KAFKA_HEAP_OPTS: "-Xms128m -Xmx384m"
+      # The volume below must be where the log lives (the image default is /tmp/kraft-combined-logs).
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
@@ -102,6 +105,7 @@ services:
       timeout: 10s
       retries: 10
       start_period: 30s
+    cpu_shares: 512
     mem_limit: 640m
     cpus: 0.75
     security_opt:
@@ -143,6 +147,7 @@ services:
       edge:
         aliases: [f1-api]
     stop_grace_period: 20s
+    cpu_shares: 512
     mem_limit: 448m
     cpus: 1.0
 
@@ -167,6 +172,7 @@ services:
         condition: service_healthy
     networks:
       - kafka
+    cpu_shares: 512
     mem_limit: 192m
     cpus: 0.5
 
@@ -188,6 +194,9 @@ services:
     tmpfs:
       - /tmp:size=16m,mode=1777
     cap_drop: [ALL]
+    # The caddy binary carries file capability cap_net_bind_service; with no-new-privileges and
+    # an empty bounding set the exec fails ("operation not permitted") unless it is added back.
+    cap_add: [NET_BIND_SERVICE]
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -195,6 +204,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    cpu_shares: 512
     mem_limit: 32m
     cpus: 0.25
     logging: *logging
@@ -212,6 +222,7 @@ services:
     entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
     environment:
       <<: *java
+      SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:postgresql://db:5432/f1battery
       DB_USER: f1
       DB_PASSWORD_FILE: /run/secrets/postgres_password
@@ -268,10 +279,16 @@ services:
     mem_limit: 1536m
     cpus: 1.0
 
+  # Run-once, never started by `up`: `scripts/dc.sh run --rm replay-producer` (running a named
+  # service activates its profile). Same image as replay-consumer, which is what builds it.
   replay-producer:
     <<: *app
-    profiles: [replay]
+    profiles: [replay-run]
     image: ${REPLAY_IMAGE:-f1battery-replay:local}
+    build:
+      context: ../..
+      dockerfile: replay/Dockerfile
+    pull_policy: never
     restart: "no"
     entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
     command: ["--mode=producer", "--session=${REPLAY_SESSION_KEY:-11361}", "--speed=${REPLAY_SPEED:-20}"]
