@@ -3,6 +3,10 @@ on:
   push:
   pull_request:
 
+# Verify only: CI never deploys and needs no write access or secrets.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-24.04
