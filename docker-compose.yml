@@ -1,10 +1,12 @@
 services:
   db:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:2.30.2-pg16
     environment:
       POSTGRES_DB: f1battery
       POSTGRES_USER: f1
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-f1dev}
+      # No usage reports to Timescale.
+      TIMESCALEDB_TELEMETRY: "off"
     ports:
       - "127.0.0.1:55432:5432"
     volumes:
@@ -46,6 +48,35 @@ services:
       timeout: 10s
       retries: 12
       start_period: 15s
+
+  # Application images (docs/ops.md). Not started by a plain `docker compose up`:
+  #   docker compose --profile app up -d --build api
+  # The ingest job is run once: docker compose --profile app run --rm ingest --source=local
+  api:
+    profiles: ["app"]
+    build: {context: ., dockerfile: api/Dockerfile}
+    depends_on: {db: {condition: service_healthy}}
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/f1battery
+      DB_USER: f1_api
+      DB_PASSWORD: ${API_DB_PASSWORD:-f1api}
+      API_CORS_ORIGIN: ${API_CORS_ORIGIN:-http://localhost:5173}
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  ingest:
+    profiles: ["app"]
+    build: {context: ., dockerfile: ingest/Dockerfile}
+    depends_on: {db: {condition: service_healthy}}
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/f1battery
+      DB_USER: f1
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-f1dev}
+      # Becomes the password of the read-only f1_api role (migration V7).
+      API_DB_PASSWORD: ${API_DB_PASSWORD:-f1api}
+      INGEST_LOCAL_ROOT: /data/raw/openf1
+    volumes:
+      - ./data/raw/openf1:/data/raw/openf1:ro
 
 volumes:
   f1battery_pgdata:
