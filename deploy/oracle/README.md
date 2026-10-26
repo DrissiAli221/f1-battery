@@ -18,13 +18,13 @@ step before running it.
 | Service | Image | Role | Exposed |
 |---|---|---|---|
 | `db` | `timescale/timescaledb:2.30.2-pg16` | Postgres 16 + TimescaleDB | internal network only |
-| `kafka` | `apache/kafka:3.8.0` | KRaft single node, advertises `kafka:9092`, 512 MB heap | internal network only |
+| `kafka` (replay) | `apache/kafka:3.8.0` | KRaft single node, advertises `kafka:9092`, 384 MB heap | internal network only |
 | `api` | built from `api/Dockerfile` | read-only Spring Boot API, `prod` profile, SSE replay relay | RCP's `edge` network as `f1-api:8080` |
-| `replay-consumer` | built from `replay/Dockerfile` | regime consumer for one session (`telemetry.N` to `regime-state.N`) | none |
+| `replay-consumer` (replay) | built from `replay/Dockerfile` | regime consumer for one session (`telemetry.N` to `regime-state.N`) | none |
 | `web` | `caddy:2.10.2-alpine` | static file server for `web/dist` | RCP's `edge` network as `f1-web:8080` |
 | `ingest` (jobs) | built from `ingest/Dockerfile` | run-once loader; owns the Flyway migrations | none, outbound to OpenF1 |
 | `model` (jobs) | built from `model/Dockerfile` | run-once: quality, estimate, profile, publish | none |
-| `replay-producer` (jobs) | same image as the consumer | run-once: re-emits a recorded session onto Kafka | none |
+| `replay-producer` (replay) | same image as the consumer | run-once: re-emits a recorded session onto Kafka | none |
 | `s3` (jobs) | `amazon/aws-cli` | off-host copies, no host install of the AWS CLI | outbound to S3 |
 
 Nothing is published on the host. The only public path is RCP's Caddy:
@@ -34,42 +34,90 @@ Networks: `database` and `kafka` are `internal: true`; `egress` is the outbound-
 the two jobs that call the internet; `edge` is RCP's existing network, joined as an external
 network.
 
+## The VM as surveyed
+
+Read-only survey of the real VM (host `rcpdemo`): Ubuntu 24.04.5 LTS aarch64, kernel 6.17
+(oracle), **1 CPU (`nproc` = 1), 5903 MB RAM, no swap**, load average about 2.5 on that single CPU
+(RCP's drill timer fires every minute), `/` 48 GB with 36 GB free. Docker 29.8.2, Compose v5.6.0.
+RCP's project is `rcp-demo` (networks `rcp-demo_edge`, `_database`, `_drill`; containers
+`rcp-demo-{control-plane,caddy,drill,alloy,postgres}-1`). Its alloy (monitoring profile) is
+running. Caddy 2.10.2 publishes 80/443 with `admin off`. The host firewall allows SSH only plus
+Docker-forwarded 80/443. `/opt` is root-owned 755 and `/opt/rcp` is `ubuntu` 750, so
+`/opt/f1-battery` is created the same way (`sudo install -d -o ubuntu -g ubuntu -m 750`).
+
+Consequences: a single CPU already loaded at 2.5 means Maven builds and the model compete with
+RCP for CPU, not only memory; all f1 jobs get a low CPU weight (`cpu_shares: 256`) so RCP wins
+contention, but builds run in the Docker daemon and are not niced, so expect slow builds and some
+latency on RCP while they run. There is no swap, so memory pressure ends in the OOM killer.
+
 ## Memory budget
 
-Limits are `mem_limit` ceilings in `compose.yaml`, not measured usage. RCP's figures are from its
-`compose.yaml`.
+Limits are `mem_limit` ceilings in `compose.yaml`, not measured usage. RCP's limits are the real
+ones: control-plane 1024, caddy 128, drill 64, alloy 384, postgres 512 = **2112 MB**. Its measured
+usage is about 850 MB, so ceilings overstate what is used, but a JVM can grow to its ceiling.
 
-| Service | Limit | Notes |
+f1 limits (JVMs use `MaxRAMPercentage` 60 for the api, 45 for the consumer, 60 for ingest; Kafka
+heap `-Xms128m -Xmx384m`):
+
+| Service | Limit | Profile |
 |---|---|---|
-| RCP: postgres | 512 MB | existing |
-| RCP: control-plane | 1024 MB | existing |
-| RCP: caddy | 128 MB | existing |
-| RCP: drill | 64 MB | existing |
-| **RCP subtotal** | **1728 MB** | (+384 MB when its optional `monitoring` profile, alloy, runs) |
-| f1: db | 768 MB | `shared_buffers=192MB` |
-| f1: kafka | 768 MB | `-Xms256m -Xmx512m`, plus off-heap and page cache |
-| f1: api | 512 MB | heap about 65% |
-| f1: replay-consumer | 256 MB | |
-| f1: web | 32 MB | |
-| **f1 steady state** | **2336 MB** | |
-| **RCP + f1 steady state** | **4064 MB** | 4448 MB with RCP's alloy |
-| f1 jobs, one at a time | ingest 768 / model 1536 / replay-producer 384 / s3 256 MB | the weekly run is ingest then model, never both |
-| **Peak (model running)** | **5600 MB** | 5984 MB with alloy |
+| db | 640 MB | always |
+| api | 448 MB | always |
+| web | 32 MB | always |
+| **f1 base** | **1120 MB** | |
+| kafka | 640 MB | `replay` |
+| replay-consumer | 192 MB | `replay` |
+| **f1 with replay** | **1952 MB** | |
+| jobs, one at a time | ingest 640, model 1536, replay-producer 320 (`replay`), s3 256 | on demand |
 
-On the current 1 OCPU / 6 GB VM the peak leaves nothing for the OS, Docker, the page cache and
-image builds, and a Maven build alone peaks above 1 GB. **Resize the VM to 2 OCPU / 12 GB before
-deploying.** That is a change to the instance shape (VM.Standard.A1.Flex can be resized in the
-console or through RCP's Terraform root; stop the instance first if the console asks).
+The weekly run is ingest then model, never both; the biggest job is the model at 1536 MB.
 
-Check the allowance in the Oracle console (Governance, Limits, Quotas and Usage, or Billing, Free
-Tier usage) before resizing. The two sources disagree: RCP's `infra/oracle-demo/README.md` says
-Always Free ARM is 2 OCPU / 12 GB account-wide (1,500 OCPU-hours and 9,000 GB-hours a month),
-while Oracle's current page says 4 OCPU / 24 GB. The allowance is account-wide, so any other
-Always Free instance or retained boot volume also counts. If the console shows only 2 / 12, the VM
-takes all of it. Do not resize if the console shows it would exceed your allowance.
+| Option | RCP | f1 steady | Steady total | Peak (model running) | Fits |
+|---|---|---|---|---|---|
+| **A. Resize to 2 OCPU / 12 GB (recommended)**, replay on | 2112 | 1952 | 4064 MB | 5600 MB | comfortably |
+| **B. Stay on 1 / 6 GB, replay off** | 2112 | 1120 | 3232 MB | 4768 MB of 5903 | yes, no swap; run the model at night |
+| **C. Stay on 1 / 6 GB, replay on, 4 GB swapfile** | 2112 | 1952 | 4064 MB | 5600 MB of 5903 + 4096 swap | tight; risky for RCP latency |
 
-Optional safety net on a 12 GB VM: a 2 GB swap file. Reclamation criteria count CPU, network and
-A1 memory use, and do not change with swap.
+Per-option setup, all through `.env` and the swap file, with no edits to `compose.yaml`:
+
+- **A.** Resize the instance (shape VM.Standard.A1.Flex, in the console or through RCP's Terraform
+  root; stop the instance if asked), then deploy with the defaults (`F1_REPLAY=1`,
+  `API_REPLAY_ENABLED=true`). Before resizing, check the Always Free allowance in the Oracle
+  console (Governance, Limits, Quotas and Usage, or Billing, Free Tier usage). The sources
+  disagree: RCP's `infra/oracle-demo/README.md` says 2 OCPU / 12 GB account-wide (1,500
+  OCPU-hours and 9,000 GB-hours a month), Oracle's current page says 4 OCPU / 24 GB, and the
+  allowance covers every Always Free instance and retained boot volume on the account. Do not
+  resize past what the console shows.
+- **B.** In `.env` set `F1_REPLAY=0` and `API_REPLAY_ENABLED=false`. Kafka, the consumer and the
+  producer do not start and are not built; the live view shows "Replay is not enabled". Run the
+  weekly job at night (the timer is 04:00 UTC; RCP's backup is 03:00). Change to A or C later by
+  flipping the two variables and running `scripts/deploy.sh`.
+- **C.** Keep `F1_REPLAY=1`, and add swap first:
+
+  ```sh
+  sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+  echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf && sudo sysctl --system
+  ```
+
+  The weekly and backup units already run at `Nice=10` and idle I/O class for the host-side steps,
+  and containers have a low CPU weight, but swapping a JVM on a block volume stalls everything,
+  RCP included, and a model run in swap can take far longer. Treat C as a stopgap and watch RCP's
+  health while the jobs run (`docker stats`, `vmstat 5`). `bootstrap.sh` prints a warning when RAM
+  is under 10 GB.
+
+Disk is not the constraint (36 GB free), but the Docker build cache is already 3.36 GB (2.81 GB
+reclaimable) and a first build adds roughly 3 GB for the Java and model images.
+
+### Pre-deploy cleanup (needs your approval; no script does it)
+
+```sh
+docker system df
+docker builder prune            # reclaims about 2.81 GB of build cache; asks before acting
+```
+
+This only clears cache and can slow the next RCP rebuild once; it removes no containers, volumes
+or images in use. `deploy.sh` never prunes on its own.
 
 ## Prerequisites
 
@@ -84,7 +132,7 @@ A1 memory use, and do not change with swap.
    - The web rebuild with `VITE_SITE_URL` (`feat/web-v2`, not pushed when this was written).
      `scripts/build-web.sh` sets it; an older web tree simply ignores it.
    - `fix/ingest-api-source`: the `--source=api` path used by the weekly job.
-2. **The VM is bootstrapped as RCP's is**: Docker Engine and the Compose plugin installed, the
+2. **The VM is bootstrapped as RCP's is** (surveyed: Docker 29.8.2, Compose v5.6.0): Docker Engine and the Compose plugin installed, the
    `ubuntu` user in the `docker` group, RCP's firewall service running. Only 80/443 are open
    (plus restricted SSH); this deployment opens nothing new, so no firewall change is needed. Do
    not open 5432, 9092 or 8080.
@@ -165,7 +213,7 @@ Caddy sets `X-Forwarded-For` to the real client. `API_TRUSTED_PROXIES` is set by
 On the VM, as `ubuntu`, after the prerequisites:
 
 ```sh
-sudo install -d -o ubuntu -g ubuntu -m 0750 /opt/f1-battery
+sudo install -d -o ubuntu -g ubuntu -m 750 /opt/f1-battery
 git clone <repository url> /opt/f1-battery
 /opt/f1-battery/deploy/oracle/scripts/bootstrap.sh
 ```
@@ -289,7 +337,7 @@ expect the model step to take a while; measure it on the first run.
 ## Replay and Kafka
 
 - `kafka`: single node, KRaft (broker and controller in one process), replication factor 1, no
-  authentication, advertised as `kafka:9092`, heap `-Xms256m -Xmx512m`, on the internal `kafka`
+  authentication, advertised as `kafka:9092`, heap `-Xms128m -Xmx384m`, on the internal `kafka`
   network (not reachable from `edge`, the host, or the internet).
 - Topics, created by the replay module (auto-create is off):
   `telemetry.<session_key>` (3 partitions, 6 h and 512 MiB retention) and
@@ -301,8 +349,8 @@ expect the model step to take a while; measure it on the first run.
   it with the producer, which reads `car_data`/`location` as the read-only `f1_api` role:
 
   ```sh
-  scripts/dc.sh --profile jobs run --rm replay-producer                      # .env session, 20x
-  scripts/dc.sh --profile jobs run --rm replay-producer --mode=producer --session=11361 --speed=10   # override
+  scripts/dc.sh run --rm replay-producer                      # .env session, 20x
+  scripts/dc.sh run --rm replay-producer --mode=producer --session=11361 --speed=10   # override
   ```
 
   Re-running appends to the topics; delete them first for a clean replay:
@@ -311,9 +359,10 @@ expect the model step to take a while; measure it on the first run.
   then `scripts/dc.sh up -d replay-consumer` and run the producer. After a session finishes
   the compacted state topic keeps the last positions, so the view shows the end state until the
   next replay is started.
-- **Disable it** (also frees about 1 GB of the budget): set `API_REPLAY_ENABLED` to `"false"` in
-  `compose.yaml`'s `api` service (the view then shows "Replay is not enabled on this server"),
-  then `scripts/dc.sh up -d api` and `scripts/dc.sh stop kafka replay-consumer`. Everything else
+- **Disable it** (frees 832 MB of limits): set `F1_REPLAY=0` and `API_REPLAY_ENABLED=false` in `.env`
+  (the view then shows "Replay is not enabled on this server"), then `scripts/deploy.sh`, and
+  `docker stop f1-battery-kafka-1 f1-battery-replay-consumer-1` once (`--remove-orphans` does not
+  see profiled services). Everything else
   is unaffected; the replay is opt-in by design.
 - **Policy flag.** `docs/phase7-replay.md` limits the replay to local use because the state
   records carry `x`, `y` and `speed` near-raw, and D9 allows only derived outputs on the public

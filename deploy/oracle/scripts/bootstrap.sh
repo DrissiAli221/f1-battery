@@ -66,14 +66,19 @@ sync_trusted_proxies
 sections="$REPO_DIR/data/reference/tracinginsights/sections"
 [[ -d "$sections" ]] || die "missing $sections: copy it from your laptop (README, 'Data to copy')"
 
+mem_mb="$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)"
+swap_mb="$(awk '/SwapTotal/ {print int($2/1024)}' /proc/meminfo)"
+if (( mem_mb < 10000 )); then
+    log "WARNING: ${mem_mb} MB RAM, ${swap_mb} MB swap. The plan assumes 12 GB (README, memory options): without it set F1_REPLAY=0 or add swap, and run the model at night"
+fi
 free_kb="$(df -Pk /var/lib/docker | awk 'NR==2 {print $4}')"
 (( free_kb > 6 * 1024 * 1024 )) || log "WARNING: under 6 GB free in /var/lib/docker; image builds may fail"
 
 # --- 3. images, one at a time -------------------------------------------------------------------
-for svc in api ingest replay-consumer model; do
+while read -r svc; do
     build_service "$svc"
-done
-dc pull --quiet db kafka web
+done < <(app_services)
+dc pull --quiet --ignore-buildable
 
 # --- 4. database up, migrated, then the rest of the stack ---------------------------------------
 dc up -d db

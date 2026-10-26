@@ -33,9 +33,9 @@ else
 fi
 
 # One image at a time: a Maven build peaks above 1 GB and shares the VM with RCP.
-for svc in api ingest replay-consumer model; do
+while read -r svc; do
     build_service "$svc"
-done
+done < <(app_services)
 
 # The web build is skipped when neither web/ nor the domain changed.
 web_stamp="$(image_tag web)@$domain"
@@ -47,7 +47,7 @@ else
 fi
 
 log "compose up"
-dc pull --quiet db kafka web
+dc pull --quiet --ignore-buildable
 dc up -d --remove-orphans
 
 # Health: wait for the api container's own check, then ask it directly.
@@ -74,5 +74,5 @@ else
 fi
 
 git rev-parse HEAD > "$DEPLOY_DIR/.deployed-commit"
-docker image prune -f >/dev/null
+log "tip: docker builder prune frees build cache (README, pre-deploy cleanup); not done automatically"
 log "deploy complete"

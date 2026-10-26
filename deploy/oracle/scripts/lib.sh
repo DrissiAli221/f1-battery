@@ -78,7 +78,16 @@ image_for_service() {
 # dc ARGS...: docker compose for this stack with the image tags exported.
 dc() {
     export_images
-    docker compose --project-directory "$DEPLOY_DIR" -f "$DEPLOY_DIR/compose.yaml" "$@"
+    local profile=()
+    # The replay profile (kafka, replay-consumer, replay-producer) is on unless F1_REPLAY=0.
+    if [[ "$(env_get F1_REPLAY 1)" == "1" ]]; then profile=(--profile replay); fi
+    docker compose --project-directory "$DEPLOY_DIR" -f "$DEPLOY_DIR/compose.yaml" "${profile[@]}" "$@"
+}
+
+# app_services: the images the current profile set needs.
+app_services() {
+    printf '%s\n' api ingest model
+    if [[ "$(env_get F1_REPLAY 1)" == "1" ]]; then printf '%s\n' replay-consumer; fi
 }
 
 # build_service SERVICE: build one image (skipped when this commit's tag already exists).

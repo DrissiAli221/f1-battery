@@ -27,7 +27,7 @@ x-app: &app
   logging: *logging
 
 x-java: &java
-  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=65 -XX:InitialRAMPercentage=25 -Djava.io.tmpdir=/tmp"
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20 -Djava.io.tmpdir=/tmp"
 
 services:
   db:
@@ -36,9 +36,9 @@ services:
     command:
       - postgres
       - -c
-      - shared_buffers=192MB
+      - shared_buffers=160MB
       - -c
-      - effective_cache_size=384MB
+      - effective_cache_size=320MB
       - -c
       - work_mem=8MB
       - -c
@@ -60,13 +60,17 @@ services:
       timeout: 5s
       retries: 6
       start_period: 30s
-    mem_limit: 768m
+    mem_limit: 640m
     cpus: 1.0
     security_opt:
       - no-new-privileges:true
     logging: *logging
 
+  # ---- replay stack: `kafka` and `replay-consumer` run only with the `replay` profile ----------
+  # scripts/dc.sh adds --profile replay when F1_REPLAY=1 in .env (the default). Set F1_REPLAY=0
+  # and API_REPLAY_ENABLED=false to run without Kafka (README, memory options B and C).
   kafka:
+    profiles: [replay]
     image: apache/kafka:3.8.0
     restart: unless-stopped
     environment:
@@ -87,7 +91,7 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       # Replay data is disposable: keep the log small.
       KAFKA_LOG_RETENTION_HOURS: 6
-      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+      KAFKA_HEAP_OPTS: "-Xms128m -Xmx384m"
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
@@ -98,7 +102,7 @@ services:
       timeout: 10s
       retries: 10
       start_period: 30s
-    mem_limit: 768m
+    mem_limit: 640m
     cpus: 0.75
     security_opt:
       - no-new-privileges:true
@@ -124,7 +128,7 @@ services:
       # narrows this to the exact edge subnet; the default is Docker's private range.
       API_TRUSTED_PROXIES: ${API_TRUSTED_PROXIES:-172.16.0.0/12}
       API_LIVE_MAX_STREAMS: ${API_LIVE_MAX_STREAMS:-20}
-      API_REPLAY_ENABLED: "true"
+      API_REPLAY_ENABLED: ${API_REPLAY_ENABLED:-true}
       KAFKA_BOOTSTRAP: kafka:9092
     secrets:
       - api_password
@@ -139,11 +143,12 @@ services:
       edge:
         aliases: [f1-api]
     stop_grace_period: 20s
-    mem_limit: 512m
+    mem_limit: 448m
     cpus: 1.0
 
   replay-consumer:
     <<: *app
+    profiles: [replay]
     image: ${REPLAY_IMAGE:-f1battery-replay:local}
     build:
       context: ../..
@@ -153,7 +158,7 @@ services:
     command: ["--mode=consumer", "--session=${REPLAY_SESSION_KEY:-11361}"]
     environment:
       <<: *java
-      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50 -Xss512k -Djava.io.tmpdir=/tmp"
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=45 -Xss512k -Djava.io.tmpdir=/tmp"
       KAFKA_BOOTSTRAP: kafka:9092
     volumes:
       - ./scripts/entrypoint-secrets.sh:/opt/f1/entrypoint-secrets.sh:ro
@@ -162,7 +167,7 @@ services:
         condition: service_healthy
     networks:
       - kafka
-    mem_limit: 256m
+    mem_limit: 192m
     cpus: 0.5
 
   web:
@@ -225,7 +230,9 @@ services:
     networks:
       - database
       - egress   # OpenF1 API (--source=api)
-    mem_limit: 768m
+    # One OCPU shared with RCP: jobs get a low CPU weight so RCP's latency wins contention.
+    cpu_shares: 256
+    mem_limit: 640m
     cpus: 1.0
 
   model:
@@ -257,12 +264,13 @@ services:
         condition: service_healthy
     networks:
       - database
+    cpu_shares: 256
     mem_limit: 1536m
-    cpus: 1.5
+    cpus: 1.0
 
   replay-producer:
     <<: *app
-    profiles: [jobs]
+    profiles: [replay]
     image: ${REPLAY_IMAGE:-f1battery-replay:local}
     restart: "no"
     entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
@@ -286,7 +294,8 @@ services:
     networks:
       - database
       - kafka
-    mem_limit: 384m
+    cpu_shares: 256
+    mem_limit: 320m
     cpus: 0.5
 
   # aws CLI for the off-host copies (no host install needed). Credentials stay a 0600 file.
@@ -315,6 +324,7 @@ services:
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
+    cpu_shares: 256
     mem_limit: 256m
     cpus: 0.5
     logging: *logging
