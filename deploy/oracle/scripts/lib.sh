@@ -90,6 +90,12 @@ app_services() {
     if [[ "$(env_get F1_REPLAY 1)" == "1" ]]; then printf '%s\n' replay-consumer; fi
 }
 
+# build_enabled: F1_BUILD=0 (environment or .env) means the images were built elsewhere and
+# loaded with scripts/build-on-mac.sh; the VM then only checks that they are present.
+build_enabled() {
+    [[ "${F1_BUILD:-$(env_get F1_BUILD 1)}" != "0" ]]
+}
+
 # build_service SERVICE: build one image (skipped when this commit's tag already exists).
 build_service() {
     local svc="$1" image
@@ -99,8 +105,26 @@ build_service() {
         log "image $image already built"
         return 0
     fi
+    if ! build_enabled; then
+        die "image $image is not loaded and F1_BUILD=0: run scripts/build-on-mac.sh on your Mac at this commit, or unset F1_BUILD to build here"
+    fi
     log "building $image"
     dc build "$svc"
+}
+
+# render_caddy_site: caddy/f1-battery.caddy (template) -> caddy/sites/f1-battery.caddy with the
+# domain from .env written literally. RCP's Caddy mounts caddy/sites/, so RCP needs no f1 variable.
+render_caddy_site() {
+    local domain out
+    domain="$(env_get F1_DOMAIN)"
+    [[ "$domain" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || die "F1_DOMAIN is not a plain hostname: $domain"
+    out="$DEPLOY_DIR/caddy/sites"
+    mkdir -p "$out"
+    sed "s/__F1_DOMAIN__/$domain/g" "$DEPLOY_DIR/caddy/f1-battery.caddy" > "$out/f1-battery.caddy.new"
+    chmod 644 "$out/f1-battery.caddy.new"
+    chmod 755 "$out"
+    mv "$out/f1-battery.caddy.new" "$out/f1-battery.caddy"
+    log "rendered caddy/sites/f1-battery.caddy for $domain"
 }
 
 # Keep API_TRUSTED_PROXIES equal to RCP's edge subnet so Caddy (and only the edge network)
@@ -120,6 +144,14 @@ sync_trusted_proxies() {
 
 offhost_enabled() {
     [[ "$(env_get F1_SKIP_OFFHOST 0)" != "1" ]]
+}
+
+# offhost_preflight: refuse to deploy without an off-host copy path unless that was chosen on
+# purpose. The database is rebuildable only from the raw JSON that the bucket holds.
+offhost_preflight() {
+    if offhost_enabled && [[ ! -s "$DEPLOY_DIR/secrets/aws_credentials" ]]; then
+        die "no off-host backup configured: either create deploy/oracle/secrets/aws_credentials (see secrets/README.md) or set F1_SKIP_OFFHOST=1 in deploy/oracle/.env on purpose (backups then stay on this VM)"
+    fi
 }
 
 # s3_run ARGS...: run the aws CLI in the `s3` job service (credentials from the secret file).

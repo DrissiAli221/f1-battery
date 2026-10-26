@@ -4,7 +4,9 @@
 # idempotent, and a full API ingest resumes where it stopped.
 #
 #   F1_REPO_URL=https://github.com/<you>/f1-battery.git deploy/oracle/scripts/bootstrap.sh
-#     (from anywhere: clones to /opt/f1-battery and continues from there)
+#   F1_REPO_URL=git@github-f1:<you>/f1-battery.git deploy/oracle/scripts/bootstrap.sh
+#     (from anywhere: clones branch $F1_BRANCH, default `deploy`, to /opt/f1-battery and
+#     continues from there; the git@github-f1 form uses the read-only deploy key, README)
 #   /opt/f1-battery/deploy/oracle/scripts/bootstrap.sh
 #     (from an existing clone)
 set -euo pipefail
@@ -21,7 +23,9 @@ if [[ "$(cd "$SELF_DIR/../../.." && pwd)" != "$TARGET" ]]; then
         if [[ ! -w "$(dirname "$TARGET")" ]]; then
             sudo install -d -o "$(id -u)" -g "$(id -g)" -m 0750 "$TARGET"
         fi
-        git clone "$F1_REPO_URL" "$TARGET"
+        # umask 022 for git only: under 077 the working tree would be 0600 and unreadable to
+        # the (non-root) container users and bind mounts.
+        (umask 022 && git clone -b "${F1_BRANCH:-deploy}" "$F1_REPO_URL" "$TARGET")
     fi
     exec "$TARGET/deploy/oracle/scripts/bootstrap.sh" "$@"
 fi
@@ -43,9 +47,7 @@ for name in postgres_password api_password; do
     fi
     chmod 600 "secrets/$name"
 done
-if [[ ! -s secrets/aws_credentials ]]; then
-    log "WARNING: secrets/aws_credentials is missing; off-host copies cannot run until it exists (secrets/README.md)"
-else
+if [[ -s secrets/aws_credentials ]]; then
     chmod 600 secrets/aws_credentials
 fi
 
@@ -60,6 +62,8 @@ if [[ -z "$domain" || "$domain" == *example* ]]; then
     die "edit deploy/oracle/.env (F1_DOMAIN, F1_S3_BUCKET, AWS_REGION), then run this script again"
 fi
 
+offhost_preflight
+render_caddy_site
 sync_trusted_proxies
 
 # The model needs the curated straight definitions, which are not in git (data/ is ignored).
@@ -99,7 +103,7 @@ fi
 # role the API logs in with), so a dry run is enough to migrate before the API starts.
 log "migrating the database"
 dc --profile jobs run --rm -T ingest "--source=$ingest_src" "--year=$INGEST_YEAR" --dry-run \
-    || log "WARNING: dry-run failed; the full ingest below migrates the schema anyway"
+    || die "migration (ingest --dry-run) failed: the API role f1_api and the schema may be missing; fix it (scripts/dc.sh --profile jobs logs ingest) and re-run"
 
 "$SELF_DIR/build-web.sh"
 printf '%s' "$(image_tag web)@$domain" > "$DEPLOY_DIR/.web-built"
@@ -119,8 +123,8 @@ cat >&2 <<NEXT
 
 Stack is up. Remaining manual steps (README.md, sections 'Caddy' and 'Timers'):
   1. DNS: A record for $domain -> this VM's public IPv4.
-  2. RCP: mount deploy/oracle/caddy into its Caddy, add F1_DOMAIN, import the site file,
-     recreate its caddy container.
+  2. RCP: mount deploy/oracle/caddy/sites into its Caddy, import the site file, validate and
+     recreate its caddy container (README, 'Changes to RCP').
   3. Check:   curl -fsS https://$domain/api/health
   4. Timers:  sudo install -m 644 $DEPLOY_DIR/systemd/f1-*.{service,timer} /etc/systemd/system/
               sudo systemctl daemon-reload && sudo systemctl enable --now f1-backup.timer f1-weekly.timer

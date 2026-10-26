@@ -17,11 +17,18 @@ domain="$(env_get F1_DOMAIN)"
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
     die "working tree has local changes; commit or discard them (image tags come from commits)"
 fi
-branch="$(git rev-parse --abbrev-ref HEAD)"
+branch="${F1_BRANCH:-deploy}"
+if [[ "$(git rev-parse --abbrev-ref HEAD)" != "$branch" ]]; then
+    log "switching to $branch"
+    git switch "$branch"
+fi
 log "pulling $branch"
-git pull --ff-only
+# umask 022 for git only (this script runs under 077; see bootstrap.sh).
+(umask 022 && git pull --ff-only origin "$branch")
 log "at $(git rev-parse --short HEAD)"
 
+offhost_preflight
+render_caddy_site
 sync_trusted_proxies
 
 # Back up first, but only when a database exists to back up.
@@ -32,7 +39,8 @@ else
     log "no running database container; skipping the pre-deploy backup"
 fi
 
-# One image at a time: a Maven build peaks above 1 GB and shares the VM with RCP.
+# One image at a time: a Maven build peaks above 1 GB and shares the VM with RCP. With
+# F1_BUILD=0 (images loaded by scripts/build-on-mac.sh) this only checks they are present.
 while read -r svc; do
     build_service "$svc"
 done < <(app_services)

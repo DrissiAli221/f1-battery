@@ -31,6 +31,20 @@ If you use a profile name other than `default`, set `AWS_PROFILE` in `.env`.
 install -m 600 /dev/stdin secrets/aws_credentials   # paste, then Ctrl-D
 ```
 
-Rotating a password: change the file, then `ALTER ROLE ... PASSWORD` inside the database (the
-files are read at container start, they do not change the database), and `scripts/dc.sh up -d
---force-recreate api`.
+## Rotating a password
+
+> **Changing `api_password` (or `postgres_password`) does nothing to the database by itself.**
+> The files are only read when a container starts; the role's password lives inside Postgres
+> (V7 set it once). After changing the file you must run `ALTER ROLE f1_api PASSWORD '<new>'`
+> (or `ALTER ROLE f1 ...`) in the database, or the api fails with
+> `password authentication failed`:
+>
+> ```sh
+> scripts/dc.sh exec -T db psql -U f1 -d f1battery -c "ALTER ROLE f1_api PASSWORD '$(cat secrets/api_password)'"
+> scripts/dc.sh up -d --force-recreate api
+> ```
+>
+> Do the `ALTER ROLE` first for `api_password`, then recreate `api` (and `replay-producer` on its
+> next run uses the file too). For `postgres_password` the db container's own environment does
+> not change the existing cluster either: `ALTER ROLE f1 ...` with the old password still
+> valid, then recreate every service that reads the file.
