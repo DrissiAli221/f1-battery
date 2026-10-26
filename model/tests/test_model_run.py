@@ -1,8 +1,8 @@
 """model_run lifecycle and exit code of the estimator CLI.
 
 The lifecycle tests run against the real database but inside a throw-away schema
-that holds its own ``model_run`` and ``model_result`` tables, placed first on the
-search_path; nothing in the real schema is read or written. ``run_session`` and
+that holds its own ``model_run`` and ``model_result`` tables, the only entry on the
+search_path (public is excluded, so real tables are unreachable); nothing in the real schema is read or written. ``run_session`` and
 the session discovery are replaced by stubs, so no telemetry is processed.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ def conn():
     schema = "t_" + uuid.uuid4().hex[:12]
     with c.cursor() as cur:
         cur.execute(f"CREATE SCHEMA {schema}")
-        cur.execute(f"SET search_path TO {schema}, public")
+        cur.execute(f"SET search_path TO {schema}")
         cur.execute(MODEL_RUN_DDL)
         cur.execute(MODEL_RESULT_DDL)
     c.commit()
@@ -111,7 +111,8 @@ def test_rerun_resets_published_flag(conn, monkeypatch):
 
 
 @pytest.mark.db
-def test_missing_table_gives_clear_error(conn):
+def test_missing_table_gives_clear_error(conn, monkeypatch):
+    stub(monkeypatch, [1])
     with conn.cursor() as cur:
         cur.execute("DROP TABLE model_run")
     conn.commit()
