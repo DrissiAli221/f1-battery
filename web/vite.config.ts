@@ -30,7 +30,7 @@ function resolveSiteOrigin(raw: string | undefined, command: 'build' | 'serve'):
 
 /**
  * The head shared by every page, injected once here. Each HTML file keeps only its own <title>
- * and <meta name="description">; the canonical path comes from the file name.
+ * and <meta name="description">; the canonical path is the clean one (no .html) derived from the file name.
  */
 function siteHead(origin: string): Plugin {
   const pick = (html: string, re: RegExp, what: string) => {
@@ -46,7 +46,8 @@ function siteHead(origin: string): Plugin {
         const title = pick(html, /<title>([^<]*)<\/title>/, '<title>');
         const description = pick(html, /<meta\s+name="description"\s+content="([^"]*)"/, 'meta description');
         const file = ctx.path.replace(/^\//, '').split('?')[0];
-        const path = file === '' || file === 'index.html' ? '/' : `/${file}`;
+        const slug = file.replace(/\.html$/, '');
+        const path = slug === '' || slug === 'index' ? '/' : `/${slug}`;
         const url = `${origin}${path}`;
         const image = `${origin}/og.png`;
         const font = (name: string) =>
@@ -88,11 +89,27 @@ function siteHead(origin: string): Plugin {
   };
 }
 
+const CLEAN_PAGES = new Set(['/session', '/findings', '/method', '/replay']);
+
+/** Dev and preview serve the clean page paths the host serves in production (/session -> /session.html). */
+function cleanPaths(): Plugin {
+  const rewrite = (req: { url?: string }, _res: unknown, next: () => void) => {
+    const [path, query] = (req.url ?? '').split('?');
+    if (CLEAN_PAGES.has(path)) req.url = `${path}.html${query === undefined ? '' : `?${query}`}`;
+    next();
+  };
+  return {
+    name: 'clean-paths',
+    configureServer: (server) => void server.middlewares.use(rewrite),
+    configurePreviewServer: (server) => void server.middlewares.use(rewrite),
+  };
+}
+
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const page = (name: string) => resolve(__dirname, name);
   return {
-    plugins: [react(), siteHead(resolveSiteOrigin(env.VITE_SITE_URL, command))],
+    plugins: [react(), cleanPaths(), siteHead(resolveSiteOrigin(env.VITE_SITE_URL, command))],
     define: { 'import.meta.env.VITE_API_BASE': JSON.stringify(env.VITE_API_BASE ?? '') },
     build: {
       rollupOptions: {

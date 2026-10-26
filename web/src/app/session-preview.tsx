@@ -1,3 +1,4 @@
+import { pageUrl } from '../lib/routes';
 import { Info } from './info-tip';
 import './reveal';
 import { PageGround, SiteFooter, SiteHeader } from './chrome';
@@ -619,7 +620,7 @@ function App() {
       </a>
       <SiteHeader
         current="races"
-        replayHref={`/replay.html?session=${sessionKey}&driver=${driver}`}
+        replayHref={pageUrl('replay', { session: sessionKey, driver })}
         navId="session-nav-links"
       />
       <PageGround>
@@ -688,7 +689,7 @@ function App() {
                     </a>
                   ))}
                 </div>
-                <a href={`/replay.html?session=${sessionKey}&driver=${driver}&mode=review`}>
+                <a href={pageUrl('replay', { session: sessionKey, driver, mode: 'review' })}>
                   Review a lap <span aria-hidden="true">↗</span>
                 </a>
               </div>
@@ -699,7 +700,7 @@ function App() {
               <div className="wrap load-state">
                 <h2>Session not found.</h2>
                 <p>This recorded session is not in the archive. Choose another race to continue.</p>
-                <a className="button button-secondary" href="/#races">
+                <a className="button button-secondary" href={`${pageUrl('home')}#races`}>
                   Choose a race <span aria-hidden="true">↗</span>
                 </a>
               </div>
@@ -713,7 +714,7 @@ function App() {
                   <button className="button button-secondary" onClick={() => location.reload()}>
                     Try again
                   </button>
-                  <a className="inline-link" href="/#races">
+                  <a className="inline-link" href={`${pageUrl('home')}#races`}>
                     Choose another race ↗
                   </a>
                 </div>
@@ -803,7 +804,7 @@ function App() {
                 <aside className="availability-band">
                   <div className="wrap availability-notice">
                     <p>No published estimates for this session. Choose another race to compare cut-offs.</p>
-                    <a href="/#races">Choose a race ↗</a>
+                    <a href={`${pageUrl('home')}#races`}>Choose a race ↗</a>
                   </div>
                 </aside>
               )}
@@ -1177,7 +1178,7 @@ function App() {
                         This page serves recorded session aggregates from the project API. It does not show a
                         live race or raw telemetry samples.
                       </p>
-                      <a className="inline-link utility" href="/method.html">
+                      <a className="inline-link utility" href={pageUrl('method')}>
                         Read the full method record <span aria-hidden="true">↗</span>
                       </a>
                     </div>

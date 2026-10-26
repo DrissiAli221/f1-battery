@@ -1,3 +1,4 @@
+import { pageUrl } from '../lib/routes';
 import { forwardRef, useEffect, useRef, useState, type ReactNode } from 'react';
 import './rail';
 
@@ -44,8 +45,8 @@ export function PageGround({ className, children }: { className?: string; childr
  */
 export function SiteHeader({
   current,
-  racesHref = '/#races',
-  replayHref = '/replay.html',
+  racesHref = `${pageUrl('home')}#races`,
+  replayHref = pageUrl('replay'),
   navId = `${current}-nav`,
 }: {
   current: SitePage;
@@ -94,7 +95,7 @@ export function SiteHeader({
         }}
       >
         <div className="masthead wrap project-header">
-          <a className="project-wordmark" href="/" aria-label="F1 Battery home">
+          <a className="project-wordmark" href={pageUrl('home')} aria-label="F1 Battery home">
             <Mark />
           </a>
           <div className="nav-side">
@@ -110,8 +111,8 @@ export function SiteHeader({
             <nav id={navId} className={`nav-island ${menu ? 'is-open' : ''}`} aria-label="Main navigation">
               {link('races', racesHref, 'Races')}
               {link('replay', replayHref, 'Replay')}
-              {link('findings', '/findings.html', 'Findings')}
-              {link('method', '/method.html', 'Method')}
+              {link('findings', pageUrl('findings'), 'Findings')}
+              {link('method', pageUrl('method'), 'Method')}
             </nav>
           </div>
         </div>
@@ -128,14 +129,14 @@ export const SiteFooter = forwardRef<
   return (
     <footer ref={ref} className={`session-footer${className ? ` ${className}` : ''}`}>
       <div className="wrap footer-inner">
-        <a className="footer-mark" href="/" aria-label="F1 Battery home">
+        <a className="footer-mark" href={pageUrl('home')} aria-label="F1 Battery home">
           <Mark />
         </a>
         <nav className="footer-route-links" aria-label="Footer navigation">
-          <a href="/#races">Races</a>
-          <a href="/replay.html">Replay</a>
-          <a href="/findings.html">Findings</a>
-          <a href="/method.html">Method</a>
+          <a href={`${pageUrl('home')}#races`}>Races</a>
+          <a href={pageUrl('replay')}>Replay</a>
+          <a href={pageUrl('findings')}>Findings</a>
+          <a href={pageUrl('method')}>Method</a>
         </nav>
         <div className="footer-bottom">
           <p>

@@ -1,3 +1,4 @@
+import { pageUrl } from '../lib/routes';
 import './reveal';
 import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
@@ -22,7 +23,7 @@ const dateFormat = new Intl.DateTimeFormat('en-GB', {
 });
 const date = (s: SessionRow) =>
   s.date_start ? dateFormat.format(new Date(s.date_start)) : 'Date unavailable';
-const href = (s: SessionRow) => `/session.html?session=${s.session_key}`;
+const href = (s: SessionRow) => pageUrl('session', { session: s.session_key });
 /* Every card lists the same four slots in the All-sessions view, so cards in a row share one height. */
 const SLOTS = ['Race', 'Qualifying', 'Sprint', 'Sprint Qualifying'];
 function App() {
@@ -367,7 +368,7 @@ function App() {
                     The explorer shows recorded estimates and uncertainty, not a live feed.
                   </p>
                 </details>
-                <a className="home-text-link" href="/findings.html">
+                <a className="home-text-link" href={pageUrl('findings')}>
                   Read the findings <span aria-hidden="true">↗</span>
                 </a>
               </div>

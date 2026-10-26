@@ -1,3 +1,4 @@
+import { pageUrl } from '../lib/routes';
 import './reveal';
 import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
@@ -688,7 +689,7 @@ function ReplaySession({
               </div>
               <a
                 className="button button-light"
-                href={`/session.html?session=${sessionKey}&driver=${driver}&compare=0`}
+                href={pageUrl('session', { session: sessionKey, driver, compare: 0 })}
               >
                 Compare cut-offs
               </a>
@@ -903,7 +904,7 @@ function App() {
             All energy outputs and replay positions are estimates.
           </>
         }
-        top={{ href: '/#races', label: 'Choose another race ↗' }}
+        top={{ href: `${pageUrl('home')}#races`, label: 'Choose another race ↗' }}
       />
     </div>
   );

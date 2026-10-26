@@ -1,3 +1,4 @@
+import { pageUrl } from '../lib/routes';
 import './reveal';
 import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
@@ -754,7 +755,7 @@ function App() {
                   <b>04</b>Source
                 </a>
               </div>
-              <a href="/method.html">
+              <a href={pageUrl('method')}>
                 How it works <span aria-hidden="true">↗</span>
               </a>
             </div>
@@ -1024,7 +1025,7 @@ function App() {
                 </div>
               </div>
               <div className="provenance-actions">
-                <a className="button button-light" href="/#races">
+                <a className="button button-light" href={`${pageUrl('home')}#races`}>
                   Explore the races
                 </a>
                 <a className="finding-download" href={reportUrl} download="f1-battery-findings.json">

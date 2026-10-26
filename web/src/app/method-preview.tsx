@@ -1,3 +1,4 @@
+import { pageUrl } from '../lib/routes';
 import './reveal';
 import { PageGround, SiteFooter, SiteHeader } from './chrome';
 import { useInitialAnchor } from './preview-navigation';
@@ -249,7 +250,7 @@ function App() {
                   <b>03</b>The record
                 </a>
               </div>
-              <a href="/findings.html">
+              <a href={pageUrl('findings')}>
                 See the findings <span aria-hidden="true">↗</span>
               </a>
             </div>
@@ -492,7 +493,7 @@ function App() {
                   approach-straight cut-offs. It does not establish that energy management never matters.
                 </p>
                 <div className="method-next-actions">
-                  <a className="button button-light" href="/findings.html">
+                  <a className="button button-light" href={pageUrl('findings')}>
                     Read the findings
                   </a>
                   <a className="method-download" href={logUrl} download="f1-battery-method-log.json">
