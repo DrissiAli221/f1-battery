@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/banner-dark.svg">
-  <img alt="F1 Battery: where does electrical deployment end on a straight? Estimates, not measurements." src="docs/diagrams/banner-light.svg" width="100%">
-</picture>
+<img alt="F1 Battery: where does electrical deployment end on a straight? Estimates, not measurements." src="docs/figures/readme/banner.webp" width="100%">
 
 ![Java 21](https://img.shields.io/badge/Java-21-informational)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring%20Boot-3.4-informational)
@@ -34,34 +31,31 @@ Several small per-race estimators already exist (DECISIONS.md D1). This project 
 
 ### The explorer
 
-<table>
-  <tr>
-    <td width="33%"><img alt="Home: pick a 2026 session" src="docs/figures/readme/home.webp"></td>
-    <td width="33%"><img alt="Session page: Singapore, driver, straight, track map and median cut-off estimate with 95 percent interval" src="docs/figures/readme/session.webp"></td>
-    <td width="33%"><img alt="Findings page: verdict no effect, 364 passes tested, odds ratio 0.92, 19 sessions, permutation p 0.208" src="docs/figures/readme/findings.webp"></td>
-  </tr>
-  <tr>
-    <td><b>Races.</b> Pick a 2026 session.</td>
-    <td><b>Session.</b> One driver on one straight: the estimated cut-off and its interval.</td>
-    <td><b>Findings.</b> The frozen result, spot checks and limits.</td>
-  </tr>
-</table>
+<img alt="Home: pick a 2026 race from the race-card grid" src="docs/figures/readme/home.webp" width="100%">
+
+**Races.** Pick a 2026 session.
+
+<img alt="Session page: Singapore, driver, straight, track map and median cut-off estimate with 95 percent interval" src="docs/figures/readme/session.webp" width="100%">
+
+**Session.** One driver on one straight: the estimated cut-off and its interval.
+
+<img alt="Findings page: verdict no effect, 364 passes tested, odds ratio 0.92, 19 sessions, permutation p 0.208" src="docs/figures/readme/findings.webp" width="100%">
+
+**Findings.** The frozen result, spot checks and limits.
+
+<img alt="Replay page: Monza lap review with the track map coloured by regime" src="docs/figures/readme/replay.webp" width="100%">
+
+**Replay.** Review a recorded lap, or follow the optional live feed.
 
 ### What one estimate is
 
-Each estimate is the distance into a straight where deployment appears to end, with an interval across laps. The shape below is illustrative, not data.
+Each estimate is the distance into a straight where deployment appears to end, with an interval across laps. Below, the app's Singapore race page (session 11388) on straight 3: the median cut-off for two drivers, each with its 95% interval across laps. These are estimates under stated assumptions, not measurements.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/estimate-dark.svg">
-  <img alt="Illustrative speed trace along a straight with the deploy regime shaded, a red cut-off marker and a 95 percent lap-to-lap interval bar" src="docs/diagrams/estimate-light.svg" width="100%">
-</picture>
+<img alt="Singapore race, straight 3: the real session map with Alonso (ALO, 404 m) and Leclerc (LEC, 498 m) tags and each driver's median cut-off with its 95 percent interval" src="docs/figures/readme/estimate.webp" width="100%">
 
 ## The result
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/result-dark.svg">
-  <img alt="Forest plot of three odds ratios, all below the pre-registered 1.3 threshold; verdict no detectable effect; permutation p 0.208" src="docs/diagrams/result-light.svg" width="100%">
-</picture>
+<img alt="Forest plot of three odds ratios, all below the pre-registered 1.3 threshold; verdict no detectable effect; permutation p 0.208" src="docs/figures/readme/result.webp" width="100%">
 
 The question, frozen on 2026-10-18 (see [HYPOTHESIS.md](HYPOTHESIS.md)): *does a defender's energy management before an attack predict being passed?* The recorded outcome, produced by `model/f1battery_model/hypothesis_test.py` from model run `proxy-0.1`:
 
@@ -77,10 +71,7 @@ An earlier cut-off on the approach straight did not predict being passed. Pace d
 
 ## How it works
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/pipeline-dark.svg">
-  <img alt="Pipeline from OpenF1 through ingest, Postgres with TimescaleDB, the Python estimator, a versioned model run, the read-only API and the web app, with an optional Kafka replay lane" src="docs/diagrams/pipeline-light.svg" width="100%">
-</picture>
+<img alt="Pipeline from OpenF1 through ingest, Postgres with TimescaleDB, the Python estimator, a versioned model run, the read-only API and the web app, with an optional Kafka replay lane" src="docs/figures/readme/pipeline.webp" width="100%">
 
 The same flow as text:
 
@@ -177,10 +168,7 @@ See [docs/phase7-replay.md](docs/phase7-replay.md) for ports, cleanup and limits
 
 ## Project record
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/phases-dark.svg">
-  <img alt="Phase strip: S, 1 to 7 with outcomes and status, and Phase 1.5 cloud deploy marked not deployed yet" src="docs/diagrams/phases-light.svg" width="100%">
-</picture>
+<img alt="The method log phase board: nine recorded entries across phases 1 to 6, with outcomes such as artifact removed, retained, 3 failed and no effect" src="docs/figures/readme/phases.webp" width="100%">
 
 Phase notes are linked in the table under How it works; the files below are the record.
 
@@ -200,4 +188,4 @@ Phase notes are linked in the table under How it works; the files below are the 
 
 ## Credits and terms
 
-Private, non-commercial project. Data from [OpenF1](https://openf1.org/) under its non-commercial terms; raw and per-sample data are never committed or redistributed, and the public API serves derived aggregates only. Not affiliated with Formula 1, the FIA or FOM. Team and driver imagery, logos and the typefaces used in the web app belong to their owners, are used privately and for non-commercial study, and are credited in the app footer; texture, mask and typeface sources are listed in [web/public/assets/ASSETS.md](web/public/assets/ASSETS.md). The screenshots above contain such material. No licence is granted for it.
+Private, non-commercial project. Data from [OpenF1](https://openf1.org/) under its non-commercial terms; raw and per-sample data are never committed or redistributed, and the public API serves derived aggregates only. Not affiliated with Formula 1, the FIA or FOM. Team and driver imagery, logos and the typefaces used in the web app belong to their owners, are used privately and for non-commercial study, and are credited in the app footer; texture, mask and typeface sources are listed in [web/public/assets/ASSETS.md](web/public/assets/ASSETS.md). The images in this README are rendered from the web app and contain such material. No licence is granted for it.
