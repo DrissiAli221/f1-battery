@@ -1,5 +1,9 @@
 package dev.f1battery.api.live;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Duration;
@@ -9,9 +13,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -23,10 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -38,6 +47,15 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * the start up to the end offsets seen at that moment, keeps the last record per key (the state
  * topic is compacted, but compaction is lazy, so the log can still hold history) and sends those
  * first; it then follows new records.
+ *
+ * <p>Concurrency is bounded: at most {@code api.live.max-streams} streams (env
+ * {@code API_LIVE_MAX_STREAMS}, default 20) run at once, each with one thread and one Kafka
+ * consumer; the next request gets 503. All streams are closed when the application context shuts down.
+ *
+ * <p>Only a reduced view of the state is forwarded: {@code driver_number}, {@code ts},
+ * {@code regime} and {@code lap_distance_est}. Raw position ({@code x}, {@code y}) and
+ * {@code speed} stay inside the Kafka topic, because the public data rule (D9) allows derived
+ * aggregates only; the page places a dot from {@code lap_distance_est} on the outline.
  */
 @RestController
 @ConditionalOnProperty(name = "api.replay.enabled", havingValue = "true")
@@ -46,18 +64,55 @@ public class LiveController {
     private static final Logger log = LoggerFactory.getLogger(LiveController.class);
 
     private final String bootstrap;
+    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final List<String> FORWARDED = List.of("driver_number", "ts", "regime", "lap_distance_est");
+
+    /** Thread count is bounded by the permits, so a cached pool cannot grow past the limit. */
     private final ExecutorService pool = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "live-sse");
         t.setDaemon(true);
         return t;
     });
+    private final Semaphore permits;
+    private final Set<Runnable> closers = ConcurrentHashMap.newKeySet();
 
-    public LiveController(@Value("${api.replay.kafka-bootstrap:localhost:9092}") String bootstrap) {
+    public LiveController(@Value("${api.replay.kafka-bootstrap:localhost:9092}") String bootstrap,
+            @Value("${api.live.max-streams:20}") int maxStreams) {
         this.bootstrap = bootstrap;
+        this.permits = new Semaphore(Math.max(1, maxStreams));
+    }
+
+    /** Ends every open stream; also stops the pool so no thread outlives the context. */
+    @PreDestroy
+    public void shutdown() {
+        closers.forEach(Runnable::run);
+        pool.shutdownNow();
+    }
+
+    /** The fields the page needs, and nothing else. Null if the record is not a JSON object. */
+    static String reduce(String value) {
+        try {
+            JsonNode in = JSON.readTree(value);
+            if (in == null || !in.isObject()) {
+                return null;
+            }
+            ObjectNode out = JSON.createObjectNode();
+            for (String f : FORWARDED) {
+                if (in.has(f)) {
+                    out.set(f, in.get(f));
+                }
+            }
+            return JSON.writeValueAsString(out);
+        } catch (java.io.IOException e) {
+            return null;
+        }
     }
 
     @GetMapping(value = "/api/live/{sessionKey}", produces = "text/event-stream")
     public SseEmitter stream(@PathVariable int sessionKey, HttpServletRequest request) {
+        if (!permits.tryAcquire()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "too many live streams");
+        }
         // The ETag filter buffers the whole body to hash it, which would hold back every event.
         ShallowEtagHeaderFilter.disableContentCaching(request);
         SseEmitter emitter = new SseEmitter(0L);
@@ -67,10 +122,28 @@ public class LiveController {
             open.set(false);
             if (holder[0] != null) holder[0].wakeup();
         };
+        Runnable closeAll = () -> {
+            close.run();
+            emitter.complete();
+        };
+        closers.add(closeAll);
         emitter.onCompletion(close);
         emitter.onTimeout(close);
         emitter.onError(e -> close.run());
-        pool.execute(() -> follow(sessionKey, emitter, open, holder));
+        try {
+            pool.execute(() -> {
+                try {
+                    follow(sessionKey, emitter, open, holder);
+                } finally {
+                    closers.remove(closeAll);
+                    permits.release();
+                }
+            });
+        } catch (RuntimeException e) {
+            closers.remove(closeAll);
+            permits.release();
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "live streams unavailable");
+        }
         return emitter;
     }
 
@@ -108,7 +181,8 @@ public class LiveController {
             Map<TopicPartition, Boolean> caughtUp = new HashMap<>();
             while (open.get() && caughtUp.size() < parts.size()) {
                 for (ConsumerRecord<String, String> r : c.poll(Duration.ofMillis(200))) {
-                    if (r.value() != null) latest.put(r.key(), r.value());
+                    String v = r.value() == null ? null : reduce(r.value());
+                    if (v != null) latest.put(r.key(), v);
                 }
                 for (TopicPartition tp : parts) {
                     if (c.position(tp) >= end.get(tp)) caughtUp.put(tp, true);
@@ -119,7 +193,8 @@ public class LiveController {
 
             while (open.get()) {
                 for (ConsumerRecord<String, String> r : c.poll(Duration.ofMillis(500))) {
-                    if (r.value() != null) emitter.send(SseEmitter.event().name("state").data(r.value()));
+                    String v = r.value() == null ? null : reduce(r.value());
+                    if (v != null) emitter.send(SseEmitter.event().name("state").data(v));
                 }
                 // Keeps proxies from closing an idle stream and surfaces a closed client as an IOException.
                 emitter.send(SseEmitter.event().comment("keepalive"));

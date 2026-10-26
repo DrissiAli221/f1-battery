@@ -18,8 +18,8 @@ List endpoints return `{items, page, size, total}`; `page` is zero-based,
 | `GET /sessions/{key}/regulation` | the `regulation_event` row; 404 if none |
 | `GET /circuits/{ck}/straights` | empty list if the table is absent or has no rows |
 | `GET /circuits/{ck}/outline` | see below; 404 if the circuit has no race session or lap |
-| `GET /models` | distinct `(model_version, run_id)` with `created_at` |
-| `GET /results?session=&driver=&variable=&straight=&lap=&model=` | one run only: the most recent `run_id` of `model` (default: latest run overall) |
+| `GET /models` | published runs from `model_run` (`created_at` = `finished_at`); from `model_result` only while `model_run` is empty |
+| `GET /results?session=&driver=&variable=&straight=&lap=&model=` | one run only: the latest published run of `model` (default: latest published run overall), see Model runs |
 | `GET /sessions/{key}/summary?model=` | one item per driver: `straights[]` (one entry per straight with per-lap rows: `laps_analysed`, `laps_detected` from `cutoff_detected`, and `cutoff_distance_median_m`, `ci_low`, `ci_high` from `lap_number = 0`, null below three detected laps) and `regime_shares` averaged over green laps (all laps if the session has no `lap_quality` rows) |
 | `GET /sessions/{key}/laps/{lap}/regimes?driver=&model=` | `[{bin, d_start_m, label}]` from `regime_bin_<n>` variables, value 0..3 = deploy, plateau, lift, brake; `d_start_m = bin * 50` |
 | `GET /compare?session=&drivers=a,b&straight=&model=` | not paginated: `{session_key, model_version, straight_id, drivers:[{driver_number, name_acronym, team_name, series:[{lap_number, straight_id, cutoff_distance_m, ci_low, ci_high}]}]}` |
@@ -30,6 +30,24 @@ the API also starts against a database that predates V4.
 
 Every `/api/*` response carries an ETag (`ShallowEtagHeaderFilter`, body hash);
 `If-None-Match` gives 304. Results are immutable per run, so this is sound.
+
+## Model runs
+
+`V6__model_run.sql` adds `model_run(model_version, run_id, started_at, finished_at,
+published, sessions_done, note)`. The model writes a row at the start of a run,
+writes `model_result`, and sets `published = true` and `finished_at` only after
+every session is committed. `ModelRuns.resolve` serves the published run with
+the latest `finished_at` (per `model_version` when `model` is given), so a newer
+unpublished or single-session run cannot hide it and a partial `--all` run is not
+served mid-way. Only when `model_run` has no rows (a database that predates V6)
+does it fall back to the newest run in `model_result`. V6 backfills existing runs
+as published. The answer is cached for 30 s per requested model, so a newly
+published run appears within half a minute. Contract test: `ModelRunsIT`.
+
+`has_results` (`exists` over `model_result` by `session_key`) was checked with
+EXPLAIN on 2.1 M rows: an index-only scan of `model_result_idx` that stops at the
+first hit (about 1 ms per session; 9 ms worst case for a session without results),
+so no extra index was added.
 
 ## Outline downsampling
 
@@ -51,8 +69,13 @@ sample is kept.
 
 Per-client token bucket, `API_RATE_PER_MIN` (default 60) tokens, refilled
 continuously; an empty bucket gives 429 with `Retry-After` (seconds). The key is
-the socket peer address. Behind a reverse proxy set
-`server.forward-headers-strategy` or all clients share one bucket. Idle buckets
+the socket peer address unless the peer is listed in `API_TRUSTED_PROXIES`
+(comma-separated addresses or CIDR ranges, default none); then `X-Forwarded-For`
+is read from the right, skipping trusted hops, and the first untrusted address is
+the client. A client cannot pick its bucket by sending the header unless it
+connects from a trusted proxy. `server.forward-headers-strategy=framework` is set
+for scheme and host; it trusts those headers from any peer, which is harmless for
+a JSON API but means the API should sit behind the proxy only. Idle buckets
 are evicted when the map exceeds 10 000 entries. CORS allows GET/HEAD/OPTIONS
 from `API_CORS_ORIGIN` (comma-separated list; default `http://localhost:5173`)
 and runs before the limiter so 429s are readable by the browser.
@@ -83,11 +106,18 @@ cd web && npm ci && npm run dev        # :5173; VITE_API_BASE overrides http://l
 npm run build                          # type-check + bundle into web/dist (gitignored)
 ```
 
-Tests: `mvn -B -q -pl api -am verify -DargLine=-Dapi.version=1.44` (the argLine is
-only needed with newer Docker engines). The integration tests start one
-`timescale/timescaledb:latest-pg16` container, run the real `db` migrations
+Tests: `mvn -B -q -pl api -am verify`. The integration tests start one
+`timescale/timescaledb:2.30.2-pg16` container, run the real `db` migrations
 (`spring.flyway.enabled=true` only in the `test` profile), seed one session and
 cover every endpoint, pagination, ETag 304, 404 and 429.
+
+## Database role
+
+The API connects as the read-only role `f1_api` (`V7__api_role.sql`: LOGIN, SELECT
+on all current and future tables in `public`; password from the Flyway
+placeholder `api_db_password`, i.e. `API_DB_PASSWORD`, dev default `f1api`).
+`DB_USER` defaults to `f1_api`. With `SPRING_PROFILES_ACTIVE=prod` both the API and
+the ingest job refuse to start when `DB_PASSWORD` is unset. See `docs/ops.md`.
 
 ## Deferred
 
