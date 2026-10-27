@@ -67,7 +67,8 @@ services:
       - no-new-privileges:true
     logging: *logging
 
-  # ---- replay stack: `kafka` and `replay-consumer` run only with the `replay` profile ----------
+  # ---- replay stack: `kafka` runs only with the `replay` profile -------------------------------
+  # The consumer and producer are run per session by scripts/replay-controller.sh (profile replay-run).
   # scripts/dc.sh adds --profile replay when F1_REPLAY=1 in .env (the default). Set F1_REPLAY=0
   # and API_REPLAY_ENABLED=false to run without Kafka (README, memory options B and C).
   kafka:
@@ -153,14 +154,17 @@ services:
     mem_limit: 448m
     cpus: 1.0
 
+  # Not started by `up`: scripts/replay-controller.sh runs one per wanted session. It also builds
+  # the replay image (deploy.sh, build-on-mac.sh), shared with replay-producer.
   replay-consumer:
     <<: *app
-    profiles: [replay]
+    profiles: [replay-run]
     image: ${REPLAY_IMAGE:-f1battery-replay:local}
     build:
       context: ../..
       dockerfile: replay/Dockerfile
-    restart: unless-stopped
+    pull_policy: never
+    restart: "no"
     entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
     command: ["--mode=consumer", "--session=${REPLAY_SESSION_KEY:-11361}"]
     environment:

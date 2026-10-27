@@ -23,7 +23,7 @@ rehearsal and read each step before running it.
 | `db` | `timescale/timescaledb:2.30.2-pg16` | Postgres 16 + TimescaleDB | internal network only |
 | `kafka` (replay) | `apache/kafka:3.8.0` | KRaft single node, advertises `kafka:9092`, 384 MB heap | internal network only |
 | `api` | built from `api/Dockerfile` | read-only Spring Boot API, `prod` profile, SSE replay relay | RCP's `edge` network as `f1-api:8080` |
-| `replay-consumer` (replay) | built from `replay/Dockerfile` | regime consumer for one session (`telemetry.N` to `regime-state.N`) | none |
+| `replay-consumer` (`replay-run`, only via `run`) | built from `replay/Dockerfile` | regime consumer for one session (`telemetry.N` to `regime-state.N`), run by the replay controller | none |
 | `web` (`web-local`, optional) | `caddy:2.10.2-alpine` | no-AWS fallback: static file server for `web/dist`; not started by default | RCP's `edge` network as `f1-web:8080` |
 | `ingest` (jobs) | built from `ingest/Dockerfile` | run-once loader; owns the Flyway migrations | none, outbound to OpenF1 |
 | `model` (jobs) | built from `model/Dockerfile` | run-once: quality, estimate, profile, publish | none |
@@ -76,7 +76,7 @@ Docker-forwarded 80/443. `/opt` is root-owned 755 and `/opt/rcp` is `ubuntu` 750
 
 Consequences at the surveyed 1 CPU (they ease after the resize to 2 OCPU / 12 GB): a single CPU already loaded at 2.5 means Maven builds and the model compete with
 RCP for CPU, not only memory; all f1 jobs get a low CPU weight (`cpu_shares: 256`) so RCP wins
-contention (the always-on services db, api, kafka, replay-consumer and web get `cpu_shares: 512`,
+contention (the always-on services db, api, kafka and web get `cpu_shares: 512`,
 below Docker's default of 1024), but builds run in the Docker daemon and are not niced, so
 expect slow builds and some latency on RCP while they run. **Build on the Mac instead**: see
 'Building on the Mac (recommended)' below. There is no swap, so memory pressure ends in the OOM killer.
@@ -97,9 +97,8 @@ heap `-Xms128m -Xmx384m`):
 | web | 32 MB | always |
 | **f1 base** | **1120 MB** | |
 | kafka | 640 MB | `replay` |
-| replay-consumer | 192 MB | `replay` |
-| **f1 with replay** | **1952 MB** | |
-| jobs, one at a time | ingest 640, model 1536, replay-producer 320 (`replay`), s3 256 | on demand |
+| **f1 with replay** | **1760 MB** | |
+| jobs, one at a time | ingest 640, model 1536, replay pairs (producer 320 + consumer 192 each, see On-demand replay feed), s3 256 | on demand |
 | replay pairs (on demand) | up to 3 x 512 MB (producer 320 + consumer 192) | `REPLAY_MAX_SESSIONS` |
 
 The weekly run is ingest then model, never both; the biggest job is the model at 1536 MB.
@@ -470,24 +469,23 @@ expect the model step to take a while; measure it on the first run.
   per driver). Broker-wide default retention is 6 h.
 - The API relays `regime-state.<key>` to browsers over SSE at `/api/live/<key>`
   (`API_REPLAY_ENABLED=true`, at most `API_LIVE_MAX_STREAMS` concurrent streams, then 503).
-- `replay-consumer` runs always, for the session in `REPLAY_SESSION_KEY` (default 11361). Feed
-  it with the producer, which has its own profile (`replay-run`), so `up -d` never starts it; it
-  runs only when you ask, and reads `car_data`/`location` as the read-only `f1_api` role:
+- `replay-consumer` and `replay-producer` have the profile `replay-run`, so `up -d` starts neither;
+  the replay controller (On-demand replay feed) runs them per session. By hand, start the consumer
+  first (`scripts/dc.sh run -d --rm replay-consumer`), then the producer, which reads `car_data`/`location` as the read-only `f1_api` role:
 
   ```sh
-  scripts/dc.sh run --rm replay-producer                      # .env session, REPLAY_SPEED (1 = real time)
+  scripts/dc.sh run --rm replay-producer                      # REPLAY_SESSION_KEY, REPLAY_SPEED (1 = real time)
   scripts/dc.sh run --rm replay-producer --mode=producer --session=11361 --speed=10   # override
   ```
 
-  Re-running appends to the topics; delete them first for a clean replay:
+  Re-running appends to the topics (the consumer resets a driver when its timestamps jump back by more than 30 s, but delete them for a clean replay; the controller does this itself):
   `scripts/dc.sh exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --delete --topic telemetry.11361`
-  (and `regime-state.11361`). To serve another session, change `REPLAY_SESSION_KEY` in `.env`,
-  then `scripts/dc.sh up -d replay-consumer` and run the producer. After a session finishes
+  (and `regime-state.11361`). After a session finishes
   the compacted state topic keeps the last positions, so the view shows the end state until the
   next replay is started.
 - **Disable it** (frees 832 MB of limits): set `F1_REPLAY=0` and `API_REPLAY_ENABLED=false` in `.env`
   (the view then shows "Replay is not enabled on this server"), then `scripts/deploy.sh`, and
-  `docker stop f1-battery-kafka-1 f1-battery-replay-consumer-1` once (`--remove-orphans` does not
+  `docker stop f1-battery-kafka-1` once (`--remove-orphans` does not
   see profiled services). Everything else
   is unaffected; the replay is opt-in by design.
 - **Policy flag.** `docs/phase7-replay.md` limits the replay to local use because the state
@@ -511,8 +509,8 @@ expect the model step to take a while; measure it on the first run.
   `docker exec <rcp caddy container> wget -qO- http://f1-api:8080/api/health` tests the path.
 - Everyone shares one rate limit: `API_TRUSTED_PROXIES` does not include Caddy's address. Run
   `deploy.sh` (it rewrites it from the `edge` subnet) and check the value in `.env`.
-- Live view says "connected" but nothing moves: the consumer is on another session, or the
-  producer has not run. `scripts/dc.sh logs replay-consumer`.
+- Live view says "connected" but nothing moves: no replay pair is running for
+  that session (the controller logs, `journalctl -u f1-replay-producer`), or open the page to create demand.
 - Out of memory: `docker stats --no-stream`, `dmesg | grep -i oom`; confirm the 12 GB resize.
 - Model fails with "model_run does not exist": run the ingest once so V6 is applied.
 - Model fails reading straights: `data/reference/tracinginsights/sections` is missing.
@@ -559,19 +557,25 @@ A producer that reaches the end of the recording while the session is still want
 from the first sample. A pair with no demand for `REPLAY_IDLE_S` is removed. A session that fails to
 start is logged and left alone for 60 s. On stop, every `f1-replay-*` container is removed.
 
+Before a pair is started (a new one, or the restart of a finished producer) the controller deletes
+`telemetry.<key>` and `regime-state.<key>` through the broker's `kafka-topics.sh` and waits up to
+20 s until both are gone, so the new pass starts on empty topics; the consumer recreates them. It
+never deletes the topics of a session whose pair is running. As a second line of defence, the
+consumer resets a driver's window and throttle when a sample is more than 30 s older than the
+newest one it has seen (log line "replay restart detected for driver N").
+
 | `.env` key | Default | Meaning |
 | --- | --- | --- |
 | `REPLAY_MAX_SESSIONS` | `3` | most pairs at once; also reported as `capacity.max` by `GET /api/live` |
 | `REPLAY_IDLE_S` | `300` | seconds without a viewer before a pair is stopped |
 | `REPLAY_SPEED` | `1` | speed multiplier, 1 = real time |
-| `REPLAY_SESSION_KEY` | `11361` | the session the always-on compose `replay-consumer` serves |
+| `REPLAY_SESSION_KEY` | `11361` | default session of the manual `replay-producer` / `replay-consumer` commands only; the controller does not read it |
 
 `REPLAY_SESSIONS` and `REPLAY_GAP_S` (the old rotation) are no longer read.
 
-The compose `replay-consumer` stays (it serves `REPLAY_SESSION_KEY` and is what the manual commands
-above use); the controller treats every session the same way and only skips starting a second
-consumer for that one key while the compose service runs, because two consumers of one topic would
-split its partitions.
+There is no always-on consumer any more: the compose `replay-consumer` is in the `replay-run` profile
+and the controller treats every session key alike, 11361 included. A leftover always-on container
+from an older deploy is removed when the controller starts (or `docker rm -f f1-battery-replay-consumer-1`).
 
 Memory budget: a pair is limited to 512 MB (producer 320 + consumer 192), so three pairs are 1536 MB.
 On the 12 GB box (option A) that is 4064 MB steady state with RCP plus 1536 MB for three pairs, 5600
