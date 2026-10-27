@@ -5,7 +5,7 @@ import { useInitialAnchor } from './preview-navigation';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
-import { useList, useRateLimited } from '../lib/api';
+import { url, useList, useRateLimited, useRemote } from '../lib/api';
 import type { SessionRow } from '../lib/types';
 import { useSessionData, useRegimes } from './preview-data';
 import { useLive, type LiveState } from '../live/useLive';
@@ -59,14 +59,42 @@ function ReplayStageSkeleton({ label }: { label: string }) {
     </section>
   );
 }
+/** GET /api/live: the sessions the rotating replay is feeding right now (docs/api-contract.md). */
+interface LiveIndex {
+  enabled: boolean;
+  active: { session_key: number; last_ts: string; age_s: number }[];
+}
+
+/** What the page knows about the session being replayed: still loading, unknown (call failed) or a list. */
+type NowPlaying =
+  { state: 'pending' | 'unknown' } | { state: 'known'; items: { key: number; label: string }[] };
+
+/**
+ * The overlay text for a session without a feed. The rotating replay plays one session at a time, so
+ * point at the one that is playing; fall back to the plain statement when the lookup is unavailable.
+ */
+function noFeedMessage(np: NowPlaying, sessionKey: number) {
+  if (np.state !== 'known') return 'No replay has started for this session.';
+  const other = np.items.find((i) => i.key !== sessionKey);
+  if (!other) return 'No session is being replayed right now.';
+  return (
+    <>
+      The live replay plays one session at a time. Now playing: {other.label} ·{' '}
+      <a href={pageUrl('replay', { mode: 'feed', session: other.key })}>open</a>
+    </>
+  );
+}
+
 function ReplaySession({
   sessionKey,
   mode,
   onReview,
+  nowPlaying,
 }: {
   sessionKey: number;
   mode: 'review' | 'feed';
   onReview: () => void;
+  nowPlaying: NowPlaying;
 }) {
   const data = useSessionData(sessionKey);
   const circuit = useCircuit(data.session?.circuit_key);
@@ -545,7 +573,7 @@ function ReplaySession({
                     {feed.status === 'disabled'
                       ? 'Replay is disabled on this server.'
                       : feed.status === 'no-topic'
-                        ? 'No replay has started for this session.'
+                        ? noFeedMessage(nowPlaying, sessionKey)
                         : feed.status === 'error'
                           ? 'Replay connection lost. Retrying…'
                           : slow
@@ -782,6 +810,9 @@ function App() {
   useInitialAnchor(!!sessions.data || !!sessions.error);
   const [key, setKey] = useState(Number(initial.get('session')) || 11361);
   const [mode, setMode] = useState<'review' | 'feed'>(initial.get('mode') === 'feed' ? 'feed' : 'review');
+  // Asked only in feed mode. A visitor who opens the feed without choosing a session gets the playing one.
+  const index = useRemote<LiveIndex>(mode === 'feed' ? url('/live') : null);
+  const wantsPlaying = useRef(initial.get('mode') === 'feed' && !initial.get('session'));
   const races = useMemo(
     () =>
       (sessions.data ?? []).filter(
@@ -789,6 +820,22 @@ function App() {
       ),
     [sessions.data]
   );
+  const nowPlaying = useMemo<NowPlaying>(() => {
+    if (index.error || (index.data && !index.data.enabled)) return { state: 'unknown' };
+    if (!index.data || sessions.loading) return { state: 'pending' };
+    return {
+      state: 'known',
+      items: index.data.active.map((a) => {
+        const row = (sessions.data ?? []).find((s) => s.session_key === a.session_key);
+        return {
+          key: a.session_key,
+          label: row
+            ? `${row.circuit_short_name ?? 'Session'} · ${row.session_name}`
+            : `Session ${a.session_key}`,
+        };
+      }),
+    };
+  }, [index.data, index.error, sessions.data, sessions.loading]);
   const session = races.find((s) => s.session_key === key);
   const hasSession = !!session;
   const place = session?.circuit_short_name ?? 'Session';
@@ -806,6 +853,12 @@ function App() {
   useEffect(() => {
     if (races.length && !races.some((s) => s.session_key === key)) setKey(races[0].session_key);
   }, [races, key]);
+  useEffect(() => {
+    if (!wantsPlaying.current || index.loading || sessions.loading) return;
+    wantsPlaying.current = false;
+    const playing = index.data?.active[0]?.session_key;
+    if (playing !== undefined && races.some((s) => s.session_key === playing)) setKey(playing);
+  }, [index.loading, index.data, sessions.loading, races]);
   useEffect(() => {
     document
       .querySelectorAll<HTMLAnchorElement>('.replay-preview .button-light, .replay-preview .button-grey')
@@ -871,7 +924,13 @@ function App() {
               </div>
             </section>
           ) : session ? (
-            <ReplaySession key={key} sessionKey={key} mode={mode} onReview={() => setMode('review')} />
+            <ReplaySession
+              key={key}
+              sessionKey={key}
+              mode={mode}
+              onReview={() => setMode('review')}
+              nowPlaying={nowPlaying}
+            />
           ) : sessions.loading ? (
             <>
               <p className="wrap replay-load-line" role="status">

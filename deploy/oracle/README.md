@@ -541,8 +541,28 @@ build. With `F1_SKIP_OFFHOST=1` the pull is skipped and the site renders with th
 
 ## Always-on replay feed
 
-`systemd/f1-replay-producer.service` keeps the replay producer running: one pass re-emits
-`REPLAY_SESSION_KEY` at `REPLAY_SPEED` onto Kafka and exits, and systemd restarts it 15 s later, so the
-Replay feed tab always has cars on the map. Install it with the other units; change the session or
-speed in `.env` and `sudo systemctl restart f1-replay-producer`. Stop it with `systemctl disable --now`
-when the demo is not needed (it uses about 320 MB and half a core while running).
+`systemd/f1-replay-producer.service` runs `scripts/replay-rotate.sh`, which plays the recorded
+sessions one after another, forever, so the Replay feed page always has cars on the map. Each cycle it
+reads the sessions that have model results from the database (a newly ingested race joins without a
+restart), runs the producer once per session at `REPLAY_SPEED`, logs `now playing <key>`, and waits
+`REPLAY_GAP_S` before the next. A session that fails is logged and skipped.
+
+| `.env` key | Default | Meaning |
+| --- | --- | --- |
+| `REPLAY_SESSIONS` | `race` | `race` (session_name = Race), `all`, or a comma list of session keys |
+| `REPLAY_SPEED` | `20` | speed multiplier; with races only, one full cycle takes about 1.5 h at 20x |
+| `REPLAY_GAP_S` | `10` | pause between two sessions, seconds |
+| `REPLAY_SESSION_KEY` | `11361` | the session served by the always-on `replay-consumer` |
+
+The always-on consumer only serves `REPLAY_SESSION_KEY`; for every other session the script starts a
+temporary consumer container (`f1-replay-rotation-consumer`) for the length of that run, because the
+consumer is what turns `telemetry.N` into the `regime-state.N` topic the API streams.
+
+The page asks `GET /api/live` which session is playing now (a session counts as playing when its
+`regime-state` topic received a record in the last 120 s) and offers to open it.
+
+Install or update the unit after pulling: `sudo cp systemd/f1-replay-producer.service /etc/systemd/system/
+&& sudo systemctl daemon-reload && sudo systemctl restart f1-replay-producer`. Change a key in `.env` and
+restart the unit. Follow it with `journalctl -u f1-replay-producer -f`. Stop it with
+`systemctl disable --now` when the demo is not needed (it uses about 320 MB and half a core while
+running, plus 192 MB for the temporary consumer).

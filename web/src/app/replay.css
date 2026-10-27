@@ -1027,6 +1027,12 @@
   .replay-map-panel .feed-waiting > button {
     pointer-events: auto;
   }
+  .replay-map-panel .feed-waiting > p a {
+    pointer-events: auto;
+    color: #f2f2ec;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
   .feed-control > .feed-eyebrow {
     display: block;
     font:

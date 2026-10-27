@@ -66,6 +66,16 @@ Endpoints:
 - `GET /api/compare?session=&drivers=a,b&straight=&model=` → the two drivers'
   per-lap cut-off series side by side.
 
+## Live replay (opt-in, `api.replay.enabled`)
+- `GET /api/live` → which sessions have a replay feed right now:
+  `{"enabled": true, "active": [{"session_key": 11361, "last_ts": "2026-10-27T11:59:48Z", "age_s": 12}]}`.
+  `active` lists the `regime-state.<key>` Kafka topics whose newest record (Kafka record time, wall
+  clock) is under 120 s old, newest first; the lookup probes at most the 50 highest session keys and
+  is cached in memory for 10 s. With replay disabled the answer is `200 {"enabled": false, "active": []}`.
+  A broker that cannot be reached is `503`.
+- `GET /api/live/{session_key}` → server-sent events of the reduced regime state (`driver_number`,
+  `ts`, `regime`, `lap_distance_est`); `404` when replay is disabled. See `docs/phase7-replay.md`.
+
 ## Non-functional
 CORS for the view origin (env `API_CORS_ORIGIN`). Basic per-IP rate limit
 (e.g. 60 req/min, env-configurable). `GET /api/health`. No auth.

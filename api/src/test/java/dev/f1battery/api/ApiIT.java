@@ -393,6 +393,14 @@ class ApiIT {
     }
 
     @Test
+    void liveIndexReportsDisabledByDefault() throws Exception {
+        mvc.perform(get("/api/live"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled", is(false)))
+                .andExpect(jsonPath("$.active", hasSize(0)));
+    }
+
+    @Test
     void liveEndpointIsDisabledByDefault() throws Exception {
         mvc.perform(get("/api/live/" + SESSION))
                 .andExpect(status().isNotFound())
