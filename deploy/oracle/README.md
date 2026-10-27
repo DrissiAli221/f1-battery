@@ -171,7 +171,7 @@ or images in use. `deploy.sh` never prunes on its own.
      `scripts/build-web.sh` sets it; an older web tree simply ignores it.
    - `fix/ingest-api-source`: the `--source=api` path used by the weekly job.
 
-   The VM tracks the **`deploy`** branch (`F1_BRANCH`, default `deploy`): `main` plus these
+   The VM tracks **`main`** (`F1_BRANCH` in `.env` or the environment, default `main`); before the public merge it tracked a `deploy` branch, which was `main` plus these
    branches merged, with this folder. Bootstrap clones it and `deploy.sh` fast-forwards it.
 2. **The VM is bootstrapped as RCP's is** (surveyed: Docker 29.8.2, Compose v5.6.0): Docker Engine and the Compose plugin installed, the
    `ubuntu` user in the `docker` group, RCP's firewall service running. Only 80/443 are open
@@ -282,12 +282,12 @@ stop with that message otherwise.
 
 ```sh
 sudo install -d -o ubuntu -g ubuntu -m 750 /opt/f1-battery
-(umask 022 && git clone -b deploy <repository url> /opt/f1-battery)
+(umask 022 && git clone -b main <repository url> /opt/f1-battery)
 /opt/f1-battery/deploy/oracle/scripts/bootstrap.sh
 ```
 
 (`F1_REPO_URL=<url> bootstrap.sh` run from any other copy of the script also clones branch
-`$F1_BRANCH`, default `deploy`, to `/opt/f1-battery` and continues from there.) Always clone under
+`$F1_BRANCH`, default `main`, to `/opt/f1-battery` and continues from there.) Always clone under
 `umask 022`: a 0600 working tree is unreadable to the non-root containers.
 
 ### By hand, with a read-only deploy key (private repository)
@@ -323,7 +323,7 @@ Then clone, with the alias as the host (this is also what `F1_REPO_URL` takes):
 
 ```sh
 sudo install -d -o ubuntu -g ubuntu -m 750 /opt/f1-battery
-(umask 022 && git clone -b deploy git@github-f1:DrissiAli221/f1-battery.git /opt/f1-battery)
+(umask 022 && git clone -b main git@github-f1:DrissiAli221/f1-battery.git /opt/f1-battery)
 /opt/f1-battery/deploy/oracle/scripts/bootstrap.sh
 # or, from any copy of the script:
 F1_REPO_URL=git@github-f1:DrissiAli221/f1-battery.git /path/to/bootstrap.sh
