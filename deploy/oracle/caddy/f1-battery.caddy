@@ -1,0 +1,53 @@
+# TEMPLATE for the f1-battery origin block (README.md, "Caddy"). Not imported directly: bootstrap.sh
+# and deploy.sh render it, replacing __F1_ORIGIN_HOST__ and __F1_ORIGIN_SECRET__ with the values from
+# deploy/oracle/.env, into caddy/sites/f1-battery.caddy (git-ignored; it holds the secret, so keep it
+# out of backups and screenshots). RCP's Caddy mounts caddy/sites/ and imports it.
+#
+# This is the VM origin of the CloudFront distribution (infra/aws-f1): plain HTTP, no certificate, no
+# static files (the site is in S3). It is a separate `http://` site beside RCP's https sites: an explicit
+# http:// address is exempt from Caddy's automatic http->https redirect, which RCP's sites keep for
+# their own hosts. Requests reach it with Host = __F1_ORIGIN_HOST__ and X-Origin-Secret set by CloudFront.
+# Caddy runs in RCP's compose project and reaches the API over RCP's `edge` network as f1-api:8080.
+http://__F1_ORIGIN_HOST__ {
+	# One route, so the order below is literal (sibling handle blocks are sorted by path length).
+	route {
+		# Not from CloudFront (direct hits on the IP, scanners): refuse.
+		@direct not header X-Origin-Secret __F1_ORIGIN_SECRET__
+		respond @direct "Forbidden" 403
+
+		# The API is read-only.
+		@write not method GET HEAD OPTIONS
+		respond @write "Method not allowed" 405
+
+		# Live replay is Server-Sent Events: no compression, no buffering.
+		handle /api/live/* {
+			reverse_proxy f1-api:8080 {
+				flush_interval -1
+				header_up -Authorization
+				header_up -Cookie
+				header_up -X-Origin-Secret
+				transport http {
+					dial_timeout 3s
+				}
+			}
+		}
+
+		handle /api/* {
+			encode zstd gzip
+			reverse_proxy f1-api:8080 {
+				header_up -Authorization
+				header_up -Cookie
+				header_up -X-Origin-Secret
+				transport http {
+					dial_timeout 3s
+					response_header_timeout 30s
+				}
+			}
+		}
+
+		# No static files here.
+		handle {
+			respond "Not found" 404
+		}
+	}
+}
