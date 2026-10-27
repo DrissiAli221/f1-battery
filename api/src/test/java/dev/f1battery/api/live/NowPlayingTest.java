@@ -107,17 +107,19 @@ class NowPlayingTest {
         FakeProbe p = new FakeProbe();
         p.topics.add("regime-state.11361");
         p.last.put("regime-state.11361", NOW.minusSeconds(12).toEpochMilli());
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new LiveIndexController(new NowPlaying(p, at(NOW)))).build();
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new LiveIndexController(new NowPlaying(p, at(NOW)), 3)).build();
         mvc.perform(get("/api/live"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
                 .andExpect(jsonPath("$.active[0].session_key").value(11361))
                 .andExpect(jsonPath("$.active[0].last_ts").value("2026-10-27T11:59:48Z"))
-                .andExpect(jsonPath("$.active[0].age_s").value(12));
+                .andExpect(jsonPath("$.active[0].age_s").value(12))
+                .andExpect(jsonPath("$.capacity.max").value(3))
+                .andExpect(jsonPath("$.capacity.used").value(1));
 
         FakeProbe down = new FakeProbe();
         down.fail = true;
-        var c = new LiveIndexController(new NowPlaying(down, at(NOW)));
+        var c = new LiveIndexController(new NowPlaying(down, at(NOW)), 3);
         assertEquals(503, assertThrows(ResponseStatusException.class, c::index).getStatusCode().value());
     }
 
@@ -127,6 +129,7 @@ class NowPlayingTest {
         mvc.perform(get("/api/live"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(false))
-                .andExpect(jsonPath("$.active").isEmpty());
+                .andExpect(jsonPath("$.active").isEmpty())
+                .andExpect(jsonPath("$.capacity.max").value(0));
     }
 }

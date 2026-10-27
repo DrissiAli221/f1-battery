@@ -133,6 +133,8 @@ services:
       API_TRUSTED_PROXIES: ${API_TRUSTED_PROXIES:-172.16.0.0/12}
       API_LIVE_MAX_STREAMS: ${API_LIVE_MAX_STREAMS:-20}
       API_REPLAY_ENABLED: ${API_REPLAY_ENABLED:-true}
+      # Reported as capacity.max by /api/live; the replay controller reads the same REPLAY_MAX_SESSIONS.
+      API_REPLAY_MAX_SESSIONS: ${REPLAY_MAX_SESSIONS:-3}
       KAFKA_BOOTSTRAP: kafka:9092
     secrets:
       - api_password
@@ -297,7 +299,7 @@ services:
     pull_policy: never
     restart: "no"
     entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
-    command: ["--mode=producer", "--session=${REPLAY_SESSION_KEY:-11361}", "--speed=${REPLAY_SPEED:-20}"]
+    command: ["--mode=producer", "--session=${REPLAY_SESSION_KEY:-11361}", "--speed=${REPLAY_SPEED:-1}"]
     environment:
       <<: *java
       DB_URL: jdbc:postgresql://db:5432/f1battery

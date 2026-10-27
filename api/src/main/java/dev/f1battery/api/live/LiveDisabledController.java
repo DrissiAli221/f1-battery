@@ -16,7 +16,7 @@ public class LiveDisabledController {
     /** The index answers 200 with nothing playing, so the page can say so instead of treating it as an error. */
     @GetMapping("/api/live")
     public Map<String, Object> index() {
-        return Map.of("enabled", false, "active", List.of());
+        return Map.of("enabled", false, "active", List.of(), "capacity", Map.of("max", 0, "used", 0));
     }
 
     @GetMapping("/api/live/{sessionKey}")

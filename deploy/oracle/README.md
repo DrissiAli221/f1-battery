@@ -100,6 +100,7 @@ heap `-Xms128m -Xmx384m`):
 | replay-consumer | 192 MB | `replay` |
 | **f1 with replay** | **1952 MB** | |
 | jobs, one at a time | ingest 640, model 1536, replay-producer 320 (`replay`), s3 256 | on demand |
+| replay pairs (on demand) | up to 3 x 512 MB (producer 320 + consumer 192) | `REPLAY_MAX_SESSIONS` |
 
 The weekly run is ingest then model, never both; the biggest job is the model at 1536 MB.
 
@@ -474,7 +475,7 @@ expect the model step to take a while; measure it on the first run.
   runs only when you ask, and reads `car_data`/`location` as the read-only `f1_api` role:
 
   ```sh
-  scripts/dc.sh run --rm replay-producer                      # .env session, 20x
+  scripts/dc.sh run --rm replay-producer                      # .env session, REPLAY_SPEED (1 = real time)
   scripts/dc.sh run --rm replay-producer --mode=producer --session=11361 --speed=10   # override
   ```
 
@@ -539,30 +540,51 @@ F1_S3_BUCKET=<bucket> web/scripts/private-assets.sh push
 `build-web.sh` pulls that list from `s3://<bucket>/private-assets/` into `web/public` before every
 build. With `F1_SKIP_OFFHOST=1` the pull is skipped and the site renders with the OFL fallback fonts.
 
-## Always-on replay feed
+## On-demand replay feed
 
-`systemd/f1-replay-producer.service` runs `scripts/replay-rotate.sh`, which plays the recorded
-sessions one after another, forever, so the Replay feed page always has cars on the map. Each cycle it
-reads the sessions that have model results from the database (a newly ingested race joins without a
-restart), runs the producer once per session at `REPLAY_SPEED`, logs `now playing <key>`, and waits
-`REPLAY_GAP_S` before the next. A session that fails is logged and skipped.
+`systemd/f1-replay-producer.service` runs `scripts/replay-controller.sh`, which replays a session
+while someone is watching it, at real speed. Any session with model results can be chosen on the
+Replay feed page; nothing plays until a viewer asks.
+
+How it works: opening `GET /api/live/<key>` (the page's SSE stream) for a session with results
+registers demand in the API's memory (refreshed on every keepalive while the stream is open, kept 5
+minutes after the last viewer leaves). The API stays read-only and starts nothing. Every 10 s the
+controller reads `GET /api/live/demand` (`docker compose exec api curl`, inside the VM; Caddy answers
+404 for that path) and keeps one pair of containers per wanted session, longest-wanted first:
+
+- `f1-replay-<key>-consumer`: `telemetry.<key>` to `regime-state.<key>`, which the API streams;
+- `f1-replay-<key>-producer`: re-emits the recorded session from its first sample at `REPLAY_SPEED`.
+
+A producer that reaches the end of the recording while the session is still wanted is started again
+from the first sample. A pair with no demand for `REPLAY_IDLE_S` is removed. A session that fails to
+start is logged and left alone for 60 s. On stop, every `f1-replay-*` container is removed.
 
 | `.env` key | Default | Meaning |
 | --- | --- | --- |
-| `REPLAY_SESSIONS` | `race` | `race` (session_name = Race), `all`, or a comma list of session keys |
-| `REPLAY_SPEED` | `20` | speed multiplier; with races only, one full cycle takes about 1.5 h at 20x |
-| `REPLAY_GAP_S` | `10` | pause between two sessions, seconds |
-| `REPLAY_SESSION_KEY` | `11361` | the session served by the always-on `replay-consumer` |
+| `REPLAY_MAX_SESSIONS` | `3` | most pairs at once; also reported as `capacity.max` by `GET /api/live` |
+| `REPLAY_IDLE_S` | `300` | seconds without a viewer before a pair is stopped |
+| `REPLAY_SPEED` | `1` | speed multiplier, 1 = real time |
+| `REPLAY_SESSION_KEY` | `11361` | the session the always-on compose `replay-consumer` serves |
 
-The always-on consumer only serves `REPLAY_SESSION_KEY`; for every other session the script starts a
-temporary consumer container (`f1-replay-rotation-consumer`) for the length of that run, because the
-consumer is what turns `telemetry.N` into the `regime-state.N` topic the API streams.
+`REPLAY_SESSIONS` and `REPLAY_GAP_S` (the old rotation) are no longer read.
 
-The page asks `GET /api/live` which session is playing now (a session counts as playing when its
-`regime-state` topic received a record in the last 120 s) and offers to open it.
+The compose `replay-consumer` stays (it serves `REPLAY_SESSION_KEY` and is what the manual commands
+above use); the controller treats every session the same way and only skips starting a second
+consumer for that one key while the compose service runs, because two consumers of one topic would
+split its partitions.
+
+Memory budget: a pair is limited to 512 MB (producer 320 + consumer 192), so three pairs are 1536 MB.
+On the 12 GB box (option A) that is 4064 MB steady state with RCP plus 1536 MB for three pairs, 5600
+MB, and 7136 MB if the 1536 MB model job runs at the same time: well inside 12 GB. The page shows
+"All 3 replay slots are busy" when the slots are taken. A pair starts within about 20 s of the first
+viewer (10 s poll plus the JVM start).
+
+The page asks `GET /api/live` which sessions are playing (a session counts as playing when its
+`regime-state` topic received a record in the last 120 s) and for the slots in use
+(`capacity: {"max": 3, "used": n}`).
 
 Install or update the unit after pulling: `sudo cp systemd/f1-replay-producer.service /etc/systemd/system/
 && sudo systemctl daemon-reload && sudo systemctl restart f1-replay-producer`. Change a key in `.env` and
 restart the unit. Follow it with `journalctl -u f1-replay-producer -f`. Stop it with
-`systemctl disable --now` when the demo is not needed (it uses about 320 MB and half a core while
-running, plus 192 MB for the temporary consumer).
+`systemctl disable --now` when the demo is not needed (idle, it is one `curl` every 10 s; each running
+pair uses up to 512 MB and about a core between the two).
