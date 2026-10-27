@@ -1,3 +1,4 @@
+/* Render with the private assets present (web/scripts/private-assets.sh pull), otherwise the fallback fonts are captured. */
 /* Dev-only README panel renderer. Builds nothing for production: it is served through vite.readme.config.ts. */
 import { StrictMode, useEffect, useRef, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
