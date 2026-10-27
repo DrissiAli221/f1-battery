@@ -70,22 +70,30 @@
   .panel-posters .poster-name { top: 52px; }
   .panel-posters .poster-name h3 { font-size: 26px; }
 
-  /* Deployment panel (?p=deployment) */
-  .panel-deploy { padding-block: 48px 52px; }
-  .dp-groups { display: grid; grid-template-columns: 0.8fr 1.5fr 1.5fr; gap: 20px; margin-bottom: 30px; }
-  .dp-group { gap: 8px; min-height: 0; }
-  .dp-group strong { font-size: 21px; }
-  .dp-group ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
-  .dp-group li { font: 400 13px/1.4 Geist, sans-serif; color: var(--muted); padding-left: 14px; position: relative; }
-  .dp-group li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 6px; height: 1px; background: var(--h); }
-  .dp-lane { margin-top: 26px; }
-  .dp-lane .pl-eyebrow { margin-bottom: 12px; }
-  .dp-lane.pl-lane { margin-top: 26px; padding-top: 18px; }
-  .dp-node { min-height: 104px; padding: 16px 18px; gap: 6px; }
-  .dp-node strong { font-size: 18px; }
-  .dp-node small { font-size: 13px; }
-  .pl-lane .dp-node { min-height: 104px; }
-  .pl-lane .dp-node strong { font-size: 18px; }
+  /* Deployment panel (?p=deployment): four rows, at most four cards each, arrows drawn in the gutters */
+  .panel-deploy { --gap: 32px; padding: 52px 96px 56px; }
+  .dp-title { font-size: 15px; margin-bottom: 0; }
+  .dp-title b { text-transform: none; }
+  .dp-section { margin-top: 46px; }
+  .dp-head { border-bottom: 1px solid var(--band-line); padding-bottom: 12px; margin-bottom: 22px; }
+  .dp-head span:last-child { color: #8c8b82; }
+  .dp-row { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: var(--gap); }
+  .dp-card { min-height: 128px; padding: 20px; gap: 10px; }
+  .dp-card .k { line-height: 17px; }
+  .dp-card strong { font-size: 21px; text-transform: uppercase; letter-spacing: 0; white-space: nowrap; }
+  .dp-card small { font-size: 14px; margin-top: auto; }
+  .dp-card.is-dashed { border-style: dashed; border-color: color-mix(in srgb, var(--h) 38%, transparent); }
+  .dp-card .pl-marks { top: 20px; right: 20px; gap: 8px; height: 22px; }
+  .dp-card:has(.pl-marks) .k { padding-right: 0; white-space: nowrap; }
+  .dp-tag { font: 900 10px/1 F1Black, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid currentColor; padding: 5px 6px 4px; font-feature-settings: 'calt' 0; }
+  .dp-arrow { position: absolute; left: 100%; top: 54px; opacity: 0.7; overflow: visible; }
+  .dp-arrow.start { left: calc(var(--gap) * -1); }
+  .dp-visitor { --h: #8c8b82; position: absolute; top: 36px; width: 44px; height: 44px; border: 1px solid color-mix(in srgb, var(--h) 55%, transparent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--h); background: #0b0b0a; }
+  .dp-visitor.start { left: calc(-1 * (var(--gap) + 44px)); }
+  .dp-visitor.end { right: calc(-1 * (var(--gap) + 44px)); }
+  .dp-visitor i { position: absolute; top: 52px; font: 400 10px/1 KHF1, monospace; font-style: normal; text-transform: uppercase; letter-spacing: 0.08em; }
+  .dp-legend { margin: 56px 0 0; display: flex; gap: 64px; font: 400 12px/1 KHF1, monospace; text-transform: uppercase; letter-spacing: 0.08em; color: #8c8b82; }
+  .dp-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; background: var(--h); margin-right: 12px; }
 
   /* Brand marks */
   .pl-marks { position: absolute; top: 18px; right: 18px; display: flex; align-items: center; gap: 10px; color: var(--h); opacity: 0.85; }
@@ -93,7 +101,4 @@
   .pl-word { font: 400 11px/1 KHF1, monospace; text-transform: none; letter-spacing: 0.04em; border: 1px solid currentColor; padding: 4px 6px 3px; }
   .pl-node:has(.pl-marks) .k { padding-right: 44px; }
   .pl-node:has(.pl-mark + .pl-mark) .k { padding-right: 0; white-space: nowrap; }
-  .dp-group:has(.pl-marks) .k { padding-right: 190px; }
-  .dp-legend { margin: 28px 0 0; display: flex; gap: 32px; font: 400 12px/1 KHF1, monospace; text-transform: uppercase; letter-spacing: 0.08em; color: #8c8b82; }
-  .dp-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; background: var(--h); margin-right: 10px; }
 }

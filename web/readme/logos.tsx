@@ -1,6 +1,9 @@
 /* Brand marks vendored from Simple Icons (https://simpleicons.org), CC0 1.0. 24-grid path data, drawn monochrome.
    Trademarks belong to their owners. Not in Simple Icons, so typeset as wordmarks instead: Oracle, AWS, S3, CloudFront, IAM. */
 import type { CSSProperties } from 'react';
+import s3 from './logos/amazon-s3.svg?raw';
+import cloudfront from './logos/amazon-cloudfront.svg?raw';
+import iam from './logos/aws-iam.svg?raw';
 
 export const MARKS: Record<string, string> = {
   // Simple Icons, CC0
@@ -31,15 +34,27 @@ export const MARKS: Record<string, string> = {
   openjdk: 'M11.915 0 11.7.215C9.515 2.4 7.47 6.39 6.046 10.483c-1.064 1.024-3.633 2.81-3.711 3.551-.093.87 1.746 2.611 1.55 3.235-.198.625-1.304 1.408-1.014 1.939.1.188.823.011 1.277-.491a13.389 13.389 0 0 0-.017 2.14c.076.906.27 1.668.643 2.232.372.563.956.911 1.667.911.397 0 .727-.114 1.024-.264.298-.149.571-.33.91-.5.68-.34 1.634-.666 3.53-.604 1.903.062 2.872.39 3.559.704.687.314 1.15.664 1.925.664.767 0 1.395-.336 1.807-.9.412-.563.631-1.33.72-2.24.06-.623.055-1.32 0-2.066.454.45 1.117.604 1.213.424.29-.53-.816-1.314-1.013-1.937-.198-.624 1.642-2.366 1.549-3.236-.08-.748-2.707-2.568-3.748-3.586C16.428 6.374 14.308 2.394 12.13.215zm.175 6.038a2.95 2.95 0 0 1 2.943 2.942 2.95 2.95 0 0 1-2.943 2.943A2.95 2.95 0 0 1 9.148 8.98a2.95 2.95 0 0 1 2.942-2.942zM8.685 7.983a3.515 3.515 0 0 0-.145.997c0 1.951 1.6 3.55 3.55 3.55 1.95 0 3.55-1.598 3.55-3.55 0-.329-.046-.648-.132-.951.334.095.64.208.915.336a42.699 42.699 0 0 1 2.042 5.829c.678 2.545 1.01 4.92.846 6.607-.082.844-.29 1.51-.606 1.94-.315.431-.713.651-1.315.651-.593 0-.932-.27-1.673-.61-.741-.338-1.825-.694-3.792-.758-1.974-.064-3.073.293-3.821.669-.375.188-.659.373-.911.5s-.466.2-.752.2c-.53 0-.876-.209-1.16-.64-.285-.43-.474-1.101-.545-1.948-.141-1.693.176-4.069.823-6.614a43.155 43.155 0 0 1 1.934-5.783c.348-.167.749-.31 1.192-.425zm-3.382 4.362a.216.216 0 0 1 .13.031c-.166.56-.323 1.116-.463 1.665a33.849 33.849 0 0 0-.547 2.555 3.9 3.9 0 0 0-.2-.39c-.58-1.012-.914-1.642-1.16-2.08.315-.24 1.679-1.755 2.24-1.781zm13.394.01c.562.027 1.926 1.543 2.24 1.783-.246.438-.58 1.068-1.16 2.08a4.428 4.428 0 0 0-.163.309 32.354 32.354 0 0 0-.562-2.49 40.579 40.579 0 0 0-.482-1.652.216.216 0 0 1 .127-.03z',
 };
 
-export const WORDMARKS = new Set(['oracle', 'aws', 's3', 'cloudfront', 'iam']);
-const WORD: Record<string, string> = { oracle: 'Oracle', aws: 'AWS', s3: 'S3', cloudfront: 'CloudFront', iam: 'IAM' };
+/* AWS Architecture Icons (see logos/CREDITS.md): fills already stripped to currentColor, so they take the card hue. */
+const AWS_ICONS: Record<string, string> = { s3, cloudfront, iam };
+const inner = (raw: string) => raw.replace(/^<svg[^>]*>|<\/svg>\s*$|<title>.*?<\/title>/g, '');
+/* No free mark exists for these, so they are plain wordmarks in a hairline tag. */
+const TAGS: Record<string, string> = { oracle: 'Oracle', openf1: 'OpenF1' };
 
-/** One brand mark (or typed wordmark) in the card hue. */
-export function Mark({ n }: { n: string }) {
+export const WORDMARKS = new Set(['oracle', 'aws', 's3', 'cloudfront', 'iam', 'openf1']);
+const WORD: Record<string, string> = { oracle: 'Oracle', aws: 'AWS', s3: 'S3', cloudfront: 'CloudFront', iam: 'IAM', openf1: 'OpenF1' };
+
+/** One brand mark (or typed wordmark) in the card hue. `size` is the CSS px of the mark. */
+export function Mark({ n, size = 21 }: { n: string; size?: number }) {
   const d = MARKS[n];
+  if (AWS_ICONS[n]) {
+    return (
+      <svg className="pl-mark" width={size} height={size} viewBox="9 9 46 46" fill="currentColor" aria-label={WORD[n]} role="img" dangerouslySetInnerHTML={{ __html: inner(AWS_ICONS[n]) }} />
+    );
+  }
+  if (TAGS[n]) return <span className="dp-tag">{TAGS[n]}</span>;
   if (!d) return <span className="pl-word" style={{ ['--w' as string]: WORD[n]?.length } as CSSProperties}>{WORD[n] ?? n}</span>;
   return (
-    <svg className="pl-mark" width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-label={n} role="img">
+    <svg className="pl-mark" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-label={n} role="img">
       <path d={d} />
     </svg>
   );
