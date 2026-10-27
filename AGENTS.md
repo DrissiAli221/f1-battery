@@ -35,7 +35,7 @@ Applies to any agent. Read README.md and PLAN.md first.
   gitignored.
 - Public outputs: derived aggregates only, never raw samples (DECISIONS.md
   D5, D9).
-- Not affiliated with F1, FIA or FOM; the site says so. This is a private,
+- Not affiliated with F1, FIA or FOM; the site says so. This is a personal,
   non-commercial project, and the owner decided (DECISIONS.md D31) that F1
   imagery, logos and typefaces may be used in the view. Credit sources in the
   footer. Driver headshots and team logos load at runtime from their source

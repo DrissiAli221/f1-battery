@@ -46,3 +46,13 @@ web/dist/
 .agents/
 .claude/skills/
 skills-lock.json
+# Public-readiness: secrets, local tooling output, never commit
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.tfstate
+/out/
+.claude/settings.local.json
+.claude/launch.json

@@ -549,7 +549,7 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
   regime bins and the per-lap cut-off tick.
 
 ## D31 — 2026-10-20 — F1 imagery, logos and typefaces may be used in the view
-- The owner's call: this is a private, non-commercial portfolio project, so
+- The owner's call: this is a personal, non-commercial project, so
   the self-imposed ban on F1, FIA and FOM marks and on the official F1
   typeface (D24, AGENTS.md) is lifted. Imagery is chosen by the owner (the
   first is the F1 "digital presentation" wallpaper as the landing hero),
@@ -557,6 +557,12 @@ Same tooling and checks as D13. Finished 2026-10-18 evening UTC. 31 sessions.
 - Caveat recorded for later: revisit before the site is linked publicly from
   applications; trademark use that is fine for a private project can draw
   attention once it is public.
+- Note, 2026-10-26: the repository is going public. The non-redistributable
+  assets (F1 typefaces, wallpaper images, the Heron pixel mask) are kept out of
+  git and fetched from a private S3 folder at build and deploy time
+  (`web/private-assets.txt`, `web/scripts/private-assets.sh`); the site keeps
+  them, a public clone builds with OFL fallbacks. Use stays personal and
+  non-commercial.
 
 ## D32 — 2026-10-20 — View rebuilt in a broadcast style; circuit reference data from MultiViewer
 - The owner reviewed the built v2 view (D29) and rejected its look: a flat
