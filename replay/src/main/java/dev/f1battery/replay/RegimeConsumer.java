@@ -68,8 +68,7 @@ public final class RegimeConsumer {
         Topics.ensureState(bootstrap, sessionKey);
         String in = Topics.telemetry(sessionKey);
         String out = Topics.state(sessionKey);
-        Map<Integer, DriverWindow> windows = new HashMap<>();
-        Map<Integer, Long> lastEmitNanos = new HashMap<>();
+        Map<Integer, DriverTrack> tracks = new HashMap<>();
         long lastLog = clock.nanoTime();
 
         Map<String, Object> cprops = Map.of(
@@ -92,13 +91,9 @@ public final class RegimeConsumer {
                     for (ConsumerRecord<String, String> rec : c.poll(Duration.ofMillis(250))) {
                         consumed.incrementAndGet();
                         Sample s = Json.MAPPER.readValue(rec.value(), Sample.class);
-                        DriverWindow w = windows.computeIfAbsent(s.driverNumber(), k -> new DriverWindow());
-                        var labelled = w.add(s);
+                        DriverTrack t = tracks.computeIfAbsent(s.driverNumber(), k -> new DriverTrack(k, minIntervalMs));
+                        var labelled = t.add(s, clock.nanoTime());
                         if (labelled.isEmpty()) continue;
-                        long now = clock.nanoTime();
-                        Long last = lastEmitNanos.get(s.driverNumber());
-                        if (last != null && (now - last) / 1_000_000 < minIntervalMs) continue;
-                        lastEmitNanos.put(s.driverNumber(), now);
                         Sample m = labelled.get().sample();
                         RegimeState st = new RegimeState(sessionKey, m.driverNumber(), m.ts(), m.x(), m.y(),
                                 m.speed(), labelled.get().regime(), labelled.get().distanceM());

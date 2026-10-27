@@ -13,13 +13,13 @@
 # At most REPLAY_MAX_SESSIONS pairs run at once (a pair is about 512 MB: producer 320 + consumer 192).
 # A pair whose session has had no demand for REPLAY_IDLE_S is removed. A producer that reaches the
 # end of the recording while the session is still wanted is started again from the first sample.
+# Before every start of a pair the session's topics are deleted (telemetry.<key>, regime-state.<key>)
+# so the new pass is not appended to an old one. Topics of a running pair are never touched.
 # One session that keeps failing is logged and left alone for 60 s before the next attempt.
 #
 #   REPLAY_MAX_SESSIONS  most pairs at once         (default 3; keep equal to API_REPLAY_MAX_SESSIONS)
 #   REPLAY_IDLE_S        seconds without demand     (default 300)
 #   REPLAY_SPEED         speed multiplier, 1 = real time  (default 1)
-#   REPLAY_SESSION_KEY   the session the always-on compose replay-consumer serves; no second
-#                        consumer is started for it while that service runs
 #
 # Values come from the environment first, then deploy/oracle/.env. On stop (and on exit) every
 # f1-replay-* container is removed.
@@ -31,7 +31,6 @@ need docker
 MAX="${REPLAY_MAX_SESSIONS:-$(env_get REPLAY_MAX_SESSIONS 3)}"
 IDLE_S="${REPLAY_IDLE_S:-$(env_get REPLAY_IDLE_S 300)}"
 SPEED="${REPLAY_SPEED:-$(env_get REPLAY_SPEED 1)}"
-BASE_KEY="${REPLAY_SESSION_KEY:-$(env_get REPLAY_SESSION_KEY 11361)}"
 POLL_S="${REPLAY_POLL_S:-10}"
 BACKOFF_S=60
 MIN_RUN_S=30 # a producer that ends sooner than this failed; it did not finish the recording
@@ -39,7 +38,6 @@ MIN_RUN_S=30 # a producer that ends sooner than this failed; it did not finish t
 [[ "$MAX" =~ ^[1-9][0-9]*$ ]] || die "REPLAY_MAX_SESSIONS must be a positive whole number, got: $MAX"
 [[ "$IDLE_S" =~ ^[0-9]+$ ]] || die "REPLAY_IDLE_S must be a whole number of seconds, got: $IDLE_S"
 [[ "$SPEED" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "REPLAY_SPEED must be a positive number, got: $SPEED"
-[[ "$BASE_KEY" =~ ^[0-9]+$ ]] || die "REPLAY_SESSION_KEY must be a session key, got: $BASE_KEY"
 
 # Per-session state lives in variables named <FIELD>_<key> (portable: no associative arrays, so the
 # script also runs under macOS bash 3.2 for testing). Fields, all epoch seconds:
@@ -77,7 +75,23 @@ running_keys() {
 
 container_up() { [[ -n "$(docker ps -q --filter "name=^$1\$")" ]]; }
 
-base_consumer_running() { [[ -n "$(dc ps -q replay-consumer 2>/dev/null || true)" ]]; }
+kafka_topics() { dc exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 "$@"; }
+
+# reset_topics KEY: delete telemetry.KEY and regime-state.KEY (a topic that does not exist is
+# fine), then wait up to 20 s until both are gone from the topic list. Only call it while no pair
+# of KEY is running. Returns 1 if they are still listed.
+reset_topics() {
+    local key="$1" topic i
+    for topic in "telemetry.$key" "regime-state.$key"; do
+        kafka_topics --delete --topic "$topic" >/dev/null 2>&1 || true
+    done
+    for ((i = 0; i < 10; i++)); do
+        if ! kafka_topics --list 2>/dev/null | grep -qxE "(telemetry|regime-state)\.$key"; then return 0; fi
+        sleep 2
+    done
+    log "WARN: topics of session $key are still listed after 20 s"
+    return 1
+}
 
 stop_pair() {
     log "stopping replay for $1"
@@ -87,8 +101,6 @@ stop_pair() {
 
 start_consumer() {
     local key="$1"
-    # The compose consumer already serves the base session; a second one would split the partitions.
-    if [[ "$key" == "$BASE_KEY" ]] && base_consumer_running; then return 0; fi
     container_up "f1-replay-$key-consumer" && return 0
     docker rm -f "f1-replay-$key-consumer" >/dev/null 2>&1 || true
     dc --profile replay-run run -d --rm -T --name "f1-replay-$key-consumer" replay-consumer \
@@ -141,7 +153,12 @@ tick() {
                 pairs=$((pairs - 1))
             else
                 log "replay for $key reached the end while wanted; starting it again"
-                start_producer "$key" || { fail_session "$key"; pairs=$((pairs - 1)); }
+                # The consumer goes too: its output topic is deleted, then both come back fresh.
+                docker rm -f "f1-replay-$key-consumer" >/dev/null 2>&1 || true
+                if ! { reset_topics "$key" && start_consumer "$key" && start_producer "$key"; }; then
+                    fail_session "$key"
+                    pairs=$((pairs - 1))
+                fi
             fi
         fi
     done
@@ -156,7 +173,7 @@ tick() {
             continue
         fi
         log "starting replay for session $key (speed ${SPEED}x, $((pairs + 1))/$MAX)"
-        if start_consumer "$key" && start_producer "$key"; then
+        if reset_topics "$key" && start_consumer "$key" && start_producer "$key"; then
             pairs=$((pairs + 1))
         else
             fail_session "$key"
@@ -164,8 +181,16 @@ tick() {
     done
 }
 
-log "replay controller: max=$MAX idle=${IDLE_S}s speed=${SPEED}x base_session=$BASE_KEY"
+log "replay controller: max=$MAX idle=${IDLE_S}s speed=${SPEED}x"
 cleanup # a previous run killed hard may have left containers behind
+# The compose replay-consumer used to run always; it would hold a stale topic. Remove a leftover one.
+legacy="$(docker ps -aq --filter 'label=com.docker.compose.service=replay-consumer' \
+    --filter 'label=com.docker.compose.oneoff=False' 2>/dev/null || true)"
+if [[ -n "$legacy" ]]; then
+    log "removing the always-on compose replay-consumer (the controller runs one per session)"
+    # shellcheck disable=SC2086
+    docker rm -f $legacy >/dev/null 2>&1 || true
+fi
 while true; do
     tick || log "WARN: controller pass failed; continuing"
     sleep "$POLL_S"
