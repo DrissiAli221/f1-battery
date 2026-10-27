@@ -176,19 +176,24 @@ public class LiveController {
      * (see {@link DemandRegistry}), and the view is told {@code waiting} meanwhile. Returns the topic's
      * partitions, or null if the stream closed first.
      */
-    private List<TopicPartition> awaitFreshTopic(KafkaConsumer<String, String> c, String topic, SseEmitter emitter,
+    private List<TopicPartition> awaitFreshTopic(Properties props, String topic, SseEmitter emitter,
             AtomicBoolean open, int sessionKey, boolean registered) throws IOException {
         boolean told = false;
         while (open.get()) {
-            var infos = c.partitionsFor(topic, Duration.ofSeconds(5));
-            List<TopicPartition> parts = new ArrayList<>();
-            if (infos != null) infos.forEach(i -> parts.add(new TopicPartition(topic, i.partition())));
-            if (!parts.isEmpty()) {
-                long since = System.currentTimeMillis() - NowPlaying.ACTIVE_WITHIN.toMillis();
-                Map<TopicPartition, Long> query = new HashMap<>();
-                parts.forEach(tp -> query.put(tp, since));
-                // A non-null entry means the partition holds a record at or after that time.
-                if (c.offsetsForTimes(query).values().stream().anyMatch(o -> o != null)) return parts;
+            // A fresh client per check: the replay controller deletes and recreates the topic before a
+            // replay starts, and a long-lived client keeps the deleted topic's metadata and never sees
+            // the new records.
+            try (KafkaConsumer<String, String> c = new KafkaConsumer<>(props)) {
+                var infos = c.partitionsFor(topic, Duration.ofSeconds(5));
+                List<TopicPartition> parts = new ArrayList<>();
+                if (infos != null) infos.forEach(i -> parts.add(new TopicPartition(topic, i.partition())));
+                if (!parts.isEmpty()) {
+                    long since = System.currentTimeMillis() - NowPlaying.ACTIVE_WITHIN.toMillis();
+                    Map<TopicPartition, Long> query = new HashMap<>();
+                    parts.forEach(tp -> query.put(tp, since));
+                    // A non-null entry means the partition holds a record at or after that time.
+                    if (c.offsetsForTimes(query).values().stream().anyMatch(o -> o != null)) return parts;
+                }
             }
             if (!told) {
                 emitter.send(SseEmitter.event().name("status").data("{\"state\":\"waiting\"}"));
@@ -217,10 +222,19 @@ public class LiveController {
         p.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         p.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         p.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "10000");
+        try {
+            List<TopicPartition> parts = awaitFreshTopic(p, topic, emitter, open, sessionKey, registered);
+            if (parts == null) return; // closed while waiting
+            follow(sessionKey, emitter, open, holder, registered, p, parts);
+        } catch (IOException | IllegalStateException e) {
+            log.debug("live stream for session {} ended while waiting: {}", sessionKey, e.toString());
+        }
+    }
+
+    private void follow(int sessionKey, SseEmitter emitter, AtomicBoolean open, KafkaConsumer<String, String>[] holder,
+            boolean registered, Properties p, List<TopicPartition> parts) {
         try (KafkaConsumer<String, String> c = new KafkaConsumer<>(p)) {
             holder[0] = c;
-            List<TopicPartition> parts = awaitFreshTopic(c, topic, emitter, open, sessionKey, registered);
-            if (parts == null) return; // closed while waiting
             c.assign(parts);
             c.seekToBeginning(parts);
             Map<TopicPartition, Long> end = c.endOffsets(parts);
