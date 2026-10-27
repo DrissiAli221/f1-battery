@@ -1,0 +1,13 @@
+[Unit]
+Description=f1-battery PostgreSQL backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/f1-battery/deploy/oracle
+ExecStart=/opt/f1-battery/deploy/oracle/scripts/backup.sh
+UMask=0077
+NoNewPrivileges=yes

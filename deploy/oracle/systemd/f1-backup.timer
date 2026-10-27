@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily f1-battery database backup
+
+[Timer]
+# RCP's backup runs at 03:00 UTC; keep clear of it.
+OnCalendar=*-*-* 02:00:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

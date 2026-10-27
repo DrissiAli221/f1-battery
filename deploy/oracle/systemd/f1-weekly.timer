@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly f1-battery refresh (Mondays, after the race weekend)
+
+[Timer]
+OnCalendar=Mon *-*-* 04:00:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

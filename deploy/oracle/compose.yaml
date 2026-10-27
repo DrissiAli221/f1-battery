@@ -1,0 +1,381 @@
+# f1-battery production stack for the shared Oracle ARM VM (see README.md).
+# Pattern follows RCP's deploy/demo/compose.yaml: images built on the VM, secrets as files,
+# memory limits per service, nothing published to the host. Public traffic arrives through
+# RCP's Caddy, which reaches `api` (and the optional `web-local` fallback) over RCP's external `edge` network.
+#
+# Use scripts/dc.sh instead of plain `docker compose`: it exports the per-image tags
+# (API_IMAGE, INGEST_IMAGE, REPLAY_IMAGE, MODEL_IMAGE) that the scripts derive from git.
+name: f1-battery
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Hardening shared by the application containers. UID/GID are the VM user's, so the 0600
+# secret files (owned by that user) stay readable without loosening their mode.
+x-app: &app
+  user: "${F1_UID:-1000}:${F1_GID:-1000}"
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=128m,mode=1777
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  logging: *logging
+
+x-java: &java
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20 -Djava.io.tmpdir=/tmp"
+
+services:
+  db:
+    image: timescale/timescaledb:2.30.2-pg16
+    restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - shared_buffers=160MB
+      - -c
+      - effective_cache_size=320MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - max_connections=40
+    environment:
+      POSTGRES_DB: f1battery
+      POSTGRES_USER: f1
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      TIMESCALEDB_TELEMETRY: "off"
+    secrets:
+      - postgres_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U f1 -d f1battery"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    cpu_shares: 512
+    mem_limit: 640m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+  # ---- replay stack: `kafka` and `replay-consumer` run only with the `replay` profile ----------
+  # scripts/dc.sh adds --profile replay when F1_REPLAY=1 in .env (the default). Set F1_REPLAY=0
+  # and API_REPLAY_ENABLED=false to run without Kafka (README, memory options B and C).
+  kafka:
+    profiles: [replay]
+    image: apache/kafka:3.8.0
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      # The container name, not localhost: the api and replay containers reach the broker by it.
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Topics are created explicitly (with retention) by the replay module; an api consumer
+      # asking for a missing topic must get "no-topic", not a default-config topic.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      # Replay data is disposable: keep the log small.
+      KAFKA_LOG_RETENTION_HOURS: 6
+      KAFKA_HEAP_OPTS: "-Xms128m -Xmx384m"
+      # The volume below must be where the log lives (the image default is /tmp/kraft-combined-logs).
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - kafka
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    cpu_shares: 512
+    mem_limit: 640m
+    cpus: 0.75
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+  api:
+    <<: *app
+    image: ${API_IMAGE:-f1battery-api:local}
+    build:
+      context: ../..
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
+    environment:
+      <<: *java
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/f1battery
+      DB_USER: f1_api
+      DB_PASSWORD_FILE: /run/secrets/api_password
+      API_CORS_ORIGIN: ${F1_SITE_URL:?Set F1_SITE_URL in .env (the https://<id>.cloudfront.net origin)}
+      API_RATE_PER_MIN: ${API_RATE_PER_MIN:-60}
+      # Must include the Caddy container (it reaches the api over `edge`). scripts/deploy.sh
+      # narrows this to the exact edge subnet; the default is Docker's private range.
+      API_TRUSTED_PROXIES: ${API_TRUSTED_PROXIES:-172.16.0.0/12}
+      API_LIVE_MAX_STREAMS: ${API_LIVE_MAX_STREAMS:-20}
+      API_REPLAY_ENABLED: ${API_REPLAY_ENABLED:-true}
+      KAFKA_BOOTSTRAP: kafka:9092
+    secrets:
+      - api_password
+    volumes:
+      - ./scripts/entrypoint-secrets.sh:/opt/f1/entrypoint-secrets.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      database:
+      kafka:
+      edge:
+        aliases: [f1-api]
+    stop_grace_period: 20s
+    cpu_shares: 512
+    mem_limit: 448m
+    cpus: 1.0
+
+  replay-consumer:
+    <<: *app
+    profiles: [replay]
+    image: ${REPLAY_IMAGE:-f1battery-replay:local}
+    build:
+      context: ../..
+      dockerfile: replay/Dockerfile
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
+    command: ["--mode=consumer", "--session=${REPLAY_SESSION_KEY:-11361}"]
+    environment:
+      <<: *java
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=45 -Xss512k -Djava.io.tmpdir=/tmp"
+      KAFKA_BOOTSTRAP: kafka:9092
+    volumes:
+      - ./scripts/entrypoint-secrets.sh:/opt/f1/entrypoint-secrets.sh:ro
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - kafka
+    cpu_shares: 512
+    mem_limit: 192m
+    cpus: 0.5
+
+  # Optional no-AWS fallback: `scripts/dc.sh --profile web-local up -d web`. The public site is
+  # served from S3 through CloudFront; this container is not started by default and nothing routes to it
+  # unless you add a f1-web handler to the Caddy site block yourself.
+  web:
+    profiles: [web-local]
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    user: "${F1_UID:-1000}:${F1_GID:-1000}"
+    # Static file server for the Vite build; RCP's Caddy terminates TLS and proxies here.
+    command: ["caddy", "file-server", "--root", "/srv", "--listen", ":8080"]
+    environment:
+      XDG_DATA_HOME: /tmp/xdg-data
+      XDG_CONFIG_HOME: /tmp/xdg-config
+    volumes:
+      - ../../web/dist:/srv:ro
+    networks:
+      edge:
+        aliases: [f1-web]
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    # The caddy binary carries file capability cap_net_bind_service; with no-new-privileges and
+    # an empty bounding set the exec fails ("operation not permitted") unless it is added back.
+    cap_add: [NET_BIND_SERVICE]
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    cpu_shares: 512
+    mem_limit: 32m
+    cpus: 0.25
+    logging: *logging
+
+  # ---- run-once jobs: docker compose --profile jobs run --rm <service> ... -----------------
+
+  ingest:
+    <<: *app
+    profiles: [jobs]
+    image: ${INGEST_IMAGE:-f1battery-ingest:local}
+    build:
+      context: ../..
+      dockerfile: ingest/Dockerfile
+    restart: "no"
+    entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
+    environment:
+      <<: *java
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/f1battery
+      DB_USER: f1
+      DB_PASSWORD_FILE: /run/secrets/postgres_password
+      # Becomes the password of the read-only f1_api role (migration V7).
+      API_DB_PASSWORD_FILE: /run/secrets/api_password
+      INGEST_LOCAL_ROOT: /data/raw/openf1
+    secrets:
+      - postgres_password
+      - api_password
+    volumes:
+      - ./scripts/entrypoint-secrets.sh:/opt/f1/entrypoint-secrets.sh:ro
+      - ../../data/raw/openf1:/data/raw/openf1:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - database
+      - egress   # OpenF1 API (--source=api)
+    # The CPUs are shared with RCP (2 OCPU after the resize): jobs get a low CPU weight so RCP's latency wins contention.
+    cpu_shares: 256
+    mem_limit: 640m
+    cpus: 1.0
+
+  model:
+    <<: *app
+    profiles: [jobs]
+    image: ${MODEL_IMAGE:-f1battery-model:local}
+    build:
+      context: ../..
+      dockerfile: model/Dockerfile
+    restart: "no"
+    # Argument: optional run id (uuid); a new one is generated when omitted.
+    entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "/usr/local/bin/f1-model-run"]
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/f1battery
+      DB_USER: f1
+      DB_PASSWORD_FILE: /run/secrets/postgres_password
+      # Curated straight definitions (gitignored, copied to the VM by hand; see README).
+      F1B_SECTIONS_DIR: /data/reference/tracinginsights/sections
+    secrets:
+      - postgres_password
+    volumes:
+      - ./scripts/entrypoint-secrets.sh:/opt/f1/entrypoint-secrets.sh:ro
+      - ../../data/reference:/data/reference:ro
+      # regulation.py reads docs/regulation-events.csv relative to the repo root, which is / in the image.
+      - ../../docs:/docs:ro
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+      - /app/out:size=64m,mode=1777   # quality.py writes its per-session reports under the package
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - database
+    cpu_shares: 256
+    mem_limit: 1536m
+    cpus: 1.0
+
+  # Run-once, never started by `up`: `scripts/dc.sh run --rm replay-producer` (running a named
+  # service activates its profile). Same image as replay-consumer, which is what builds it.
+  replay-producer:
+    <<: *app
+    profiles: [replay-run]
+    image: ${REPLAY_IMAGE:-f1battery-replay:local}
+    build:
+      context: ../..
+      dockerfile: replay/Dockerfile
+    pull_policy: never
+    restart: "no"
+    entrypoint: ["/bin/bash", "/opt/f1/entrypoint-secrets.sh", "java", "-jar", "/app/app.jar"]
+    command: ["--mode=producer", "--session=${REPLAY_SESSION_KEY:-11361}", "--speed=${REPLAY_SPEED:-20}"]
+    environment:
+      <<: *java
+      DB_URL: jdbc:postgresql://db:5432/f1battery
+      # Read-only is enough: the producer only reads car_data and location.
+      DB_USER: f1_api
+      DB_PASSWORD_FILE: /run/secrets/api_password
+      KAFKA_BOOTSTRAP: kafka:9092
+    secrets:
+      - api_password
+    volumes:
+      - ./scripts/entrypoint-secrets.sh:/opt/f1/entrypoint-secrets.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - database
+      - kafka
+    cpu_shares: 256
+    mem_limit: 320m
+    cpus: 0.5
+
+  # aws CLI for the off-host copies (no host install needed). Credentials stay a 0600 file.
+  s3:
+    profiles: [jobs]
+    image: amazon/aws-cli:2.17.0
+    restart: "no"
+    user: "${F1_UID:-1000}:${F1_GID:-1000}"
+    environment:
+      AWS_SHARED_CREDENTIALS_FILE: /run/secrets/aws_credentials
+      AWS_PROFILE: ${AWS_PROFILE:-default}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_EC2_METADATA_DISABLED: "true"
+      HOME: /tmp
+    secrets:
+      - aws_credentials
+    volumes:
+      - ../../data/raw:/data/raw:ro
+      - ../../data/reference:/data/reference:ro
+      - ./backups:/backups:ro
+      # Private web assets (fonts, wallpaper) are pulled here before the web build; see build-web.sh.
+      - ../../web/public:/web/public
+      # The built site, synced to the web bucket by build-web.sh.
+      - ../../web/dist:/web/dist:ro
+    networks:
+      - egress
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    cpu_shares: 256
+    mem_limit: 256m
+    cpus: 0.5
+    logging: *logging
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password
+  api_password:
+    file: ./secrets/api_password
+  aws_credentials:
+    file: ./secrets/aws_credentials
+
+networks:
+  database:
+    internal: true
+  kafka:
+    internal: true
+  # Outbound-only network for the jobs that call the internet (OpenF1, S3).
+  egress:
+  # RCP's Caddy network. RCP's compose project is `rcp-demo`, so its network is rcp-demo_edge.
+  edge:
+    external: true
+    name: ${EDGE_NETWORK:-rcp-demo_edge}
+
+volumes:
+  pgdata:
+  kafka_data:
