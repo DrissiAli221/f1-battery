@@ -42,6 +42,10 @@ model/out/
 web/node_modules/
 web/dist/
 
+# Agent skills installed with `npx skills add` (tooling, not project source)
+.agents/
+.claude/skills/
+skills-lock.json
 # Public-readiness: secrets, local tooling output, never commit
 .env.*
 !.env.example

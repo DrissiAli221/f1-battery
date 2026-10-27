@@ -1,0 +1,532 @@
+import type { Outline, Straight } from './types';
+
+/*
+ * Track geometry shared by the map and the distance strip.
+ *
+ * Units: the outline's `d` is in the source's position units (decimetres), so the lap length
+ * in metres is the last `d` / 10. Model distances (cut-offs, regime bins) are metres from the
+ * start/finish line along the driver's own lap; they are placed on the outline at the same
+ * metre value, wrapped into [0, lap). Straights arrive as lap fractions (0-100 %).
+ */
+
+export interface Pt {
+  d: number;
+  x: number;
+  y: number;
+}
+
+export interface Pose {
+  x: number;
+  y: number;
+  /** Heading in degrees, for rotating marks along the line. */
+  deg: number;
+  /** Unit normal pointing to the inside of the loop. */
+  nx: number;
+  ny: number;
+}
+
+export interface TrackStraight extends Straight {
+  d0: number;
+  d1: number;
+  len: number;
+  mid: number;
+  /** The corner the straight runs into, from the curated name "A → B", or null. */
+  into: string | null;
+}
+
+export function lapLength(outline: Outline): number {
+  const pts = outline.points;
+  const last = pts[pts.length - 1];
+  // Close the loop: the outline ends a few metres before the start point.
+  const closing = Math.hypot(last.x - pts[0].x, last.y - pts[0].y);
+  return (last.d + closing) / 10;
+}
+
+export const wrap = (d: number, lap: number) => ((d % lap) + lap) % lap;
+
+export function trackStraights(straights: Straight[], lap: number): TrackStraight[] {
+  return straights.map((s) => {
+    const d0 = (s.start_pct / 100) * lap;
+    const d1 = (s.end_pct / 100) * lap;
+    const len = wrap(d1 - d0, lap);
+    const m = /→\s*(.+)$/.exec(s.label ?? '');
+    return { ...s, d0, d1, len, mid: wrap(d0 + len / 2, lap), into: m ? m[1].trim() : null };
+  });
+}
+
+/**
+ * Signed distance along a straight from its start. A point shortly before the start comes out
+ * negative rather than wrapping to almost a full lap: model distances are measured on each
+ * driver's own lap, so a cut-off near the start of a straight can land a few metres before the
+ * outline's straight window.
+ */
+export function along(s: TrackStraight, d: number, lap: number): number {
+  const a = wrap(d - s.d0, lap);
+  return a > s.len + (lap - s.len) / 2 ? a - lap : a;
+}
+
+/** Metres from d to the end of the straight, or null when d is outside the straight window. */
+export function beforeEnd(s: TrackStraight, d: number, lap: number): number | null {
+  const a = along(s, d, lap);
+  return a >= 0 && a <= s.len ? s.len - a : null;
+}
+
+export function straightAt(straights: TrackStraight[], d: number, lap: number): TrackStraight | null {
+  return (
+    straights.find((s) => {
+      const a = along(s, d, lap);
+      return a >= 0 && a <= s.len;
+    }) ?? null
+  );
+}
+
+/**
+ * The source outline is one lap of `location` at 50 m spacing, and its points carry a few
+ * metres of positional noise, so a hairline through them wobbles. One pass of a [1 2 1]
+ * kernel over the closed ring takes the wobble out while keeping every bend (a 50 m step
+ * cannot carry real geometry finer than that anyway).
+ */
+function smooth(P: Pt[]): Pt[] {
+  const n = P.length;
+  if (n < 5) return P;
+  return P.map((p, i) => {
+    const a = P[(i - 1 + n) % n];
+    const c = P[(i + 1) % n];
+    return { d: p.d, x: (a.x + 2 * p.x + c.x) / 4, y: (a.y + 2 * p.y + c.y) / 4 };
+  });
+}
+
+/** Closed Catmull-Rom densification of the smoothed outline in metres, 8 points per source segment. */
+function densify(outline: Outline, lap: number): Pt[] {
+  const P = smooth(outline.points.map((p) => ({ d: p.d / 10, x: p.x, y: -p.y })));
+  const n = P.length;
+  const K = 8;
+  const out: Pt[] = [];
+  for (let i = 0; i < n; i++) {
+    const p0 = P[(i - 1 + n) % n];
+    const p1 = P[i];
+    const p2 = P[(i + 1) % n];
+    const p3 = P[(i + 2) % n];
+    const dA = p1.d;
+    const dB = i + 1 < n ? P[i + 1].d : lap;
+    for (let k = 0; k < K; k++) {
+      const t = k / K;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const cr = (a: number, b: number, c: number, e: number) =>
+        0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - e) * t2 + (-a + 3 * b - 3 * c + e) * t3);
+      out.push({ d: dA + (dB - dA) * t, x: cr(p0.x, p1.x, p2.x, p3.x), y: cr(p0.y, p1.y, p2.y, p3.y) });
+    }
+  }
+  out.push({ d: lap, x: out[0].x, y: out[0].y });
+  return out;
+}
+
+const rotate = (pts: Pt[], a: number): Pt[] => {
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  return pts.map((p) => ({ d: p.d, x: p.x * c - p.y * s, y: p.x * s + p.y * c }));
+};
+
+function bbox(pts: Pt[]) {
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  for (const p of pts) {
+    if (p.x < x0) x0 = p.x;
+    if (p.x > x1) x1 = p.x;
+    if (p.y < y0) y0 = p.y;
+    if (p.y > y1) y1 = p.y;
+  }
+  return { x0, x1, y0, y1, w: x1 - x0 || 1, h: y1 - y0 || 1 };
+}
+
+export interface Pad {
+  l: number;
+  r: number;
+  t: number;
+  b: number;
+}
+
+/** Circuit reference data (src/content/circuits/<key>.json, generated by scripts/gen-circuits.mjs). */
+export interface CircuitRef {
+  circuit_key: number;
+  name: string;
+  location: string;
+  country: string;
+  iso2: string | null;
+  meeting_name: string | null;
+  /** Broadcast map orientation, degrees, or null when unknown. */
+  rotation: number | null;
+  /** Official corner numbers at their apex in the live-timing frame. */
+  corners: { n: number; x: number; y: number; angle?: number; len?: number }[];
+  /** The high-resolution centreline, same frame; null when not available. */
+  outline: [number, number][] | null;
+}
+
+export interface CornerMark {
+  n: number;
+  /** Apex on the drawn road, px. */
+  x: number;
+  y: number;
+  /** Where the number sits: outside the bend, px. */
+  lx: number;
+  ly: number;
+  /** Lap distance of the apex, m (from the position frame, so approximate to ~10 m). */
+  d: number;
+}
+
+export interface Projection {
+  lap: number;
+  /** The drawn ring, px, with lap distance on each point. */
+  pts: Pt[];
+  /** Screen pixels per metre of track. */
+  scale: number;
+  pathD: string;
+  at: (d: number) => { x: number; y: number };
+  pose: (d: number) => Pose;
+  /** Fraction of the drawn path length at lap distance d. */
+  frac: (d: number) => number;
+  /** Path from d0 to d1 in the direction of travel (wraps over the line), offset along the inner normal. */
+  sub: (d0: number, d1: number, offset?: number) => string;
+  nearest: (x: number, y: number) => { d: number; dist: number };
+  /** Metres per screen pixel along the line. */
+  mpp: number;
+  /** Official corners placed on the road, when the circuit reference has them. */
+  corners: CornerMark[];
+  /** Screen direction of north as a unit vector, when the orientation is known. */
+  north: { x: number; y: number } | null;
+  /** Whether the road is drawn from the reference centreline (true) or the API outline. */
+  hires: boolean;
+}
+
+/**
+ * Fits the track into a W x H box.
+ *
+ * Two sources share one frame (the F1 live-timing position frame, D32): the API outline (one
+ * downsampled lap of `location`, 50 m spacing, carrying lap distance) and, when available, the
+ * circuit reference centreline (hundreds of points, no distance). The road is drawn from the
+ * centreline; every lap distance is first located on the API outline, then snapped onto the
+ * centreline by a monotone distance-to-arc-length map built once per projection. So the trail,
+ * the tags and the ticks all sit on the road that is drawn.
+ *
+ * Orientation: the reference's broadcast rotation when known, so each circuit reads the way
+ * it does on TV; otherwise the rotation (15 degree steps) that fills the box best.
+ */
+/** The map's orientation in radians: the broadcast one, turned a quarter when `landscape` asks for a wide shape. */
+function orientation(
+  ring: Pt[],
+  ref: CircuitRef | null | undefined,
+  landscape: boolean,
+  iw: number,
+  ih: number
+): number | null {
+  if (ref?.rotation === null || ref?.rotation === undefined) return null;
+  // The frame is x east, y north (flipped to screen). The reference's rotation is the
+  // broadcast orientation in that frame's own convention; on screen it is a clockwise turn
+  // of (rotation - 90) degrees (checked on Monza and Singapore against the TV maps).
+  let a = ((ref.rotation - 90) * Math.PI) / 180;
+  if (landscape) {
+    const b = bbox(rotate(ring, a));
+    // Turn a tall outline a quarter when that fits the box better: landscape circuits get wider,
+    // portrait ones stay tall in a tall box.
+    if (b.h > b.w && Math.min(iw / b.h, ih / b.w) > Math.min(iw / b.w, ih / b.h)) a += Math.PI / 2;
+  }
+  return a;
+}
+
+/** Aspect (height over width) of the drawn track at its orientation, for sizing a box to it. */
+export function trackAspect(outline: Outline, ref: CircuitRef | null | undefined, landscape = true): number {
+  const lap = lapLength(outline);
+  const hires = !!ref?.outline && ref.outline.length > 20;
+  const ring: Pt[] = hires ? ref!.outline!.map(([x, y], i) => ({ d: i, x, y: -y })) : densify(outline, lap);
+  const a = orientation(ring, ref, landscape, 2, 1) ?? 0;
+  const b = bbox(rotate(ring, a));
+  return b.h / b.w;
+}
+
+export function project(
+  outline: Outline,
+  W: number,
+  H: number,
+  pad: Pad,
+  ref?: CircuitRef | null,
+  landscape = true
+): Projection {
+  const lap = lapLength(outline);
+  const dense = densify(outline, lap);
+  const iw = Math.max(10, W - pad.l - pad.r);
+  const ih = Math.max(10, H - pad.t - pad.b);
+  const hires = !!ref?.outline && ref.outline.length > 20;
+  const ring: Pt[] = hires ? ref!.outline!.map(([x, y], i) => ({ d: i, x, y: -y })) : dense;
+
+  // Orientation.
+  let angle: number;
+  const oriented = orientation(ring, ref, landscape, iw, ih);
+  if (oriented !== null) {
+    angle = oriented;
+  } else {
+    let best = { a: 0, s: 0 };
+    for (let deg = 0; deg < 180; deg += 15) {
+      const b = bbox(rotate(ring, (deg * Math.PI) / 180));
+      const sc = Math.min(iw / b.w, ih / b.h);
+      if (sc > best.s * (deg === 0 ? 1 : 1.04)) best = { a: (deg * Math.PI) / 180, s: sc };
+    }
+    angle = best.a;
+  }
+  const rotRing = rotate(ring, angle);
+  const b = bbox(rotRing);
+  const s = Math.min(iw / b.w, ih / b.h);
+  const ox = pad.l + (iw - b.w * s) / 2;
+  const oy = pad.t + (ih - b.h * s) / 2;
+  const toPx = (p: { x: number; y: number }) => {
+    const c = Math.cos(angle);
+    const sn = Math.sin(angle);
+    const rx = p.x * c - p.y * sn;
+    const ry = p.x * sn + p.y * c;
+    return { x: ox + (rx - b.x0) * s, y: oy + (ry - b.y0) * s };
+  };
+
+  // The drawn ring in px, closed, with cumulative px length.
+  const R = ring.map((p) => ({ ...toPx(p), d: p.d }));
+  if (hires) R.push({ ...R[0], d: 0 });
+  const cum = [0];
+  for (let i = 1; i < R.length; i++)
+    cum.push(cum[i - 1] + Math.hypot(R[i].x - R[i - 1].x, R[i].y - R[i - 1].y));
+  const total = cum[cum.length - 1] || 1;
+
+  // Lap distance -> arc length on the drawn ring. From the API outline directly, or, with a
+  // centreline, through nearest-point snapping of each dense outline point, unwrapped so the
+  // map is monotone over the lap.
+  const D = dense.map((p) => ({ ...toPx(p), d: p.d }));
+  let sOf: number[];
+  if (hires) {
+    sOf = [];
+    const nR = R.length - 1; // ring vertices (the last repeats the first)
+    let prev = -1;
+    let prevIdx = -1;
+    let turns = 0;
+    const snapQ: number[] = [];
+    const seg = (p: { x: number; y: number }, a: number, c: number) => {
+      const vx = R[c].x - R[a].x;
+      const vy = R[c].y - R[a].y;
+      const L2 = vx * vx + vy * vy || 1;
+      const t = Math.max(0, Math.min(1, ((p.x - R[a].x) * vx + (p.y - R[a].y) * vy) / L2));
+      return {
+        q: (R[a].x + vx * t - p.x) ** 2 + (R[a].y + vy * t - p.y) ** 2,
+        s: cum[a] + (cum[c] - cum[a]) * t,
+      };
+    };
+    for (const p of D) {
+      // Nearest ring vertex: a global search for the first point, then only a forward window
+      // from the previous match, so a crossover (Suzuka) cannot jump to the other branch.
+      let bi = 0;
+      let bq = Infinity;
+      const from = prevIdx < 0 ? 0 : prevIdx - 4;
+      const span = prevIdx < 0 ? nR : Math.min(nR, 80);
+      for (let k = 0; k < span; k++) {
+        const j = (((from + k) % nR) + nR) % nR;
+        const q = (R[j].x - p.x) ** 2 + (R[j].y - p.y) ** 2;
+        if (q < bq) {
+          bq = q;
+          bi = j;
+        }
+      }
+      // Sub-vertex precision: project onto the segment after or before the vertex.
+      const f = seg(p, bi, bi + 1);
+      // The segment before vertex 0 is the closing one (nR-1 -> nR), whose s runs up to `total`.
+      const g = bi === 0 ? seg(p, nR - 1, nR) : seg(p, bi - 1, bi);
+      const sv = f.q <= g.q ? f.s : g.s;
+      snapQ.push(Math.min(f.q, g.q));
+      if (prev >= 0 && sv < prev - total / 2) turns++;
+      else if (prev >= 0 && sv > prev + total / 2) turns--;
+      sOf.push(sv + turns * total);
+      prev = sv;
+      prevIdx = bi;
+    }
+    // Normalise so s(0) = 0, then check the map is usable: monotone, one full turn, and no
+    // outline point further than ~30 m from the centreline (the frames might not agree on
+    // some circuit). Otherwise draw the road from the outline itself.
+    const s0 = sOf[0];
+    sOf = sOf.map((v) => v - s0);
+    // A frame mismatch puts most points far off the road; one odd stretch of the outline
+    // (a reference lap through the pit lane, a data gap) is a local deviation the snap
+    // absorbs. So: the 90th percentile of the snap distance under 30 m, the worst under
+    // 150 m. Outline noise can also project a point a few metres behind the previous one:
+    // clamp those, and give up only on a real reversal (over 60 m back).
+    const sorted = [...snapQ].sort((a, b) => a - b);
+    const p90 = Math.sqrt(sorted[Math.floor(sorted.length * 0.9)] ?? 0) / s / 10;
+    const worstM = Math.sqrt(sorted[sorted.length - 1] ?? 0) / s / 10;
+    let ok = Math.abs(sOf[sOf.length - 1] - total) < total * 0.05 && p90 <= 30 && worstM <= 150;
+    for (let i = 1; ok && i < sOf.length; i++) {
+      if (sOf[i] < sOf[i - 1] - 600 * s) ok = false;
+      else if (sOf[i] < sOf[i - 1]) sOf[i] = sOf[i - 1];
+    }
+    if (import.meta.env.DEV && !ok)
+      console.debug('track: centreline rejected', { end: sOf[sOf.length - 1] / total, p90, worstM });
+    if (!ok) return project(outline, W, H, pad, ref ? { ...ref, outline: null } : null, landscape);
+  } else {
+    sOf = cum.slice(0, D.length);
+  }
+  const sAt = (d: number): number => {
+    const dd = Math.min(wrap(d, lap), lap - 1e-6);
+    let lo = 0;
+    let hi = D.length - 1;
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (D[m].d <= dd) lo = m;
+      else hi = m;
+    }
+    const t = (dd - D[lo].d) / (D[lo + 1].d - D[lo].d || 1);
+    return (((sOf[lo] + (sOf[lo + 1] - sOf[lo]) * t) % total) + total) % total;
+  };
+  const dAt = (sv: number): number => {
+    const ss = ((sv % total) + total) % total;
+    let lo = 0;
+    let hi = sOf.length - 1;
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (sOf[m] <= ss) lo = m;
+      else hi = m;
+    }
+    const t = (ss - sOf[lo]) / (sOf[lo + 1] - sOf[lo] || 1);
+    return wrap(D[lo].d + (D[lo + 1].d - D[lo].d) * t, lap);
+  };
+  const ptAtS = (sv: number) => {
+    const ss = Math.min(((sv % total) + total) % total, total - 1e-6);
+    let lo = 0;
+    let hi = cum.length - 1;
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (cum[m] <= ss) lo = m;
+      else hi = m;
+    }
+    const t = (ss - cum[lo]) / (cum[lo + 1] - cum[lo] || 1);
+    return { x: R[lo].x + (R[lo + 1].x - R[lo].x) * t, y: R[lo].y + (R[lo + 1].y - R[lo].y) * t };
+  };
+
+  let area = 0;
+  for (let i = 0; i < R.length - 1; i++) area += R[i].x * R[i + 1].y - R[i + 1].x * R[i].y;
+  const inner = area > 0 ? 1 : -1;
+
+  const at = (d: number) => ptAtS(sAt(d));
+  const pose = (d: number): Pose => {
+    const p = at(d);
+    const a = at(d - 14);
+    const c = at(d + 14);
+    const ang = Math.atan2(c.y - a.y, c.x - a.x);
+    return {
+      x: p.x,
+      y: p.y,
+      deg: (ang * 180) / Math.PI,
+      nx: -Math.sin(ang) * inner,
+      ny: Math.cos(ang) * inner,
+    };
+  };
+  const frac = (d: number) => sAt(d) / total;
+  const sub = (d0: number, d1: number, off = 0) => {
+    const list: [number, number][] = [];
+    const push = (p: { x: number; y: number }, d: number) => {
+      if (off === 0) list.push([p.x, p.y]);
+      else {
+        const q = pose(d);
+        list.push([q.x + q.nx * off, q.y + q.ny * off]);
+      }
+    };
+    const sa = sAt(d0);
+    let sb = sAt(d1);
+    if (wrap(d1, lap) === 0 && d1 !== d0) sb = total;
+    if (sb < sa) sb += total;
+    push(ptAtS(sa), d0);
+    // Ring vertices strictly between sa and sb (unwrapped).
+    for (let k = 0; k < 2; k++) {
+      for (let j = 1; j < cum.length - 1; j++) {
+        const sv = cum[j] + k * total;
+        if (sv > sa && sv < sb) push(R[j], dAt(sv));
+      }
+    }
+    push(ptAtS(sb), d1);
+    return 'M' + list.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join('L');
+  };
+  const pathD = 'M' + R.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join('L') + 'Z';
+  const nearest = (x: number, y: number) => {
+    let bestQ = Infinity;
+    let bs = 0;
+    for (let j = 0; j < R.length - 1; j++) {
+      const q = (R[j].x - x) ** 2 + (R[j].y - y) ** 2;
+      if (q < bestQ) {
+        bestQ = q;
+        bs = cum[j];
+      }
+    }
+    return { d: dAt(bs), dist: Math.sqrt(bestQ) };
+  };
+
+  // Corners: apex snapped to the road; the number sits where the reference's label angle
+  // points (the same placement FastF1 and the official circuit guides use), 54 m out.
+  const corners: CornerMark[] = (ref?.corners ?? []).map((c) => {
+    const p = toPx({ x: c.x, y: -c.y });
+    const n = nearest(p.x, p.y);
+    const q = at(n.d);
+    const a = c.angle ?? 0;
+    const l = toPx({
+      x: c.x + 540 * Math.cos((a * Math.PI) / 180),
+      y: -(c.y + 540 * Math.sin((a * Math.PI) / 180)),
+    });
+    // Keep the label at a readable distance from the road at any map size: 54 m scaled, but
+    // never under 18 px nor over 30 px.
+    const vx = l.x - q.x;
+    const vy = l.y - q.y;
+    const len = Math.hypot(vx, vy) || 1;
+    const off = Math.max(18, Math.min(30, len));
+    return { n: c.n, x: q.x, y: q.y, lx: q.x + (vx / len) * off, ly: q.y + (vy / len) * off, d: n.d };
+  });
+
+  const north =
+    ref?.rotation !== null && ref?.rotation !== undefined
+      ? (() => {
+          // Frame north (0, +1) is screen (0, -1) before rotation.
+          const c = Math.cos(angle);
+          const sn = Math.sin(angle);
+          return { x: -(-sn), y: -c };
+        })()
+      : null;
+
+  const pts = hires ? R.map((p, i) => ({ x: p.x, y: p.y, d: dAt(cum[i]) })) : D;
+  return { lap, pts, scale: s, pathD, at, pose, frac, sub, nearest, mpp: lap / total, corners, north, hires };
+}
+
+/** Regime runs: consecutive 50 m bins with the same label merged, "other" where unlabelled. */
+export interface RegimeRun {
+  label: 'deploy' | 'plateau' | 'lift' | 'brake' | 'other';
+  d0: number;
+  d1: number;
+}
+
+export function regimeRuns(
+  bins: { d_start_m: number; label: RegimeRun['label'] }[],
+  lap: number,
+  binM = 50
+): RegimeRun[] {
+  if (!bins.length) return [];
+  const byStart = new Map(bins.map((b) => [Math.round(b.d_start_m), b.label]));
+  const runs: RegimeRun[] = [];
+  let cur: RegimeRun | null = null;
+  for (let d0 = 0; d0 < lap; d0 += binM) {
+    const label = byStart.get(d0) ?? 'other';
+    const d1 = Math.min(d0 + binM, lap);
+    if (cur && cur.label === label) cur.d1 = d1;
+    else {
+      cur = { label, d0, d1 };
+      runs.push(cur);
+    }
+  }
+  return runs;
+}
+
+export function regimeAt(runs: RegimeRun[], d: number): RegimeRun['label'] | null {
+  if (!runs.length) return null;
+  for (const r of runs) if (d >= r.d0 && d < r.d1) return r.label;
+  return 'other';
+}

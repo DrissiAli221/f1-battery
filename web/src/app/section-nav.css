@@ -1,0 +1,31 @@
+@layer tokens, base, components, pages, overrides;
+@layer components {
+  /* In-page section row: pinned under the 64px header on desktop, static on phone. */
+  .page-sections a[aria-current] {
+    color: #f4f4ef;
+  }
+  .page-sections a:focus-visible {
+    outline: 2px solid #f4f4ef;
+    outline-offset: 2px;
+  }
+  @media (min-width: 1000px) {
+    .section-rail {
+      position: sticky;
+      top: var(--header-h);
+      z-index: 15;
+      /* Same surface as the ground it pins over: one hairline, not a separate black bar between hero and band. */
+      /* Transparent in the flow so the ground's depth runs through it; solid only once pinned (rail.ts sets data-stuck). */
+      background: transparent;
+      box-shadow: 0 1px 0 var(--band-line);
+      transition: background-color var(--dur-ui) var(--ease);
+    }
+    .section-rail[data-stuck] {
+      background: var(--ground);
+    }
+    .section-rail-sentinel {
+      height: 1px;
+      margin-top: -1px;
+      pointer-events: none;
+    }
+  }
+}

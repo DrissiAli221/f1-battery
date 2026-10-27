@@ -1,0 +1,7 @@
+dist
+node_modules
+public
+src/content
+scripts
+*.md
+package-lock.json

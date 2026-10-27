@@ -1,0 +1,2854 @@
+@layer tokens, base, components, pages, overrides;
+@layer pages {
+  /* The ground wraps <main> and the atmosphere layer: ground (opaque, hides the sticky footer), then
+     atmosphere (z 0), then <main> content (z 1). */
+  .page-ground {
+    position: relative;
+    z-index: 1;
+    background:
+      radial-gradient(ellipse 100% 700px at 12% 520px, #151514 0%, transparent 80%),
+      radial-gradient(ellipse 90% 850px at 100% 1300px, #111110 0%, transparent 85%), #060606;
+    box-shadow: 0 10px 28px #0008;
+  }
+  .session-main {
+    position: relative;
+    z-index: 1;
+    padding-bottom: 72px;
+  }
+  .session-nav .nav-island {
+    gap: 28px;
+  }
+  .session-nav .nav-island a {
+    font-size: var(--type-label);
+  }
+  .session-preview h1,
+  .session-preview h2,
+  .session-preview h3,
+  .session-preview h4 {
+    font-feature-settings: 'calt' 1;
+  }
+  .race-hero {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    min-height: 260px;
+    padding-top: 48px;
+    padding-bottom: 38px;
+    gap: 30px;
+    isolation: isolate;
+  }
+  .race-hero h1 {
+    font:
+      900 clamp(68px, 8vw, 122px)/0.94 F1Black,
+      Archivo,
+      sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0;
+  }
+  .race-venue {
+    font:
+      400 13px/1.5 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: #b8b8b0;
+    margin-top: 20px;
+  }
+  .race-date {
+    font:
+      400 var(--type-body)/1.5 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    white-space: nowrap;
+    position: relative;
+    padding-bottom: 2px;
+  }
+  .race-date > span {
+    color: #77776f;
+    padding-inline: 12px;
+  }
+  /* The reading guide keeps only a top hairline; the band tint is dropped on this page. */
+  .session-preview #method.band {
+    background: transparent;
+    border-block: 0;
+    box-shadow: 0 1px 0 var(--band-line) inset;
+  }
+  .race-halftone {
+    position: absolute;
+    z-index: -1;
+    right: 0;
+    top: 0;
+    bottom: -38px;
+    width: 520px;
+    opacity: 0.58;
+    mask-image:
+      radial-gradient(ellipse closest-side at 70% 45%, #000 40%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%);
+    -webkit-mask-image:
+      radial-gradient(ellipse closest-side at 70% 45%, #000 40%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%);
+    mask-composite: intersect;
+    -webkit-mask-composite: source-in;
+    pointer-events: none;
+  }
+  .race-halftone canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .session-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.1fr;
+    gap: 20px;
+    padding-block: 28px 24px;
+    border-top: 1px solid #282826;
+  }
+  .session-controls label {
+    display: block;
+    min-width: 0;
+    font:
+      400 var(--type-label)/1.4 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: #c0c0b7;
+  }
+  .session-controls select,
+  .lap-selector select {
+    width: 100%;
+    min-height: 44px;
+    border: 0;
+    border-bottom: 1px solid #4b4b46;
+    border-radius: 0;
+    background-color: #111110;
+    color: #f4f4ef;
+    font:
+      400 var(--type-body)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    padding: 10px 34px 10px 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23c8c8c0' stroke-width='1.3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .session-controls label > select,
+  .driver-field {
+    margin-top: 10px;
+  }
+  .driver-field {
+    display: flex;
+    align-items: center;
+    position: relative;
+    min-width: 0;
+    background: #111110;
+  }
+  .driver-field .team-logo {
+    margin-left: 12px;
+    width: 24px;
+    height: 24px;
+  }
+  .driver-field select {
+    min-width: 0;
+    flex: 1;
+    background-color: transparent;
+    padding-left: 10px;
+  }
+  .team-logo {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .map-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 22px;
+    align-items: start;
+  }
+  .map-surface {
+    min-width: 0;
+    position: relative;
+    background: radial-gradient(ellipse 95% 100% at 25% 10%, #232322 0%, #181818 50%, #111111 100%);
+    padding: 24px 12px 16px;
+    --page-bg: #181818;
+  }
+  .map-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-inline: 8px;
+  }
+  .map-heading h2 {
+    font:
+      400 18px/1.3 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+  }
+  .map-heading .utility {
+    font-size: var(--type-label);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .map-footnote {
+    font:
+      400 var(--type-label)/1.5 KHF1,
+      GeistMono,
+      monospace;
+    color: #bcbcb2;
+    padding-inline: 8px;
+    margin-top: 6px;
+  }
+  .session-preview .tmap {
+    animation: none;
+    --road-line: #c5c5b6;
+    --road-line-dim: #828277;
+    --road-ground: #191919;
+  }
+  .session-preview .tmap__corner {
+    fill: #191919;
+    stroke: #a6a69a;
+  }
+  .session-preview .tmap__corner-n {
+    fill: #e0e0d3;
+  }
+  .session-preview .tmap__sid {
+    fill: #d6d6c8;
+  }
+  .session-preview .tmap__sf-label {
+    color: #d6d6c8;
+  }
+  .session-preview .tmap__tag-chip {
+    border-radius: 0;
+  }
+  .session-preview .tmap__tag-code,
+  .session-preview .tmap__tag-note {
+    border-radius: 0;
+    font-weight: 400;
+  }
+  .session-preview .tmap__corner-n {
+    font-style: normal;
+    font-weight: 400;
+  }
+  .session-preview .tmap__sf-label {
+    font-family: KHF1, GeistMono, monospace;
+  }
+  .estimate-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .driver-estimate {
+    padding: 22px;
+    background:
+      radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--team) 22%, transparent), transparent 85%),
+      #171716;
+  }
+  .driver-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .driver-identity > div {
+    min-width: 0;
+  }
+  .driver-identity h3 {
+    font:
+      400 15px/1.2 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+  }
+  .driver-identity p {
+    font:
+      400 var(--type-label)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+  .driver-code {
+    margin-left: auto;
+    align-self: start;
+    font:
+      400 var(--type-label)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--team);
+  }
+  .estimate-label {
+    font:
+      400 var(--type-label)/1.5 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: #c0c0b8;
+    margin-top: 24px;
+  }
+  .estimate-number {
+    font:
+      400 64px/1.1 GeistMono,
+      monospace;
+    letter-spacing: -0.065em;
+    display: flex;
+    align-items: baseline;
+    gap: 13px;
+    margin-top: 8px;
+    white-space: nowrap;
+  }
+  .estimate-number > span {
+    font:
+      400 var(--type-body)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    letter-spacing: 0;
+    color: #b6b6ae;
+  }
+  .flow-number {
+    font: inherit;
+    letter-spacing: inherit;
+    font-variant-numeric: tabular-nums;
+    --number-flow-mask-height: 0.08em;
+    --number-flow-mask-width: 0.1em;
+    line-height: 1;
+  }
+  .estimate-context {
+    font:
+      400 var(--type-label)/1.5 KHF1,
+      GeistMono,
+      monospace;
+    color: #bcbcb2;
+    margin-top: 8px;
+  }
+  .estimate-interval {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    border-top: 1px solid #ffffff17;
+    padding-top: 12px;
+    margin-top: 16px;
+    font:
+      400 var(--type-label)/1.4 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+  }
+  .estimate-interval span {
+    font:
+      400 var(--type-body)/1.4 GeistMono,
+      monospace;
+    color: #deded6;
+    white-space: nowrap;
+  }
+  .compare-estimate {
+    padding-block: 18px;
+  }
+  .compare-estimate .estimate-label {
+    margin-top: 16px;
+  }
+  .compare-estimate .estimate-number {
+    font-size: 40px;
+  }
+  .compare-estimate .estimate-context {
+    display: none;
+  }
+  .compare-estimate .estimate-interval {
+    margin-top: 10px;
+  }
+  .estimate-stack > .button {
+    align-self: stretch;
+    min-height: 38px;
+  }
+  .estimate-stack .text-toggle {
+    margin: 0;
+    text-align: left;
+    min-height: 32px;
+    align-self: start;
+  }
+  .analysis-layout {
+    display: grid;
+    grid-template-columns: minmax(270px, 0.85fr) minmax(0, 1.65fr);
+    gap: 48px;
+    padding-block: var(--section-pad);
+  }
+  .analysis-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .analysis-heading h2 {
+    font:
+      400 24px/1.2 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+  }
+  .analysis-heading .utility {
+    font-size: var(--type-label);
+    color: var(--muted);
+    text-align: right;
+  }
+  .quiet-note {
+    font:
+      400 var(--type-label)/1.6 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+    margin-top: 12px;
+  }
+  .tower-rows {
+    max-height: 440px;
+    overflow-y: auto;
+    margin-top: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: #55554f #111;
+  }
+  .tower-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 4px 24px 34px minmax(0, 1fr) 58px;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 12px 6px 0;
+    min-height: 44px;
+    border: 0;
+    border-bottom: 1px solid #252523;
+    background: #171716;
+    color: #e3e3da;
+    text-align: left;
+    cursor: pointer;
+  }
+  .tower-team {
+    height: 22px;
+    background: var(--team);
+  }
+  .tower-row.selected {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--team) 26%, #131312), #131312);
+    color: #fff;
+  }
+  .tower-row.compared {
+    background: #171716;
+  }
+  .tower-row .team-logo {
+    width: 24px;
+    height: 24px;
+  }
+  .tower-code {
+    font:
+      400 var(--type-body)/1 KHF1,
+      GeistMono,
+      monospace;
+  }
+  .tower-name {
+    font:
+      400 var(--type-label)/1.2 KHF1,
+      GeistMono,
+      monospace;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    color: #bcbcb2;
+  }
+  .tower-value {
+    font:
+      400 16px/1 GeistMono,
+      monospace;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .tower-row:active {
+    background: #282826;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .tower-row:hover {
+      background: #232321;
+      color: #fff;
+    }
+  }
+  .lap-panel {
+    min-width: 0;
+  }
+  .lap-selector {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-block: 20px 26px;
+  }
+  .lap-selector label {
+    font:
+      400 var(--type-label)/1.2 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: #bbb;
+  }
+  .lap-selector select {
+    width: 180px;
+  }
+  .chart-caption {
+    font:
+      400 var(--type-label)/1.6 KHF1,
+      GeistMono,
+      monospace;
+    color: #bcbcb2;
+    margin-top: 14px;
+    max-width: 75ch;
+  }
+  .cc__legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 20px;
+    padding: 0;
+    list-style: none;
+    font:
+      400 var(--type-label)/1.4 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+  .cc__legend li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .cc__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .cc__ring {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1px solid #eee;
+  }
+  .cc__code {
+    color: #f4f4ef;
+  }
+  .cc__med {
+    font:
+      400 var(--type-label)/1.3 GeistMono,
+      monospace;
+  }
+  .cc__med b {
+    font-weight: 400;
+    color: #deded6;
+  }
+  .cc__label {
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    paint-order: stroke;
+    stroke: #080808;
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+  .cc__label-k {
+    fill: var(--muted);
+  }
+  .cc__label-v {
+    fill: #f4f4ef;
+  }
+  .cc__now {
+    stroke: #f4f4ef;
+    stroke-opacity: 0.55;
+    stroke-width: 1;
+  }
+  .cc__pt {
+    cursor: pointer;
+  }
+  .lx__t {
+    stroke: #77776f;
+    stroke-width: 1;
+  }
+  .lx__t--pit {
+    stroke: #aaa;
+  }
+  .lx__t--neutral {
+    stroke: #d7bd36;
+  }
+  .tl__num {
+    fill: var(--muted);
+  }
+  .tl__unit {
+    fill: var(--muted);
+  }
+  .method-section {
+    padding-block: var(--section-pad);
+  }
+  .method-section .notice {
+    grid-template-columns: 26px minmax(0, 1fr);
+    min-height: 82px;
+  }
+  .notice-content h2 {
+    font:
+      400 16px/1.3 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    letter-spacing: 0;
+    margin: 0;
+  }
+  .method-section .method-note {
+    margin-top: 24px;
+  }
+  .method-section .method-note summary {
+    font:
+      400 14px/1.4 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+  }
+  .session-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 0;
+    background: #0e0e0d;
+    padding-block: 54px 36px;
+    min-height: 260px;
+  }
+  .footer-mark .wordmark-top {
+    font-size: clamp(30px, 5vw, 64px);
+    gap: 20px;
+  }
+  .footer-mark .wordmark-divider {
+    height: 44px;
+    background: #5d5d57;
+  }
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    align-items: end;
+    margin-top: 44px;
+    font:
+      400 var(--type-label)/1.7 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+  }
+  .footer-bottom a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    color: #f4f4ef;
+  }
+  .load-state {
+    padding-block: 40px;
+    min-height: 500px;
+  }
+  .load-state .notice {
+    grid-template-columns: 1fr auto;
+  }
+  .loading-map {
+    height: 340px;
+    margin-top: 30px;
+    background: #111110;
+  }
+  .session-preview section:focus,
+  .session-preview .lap-panel:focus {
+    outline: none;
+  }
+  @media (max-width: 1199px) {
+    .map-stage {
+      grid-template-columns: minmax(0, 1fr) 290px;
+      gap: 18px;
+    }
+    .analysis-layout {
+      gap: 30px;
+    }
+    .estimate-number {
+      font-size: 56px;
+    }
+    .driver-estimate {
+      padding: 18px;
+    }
+    .map-surface {
+      padding-inline: 12px;
+    }
+    .map-heading {
+      gap: 12px;
+    }
+    .map-heading h2 {
+      font-size: 16px;
+    }
+    .driver-identity h3 {
+      font-size: 13px;
+    }
+  }
+  @media (max-width: 999px) {
+    .map-stage {
+      grid-template-columns: 1fr;
+    }
+    .estimate-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .estimate-stack > .button {
+      grid-column: 1/-1;
+      justify-self: start;
+      min-width: 160px;
+    }
+    .compare-estimate .estimate-number {
+      font-size: 56px;
+    }
+    .compare-estimate .estimate-label {
+      margin-top: 24px;
+    }
+    .compare-estimate .estimate-context {
+      display: block;
+    }
+    .compare-estimate .estimate-interval {
+      margin-top: 16px;
+    }
+    .compare-estimate {
+      padding: 18px;
+    }
+    .analysis-layout {
+      grid-template-columns: 1fr;
+      gap: 42px;
+    }
+    .driver-tower {
+      order: 1;
+    }
+    .tower-rows {
+      flex: none;
+      height: auto;
+      max-height: 350px;
+    }
+    .lap-panel {
+      order: 0;
+    }
+    .race-hero {
+      min-height: 220px;
+    }
+    .race-hero h1 {
+      font-size: 80px;
+    }
+    .race-hero {
+      align-items: start;
+      flex-direction: column;
+      gap: 22px;
+      padding-top: 38px;
+      padding-bottom: 28px;
+    }
+    .race-date {
+      align-self: flex-start;
+    }
+    .race-halftone {
+      width: 330px;
+      opacity: 0.45;
+    }
+    .session-controls {
+      gap: 12px;
+    }
+    .session-controls select {
+      font-size: var(--type-label);
+    }
+    .footer-bottom {
+      flex-wrap: wrap;
+    }
+    .session-footer {
+      position: static;
+    }
+    .footer-inner {
+      transform: none !important;
+    }
+  }
+  @media (max-width: 720px) {
+    .session-nav .nav-island {
+      gap: 0;
+    }
+    .race-hero h1 {
+      font-size: clamp(52px, 13vw, 80px);
+    }
+    .race-hero {
+      min-height: 230px;
+    }
+    .race-venue {
+      font-size: var(--type-label);
+      max-width: 210px;
+      margin-top: 14px;
+    }
+    .race-date {
+      font-size: var(--type-label);
+    }
+    .race-halftone {
+      width: 220px;
+      opacity: 0.45;
+    }
+    .session-controls {
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 12px;
+      padding-top: 22px;
+    }
+    .session-controls label:last-child {
+      grid-column: 1/-1;
+    }
+    .session-controls label {
+      font-size: var(--type-label);
+    }
+    .driver-field .team-logo {
+      width: 22px;
+      height: 22px;
+      margin-left: 10px;
+    }
+    .driver-field select {
+      padding-left: 8px;
+      padding-right: 24px;
+      background-position: right 7px center;
+    }
+    .session-controls select {
+      font-size: var(--type-label);
+    }
+    .map-surface {
+      padding: 18px 0 14px;
+    }
+    .map-heading {
+      padding-inline: 14px;
+    }
+    .map-heading h2 {
+      font-size: 15px;
+    }
+    .map-heading .utility {
+      font-size: var(--type-label);
+    }
+    .map-footnote {
+      padding-inline: 14px;
+      font-size: var(--type-label);
+      max-width: 95%;
+    }
+    .estimate-stack {
+      grid-template-columns: 1fr;
+    }
+    .estimate-stack > .button {
+      grid-column: auto;
+    }
+    .driver-identity h3 {
+      font-size: 16px;
+    }
+    .estimate-number,
+    .compare-estimate .estimate-number {
+      font-size: 58px;
+    }
+    .compare-estimate .estimate-context {
+      display: block;
+    }
+    .analysis-heading {
+      gap: 14px;
+    }
+    .analysis-heading h2 {
+      font-size: 23px;
+    }
+    .analysis-heading .utility {
+      font-size: var(--type-label);
+      max-width: 140px;
+    }
+    .lap-selector {
+      margin-bottom: 22px;
+    }
+    .lap-selector select {
+      width: auto;
+      min-width: 200px;
+      max-width: 100%;
+    }
+    .cc__legend {
+      font-size: var(--type-label);
+      gap: 10px 16px;
+    }
+    .cc__med {
+      font-size: var(--type-label);
+    }
+    .method-section .notice {
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 12px;
+    }
+    .notice-content h2 {
+      font-size: 14px;
+    }
+    .session-main {
+      padding-bottom: 42px;
+    }
+    .session-footer {
+      padding-block: 38px 24px;
+    }
+    .footer-mark .wordmark-top {
+      font-size: 30px;
+      gap: 12px;
+    }
+    .footer-mark .wordmark-divider {
+      height: 24px;
+    }
+    .footer-bottom {
+      display: block;
+      margin-top: 26px;
+      font-size: var(--type-label);
+    }
+    .footer-bottom p + p {
+      margin-top: 16px;
+    }
+    .footer-bottom a {
+      margin-top: 12px;
+    }
+    .flow-number {
+      --number-flow-mask-width: 0.06em;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .session-footer {
+      position: static;
+    }
+    .footer-inner {
+      transform: none !important;
+    }
+    .race-halftone canvas {
+      transform: none !important;
+    }
+    .session-preview .tmap * {
+      transition: none !important;
+    }
+  }
+
+  /* Identity belongs inside the picker; colour is a guide, names and checkmarks carry meaning. */
+  .session-controls {
+    position: relative;
+    z-index: 4;
+  }
+  .session-select {
+    position: relative;
+    min-width: 0;
+  }
+  .select-label {
+    display: block;
+    font:
+      400 var(--type-label)/1.4 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: #c0c0b7;
+    margin-bottom: 10px;
+  }
+  .select-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 9px 14px 9px 12px;
+    border: 0;
+    border-bottom: 1px solid #5a5a53;
+    border-radius: 0;
+    background:
+      radial-gradient(ellipse at 0 0, color-mix(in srgb, var(--team) 20%, transparent), transparent 85%),
+      #181817;
+    color: #f4f4ef;
+    text-align: left;
+    cursor: pointer;
+  }
+  .select-value {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+    position: relative;
+  }
+  .select-team-stripe {
+    display: none;
+    width: 3px;
+    flex-shrink: 0;
+    align-self: stretch;
+    background: var(--team);
+  }
+  .select-logo {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .select-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+    flex: 1;
+  }
+  .select-name {
+    font:
+      400 var(--type-body)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .select-detail {
+    font:
+      400 var(--type-label)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    color: #b8b8b0;
+  }
+  .select-code {
+    font:
+      400 var(--type-label)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--team);
+    flex-shrink: 0;
+  }
+  .select-chevron {
+    flex-shrink: 0;
+    color: #c8c8bf;
+  }
+  .is-open > .select-trigger {
+    border-bottom-color: var(--team);
+    background-color: #232321;
+  }
+  .is-open .select-chevron {
+    rotate: 180deg;
+  }
+  .select-options {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: min(340px, 45vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #66665e #1b1b19;
+    padding: 5px;
+    background: #1b1b19;
+    border: 1px solid #4b4b44;
+    box-shadow: 0 18px 40px #0009;
+    animation: select-enter 180ms var(--ease);
+  }
+  .opens-above .select-options {
+    top: auto;
+    bottom: calc(100% - 18px);
+  }
+  .select-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 9px 10px;
+    color: #e9e9df;
+    cursor: pointer;
+  }
+  .select-option[aria-selected='true'] {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--team) 18%, #20201e), #20201e);
+  }
+  .select-option.is-active {
+    outline: 1px solid #77776b;
+    outline-offset: -1px;
+    background-color: #30302b;
+  }
+  .select-check {
+    width: 15px;
+    flex-shrink: 0;
+    font:
+      400 15px/1 Arial,
+      sans-serif;
+    color: #f4f4ef;
+  }
+  .select-trigger:focus-visible {
+    outline: 2px solid #eee;
+    outline-offset: 3px;
+  }
+  @keyframes select-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes select-enter-up {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .opens-above .select-options {
+    animation-name: select-enter-up;
+  }
+  html[data-input='keyboard'] .select-options {
+    animation: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .select-trigger:hover {
+      background-color: #252522;
+    }
+  }
+  @media (max-width: 1199px) {
+    .select-trigger,
+    .select-value,
+    .select-option {
+      gap: 9px;
+    }
+    .select-trigger .select-code {
+      display: none;
+    }
+  }
+  @media (max-width: 720px) {
+    .session-controls {
+      grid-template-columns: 1fr 1fr;
+    }
+    .session-select:last-child {
+      grid-column: 1/-1;
+    }
+    .select-trigger {
+      padding: 10px;
+      min-height: 58px;
+    }
+    .select-trigger .select-team-stripe {
+      display: none;
+    }
+    .select-trigger .select-logo {
+      width: 22px;
+      height: 22px;
+    }
+    .select-trigger .select-detail {
+      display: none;
+    }
+    .select-trigger .select-name {
+      font-size: var(--type-body);
+    }
+    .select-options {
+      width: min(360px, calc(100vw - 44px));
+      right: auto;
+    }
+    .session-select:nth-child(2) .select-options {
+      left: auto;
+      right: 0;
+    }
+    .session-select:last-child .select-options {
+      width: 100%;
+    }
+    .select-option .select-name {
+      font-size: var(--type-body);
+    }
+    .select-option .select-detail {
+      font-size: var(--type-label);
+    }
+    .select-label {
+      font-size: var(--type-label);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .select-options {
+      animation: none;
+    }
+  }
+  .select-options {
+    min-width: min(360px, calc(100vw - 44px));
+  }
+  .session-select:last-child .select-options {
+    left: auto;
+    right: 0;
+  }
+  .select-detail {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (max-width: 480px) {
+    .session-controls {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .session-select:last-child {
+      grid-column: auto;
+    }
+    .select-trigger .select-team-stripe {
+      display: none;
+    }
+    .select-trigger .select-code {
+      display: block;
+    }
+    .select-trigger .select-detail {
+      display: block;
+    }
+    .select-trigger .select-name {
+      font-size: var(--type-body);
+    }
+    .select-trigger .select-logo {
+      width: 26px;
+      height: 26px;
+    }
+  }
+  /* Let the masked, textured road fill carry selection, with no hard band over it. */
+  .session-preview .tmap {
+    --road-line: #a6a6a1;
+    --road-line-dim: #777773;
+  }
+  .session-preview .tmap__straight.is-on .tmap__fill {
+    opacity: 0.16;
+  }
+  .session-preview .tmap__straight.is-on.is-blend .tmap__fill {
+    opacity: 0.2;
+  }
+  .tmap__blend {
+    fill: none;
+    stroke-linecap: butt;
+    stroke-linejoin: round;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 360ms var(--ease-out);
+  }
+  .tmap__blend.is-on {
+    opacity: 0.08;
+  }
+  .session-preview .tmap__glow.is-on {
+    opacity: 0.018;
+  }
+  .session-preview .tmap__tag-dot {
+    box-shadow: none;
+  }
+  .session-preview .tmap__tag-chip,
+  .session-preview .tmap__tag-lead {
+    transition: opacity 160ms var(--ease-out);
+  }
+  .session-preview .tmap__tag.is-travel .tmap__tag-chip,
+  .session-preview .tmap__tag.is-travel .tmap__tag-lead {
+    scale: 1;
+    transition: opacity 100ms var(--ease-out);
+  }
+  html[data-input='keyboard'] .session-preview .tmap * {
+    transition: none !important;
+    animation: none !important;
+  }
+  /* A straight previews through the same faded road mask as selection, never a hard rail. */
+  .session-preview .tmap__hover {
+    fill: none;
+    stroke: #e7e7df;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 100ms ease;
+  }
+  .session-preview .tmap__straight .tmap__lit,
+  .session-preview .tmap__straight .tmap__lit-ground {
+    stroke: transparent !important;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .session-preview .tmap__straight.is-pick:not(.is-on):hover .tmap__hover {
+      opacity: 0.11;
+      transition-duration: 160ms;
+    }
+  }
+  .session-preview .tmap__straight.is-pick:focus-visible .tmap__hover {
+    opacity: 0.24;
+  }
+  .session-preview .tmap__tag:not(.is-on) .tmap__tag-dot {
+    width: calc(var(--dot) + 4px);
+    height: calc(var(--dot) + 4px);
+    left: calc(var(--dot) * -0.5 - 2px);
+    top: calc(var(--dot) * -0.5 - 2px);
+    background: transparent;
+    border: 2px solid var(--team);
+  }
+  .session-preview .tmap__tag-chip.has-note small::before {
+    background: #191919;
+    border-color: #ffffff30;
+  }
+  .session-preview .tmap__sf-label {
+    font-size: var(--type-label);
+    letter-spacing: 0.03em;
+    color: #b6b6ae;
+  }
+
+  /* Persistent layers make hover and selection interruptible: no reset or animation queue. */
+  .session-preview .tmap__guides {
+    opacity: 0;
+    transition: opacity 120ms var(--ease-out);
+  }
+  .session-preview .tmap__guides.is-on {
+    opacity: 1;
+    transition-duration: 200ms;
+  }
+  .session-preview .tmap__guides .tmap__line {
+    transition: stroke 160ms ease;
+  }
+  .session-preview .tmap__straight .tmap__fill {
+    transition:
+      opacity 120ms var(--ease-out),
+      visibility 0s linear 120ms;
+  }
+  .session-preview .tmap__straight.is-on .tmap__fill {
+    transition:
+      opacity 200ms var(--ease-out),
+      visibility 0s;
+  }
+  /* Missing estimates are a data state: fade identity marks out, never travel to a fake point. */
+  .session-preview .tmap__tags {
+    opacity: 1;
+    transition: opacity 160ms var(--ease-out);
+  }
+  .session-preview .tmap__tags.is-empty {
+    opacity: 0;
+    transition-duration: 100ms;
+  }
+  .map-surface[data-no-estimates='true'] .tmap__guides {
+    opacity: 0;
+    transition-duration: 120ms;
+  }
+  .map-status {
+    font:
+      400 var(--type-label)/1.5 KHF1,
+      GeistMono,
+      monospace;
+    color: #d1d1c7;
+    min-height: 17px;
+    margin: 4px 8px 8px;
+  }
+  .estimate-number {
+    min-height: 70px;
+  }
+  .compare-estimate .estimate-number {
+    min-height: 44px;
+  }
+  .estimate-number > span:only-child {
+    font: inherit;
+    color: #a6a69b;
+  }
+  @media (max-width: 999px) {
+    .compare-estimate .estimate-number {
+      min-height: 70px;
+    }
+  }
+  .estimate-number > .flow-missing {
+    font: inherit;
+    color: #a6a69b;
+  }
+
+  /* Both drivers use one comparison grid: identity, value and interval share the same rhythm. */
+  .map-stage {
+    align-items: stretch;
+  }
+  .estimate-stack {
+    display: grid;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) auto;
+    gap: 12px;
+    min-width: 0;
+  }
+  .estimate-stack[data-count='1'] {
+    grid-template-rows: auto auto;
+    align-self: start;
+  }
+  .driver-estimate,
+  .driver-estimate.compare-estimate {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 20px;
+    background:
+      radial-gradient(
+        ellipse 130% 100% at 0 0,
+        color-mix(in srgb, var(--team) 17%, transparent),
+        transparent 78%
+      ),
+      #171716;
+  }
+  .driver-identity {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    min-height: 38px;
+  }
+  .driver-identity h3 {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .driver-identity p {
+    line-height: 1.4;
+  }
+  .driver-code {
+    align-self: center;
+    margin: 0;
+  }
+  .driver-estimate .estimate-label {
+    margin-top: 18px;
+    font-size: var(--type-label);
+    color: #bdbdb3;
+  }
+  .driver-estimate .estimate-number {
+    font-size: 56px;
+    line-height: 1.05;
+    min-height: 64px;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    gap: 10px;
+  }
+  .driver-estimate .estimate-number > span:not(.flow-missing) {
+    font-size: var(--type-label);
+  }
+  .driver-estimate .estimate-interval {
+    margin-top: auto;
+    min-height: 33px;
+    padding-top: 12px;
+    gap: 12px;
+    font-size: var(--type-label);
+  }
+  .driver-estimate .estimate-interval span {
+    font-size: var(--type-body);
+  }
+  .estimate-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .estimate-actions .button {
+    width: 100%;
+    min-height: 38px;
+  }
+  .estimate-actions .text-toggle {
+    margin: 0;
+    min-height: 32px;
+    align-self: start;
+  }
+  @media (min-width: 1000px) {
+    .driver-estimate {
+      min-height: 260px;
+    }
+  }
+  @media (max-width: 1199px) and (min-width: 1000px) {
+    .driver-estimate,
+    .driver-estimate.compare-estimate {
+      padding: 18px;
+    }
+    .driver-identity h3 {
+      font-size: var(--type-body);
+    }
+  }
+  @media (max-width: 999px) {
+    .estimate-stack {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+    }
+    .estimate-stack[data-count='1'] {
+      grid-template-columns: 1fr;
+    }
+    .estimate-actions {
+      grid-column: 1/-1;
+      justify-self: start;
+      min-width: 160px;
+    }
+    .driver-estimate .estimate-number {
+      font-size: 56px;
+    }
+    .driver-estimate {
+      min-height: 250px;
+    }
+  }
+  @media (max-width: 720px) {
+    .estimate-stack {
+      grid-template-columns: 1fr;
+    }
+    .estimate-actions {
+      grid-column: auto;
+      justify-self: stretch;
+    }
+    .driver-identity h3 {
+      font-size: 15px;
+    }
+    .driver-estimate,
+    .driver-estimate.compare-estimate {
+      padding: 20px;
+    }
+    .driver-estimate .estimate-number {
+      font-size: 58px;
+    }
+    .driver-estimate {
+      min-height: 250px;
+    }
+  }
+  .estimate-range {
+    margin-top: auto;
+    padding-top: 6px;
+    margin-bottom: 14px;
+  }
+  .estimate-range-track {
+    position: relative;
+    height: 12px;
+    display: flex;
+    align-items: center;
+  }
+  .estimate-range-track::before {
+    content: '';
+    height: 2px;
+    width: 100%;
+    background: #ffffff24;
+  }
+  .estimate-range-ci {
+    position: absolute;
+    height: 8px;
+    background: color-mix(in srgb, var(--team) 45%, transparent);
+    min-width: 2px;
+  }
+  .estimate-range-dot {
+    position: absolute;
+    width: 6px;
+    height: 12px;
+    background: var(--team);
+    transform: translateX(-50%);
+  }
+  .estimate-range-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    font:
+      400 var(--type-label)/1.3 GeistMono,
+      monospace;
+    color: #b5b5ab;
+  }
+  .driver-estimate .estimate-number {
+    margin-bottom: 8px;
+  }
+  .driver-estimate .estimate-interval {
+    margin-top: 0;
+  }
+
+  /* A single driver composition: colour and portrait dissolve into the compact readout. */
+  .driver-estimate.driver-poster {
+    padding: 0;
+    display: grid;
+    grid-template-rows: 170px minmax(0, 1fr);
+    background: #111110;
+    overflow: hidden;
+    min-height: 412px;
+    container-type: inline-size;
+  }
+  .driver-poster-art {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: var(--poster-ink);
+    background:
+      radial-gradient(120% 90% at 18% 0%, color-mix(in srgb, var(--team) 82%, #fff) 0%, transparent 55%),
+      linear-gradient(
+        165deg,
+        color-mix(in srgb, var(--team) 92%, #fff) 0%,
+        var(--team) 45%,
+        color-mix(in srgb, var(--team) 70%, #000) 78%,
+        #111110 100%
+      );
+  }
+  .driver-poster-art::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: url('/assets/felt-grey.jpg') center/480px;
+    mix-blend-mode: multiply;
+    opacity: 0.12;
+    pointer-events: none;
+  }
+  .poster-screen {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, #0007 0.8px, transparent 1px) 0 0/7px 7px;
+    mask-image: linear-gradient(90deg, transparent 0 45%, #0003 45% 65%, #0008 65% 85%, #000 85%);
+    opacity: 0.32;
+  }
+  /* The car poster carries the number and the car; the dot screen stays off it. */
+  .driver-poster .poster-screen {
+    opacity: 0;
+  }
+  .poster-team {
+    position: absolute;
+    z-index: 3;
+    top: 13px;
+    left: 18px;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font:
+      400 var(--type-label)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+  }
+  .poster-team .team-logo {
+    width: 22px;
+    height: 22px;
+  }
+  .poster-team span {
+    max-width: 150px;
+  }
+  .poster-name {
+    position: absolute;
+    z-index: 3;
+    left: 18px;
+    top: 42px;
+    width: 56%;
+    text-transform: uppercase;
+  }
+  .poster-name > span {
+    font:
+      400 var(--type-label)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .poster-name h3 {
+    font:
+      900 clamp(14px, calc(52cqw / var(--surname-length)), 24px)/1.05 F1Black,
+      Archivo,
+      sans-serif;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  .poster-number {
+    position: absolute;
+    z-index: 0;
+    /* Sits above the car's roofline so the digits are never cut; one clean glyph, no screen behind it. */
+    right: 14px;
+    top: 6px;
+    font:
+      900 86px/1 F1Black,
+      Archivo,
+      sans-serif;
+    letter-spacing: -0.06em;
+    color: transparent;
+    background: radial-gradient(circle, var(--poster-ink) 1.6px, transparent 1.85px) 0 0 / 6px 6px;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    opacity: 0.55;
+  }
+  .poster-car {
+    position: absolute;
+    z-index: 2;
+    bottom: 0;
+    right: -46px;
+    height: 84px;
+    width: auto;
+    max-width: none;
+    mask-image: linear-gradient(#000 0 62%, transparent 100%);
+    pointer-events: none;
+  }
+  .driver-poster-data {
+    padding: 0 18px 4px;
+    margin-top: 4px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .poster-readout {
+    min-width: 0;
+  }
+  .rng {
+    margin: 6px 0 6px;
+    height: 51px;
+  }
+  .rng-cap {
+    margin: 0 0 7px;
+    font:
+      400 11px/1 var(--utility),
+      monospace;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .rng-track {
+    position: relative;
+    height: 2px;
+    background: #ffffff30;
+  }
+  .rng-track i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--team);
+  }
+  .rng-track b {
+    position: absolute;
+    top: -5px;
+    width: 2px;
+    height: 12px;
+    margin-left: -1px;
+    background: #f4f4ef;
+  }
+  .rng-lab {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 9px;
+    font:
+      400 12px/1 GeistMono,
+      monospace;
+    color: #e0e0d7;
+  }
+  .rng-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .rng-text span {
+    font:
+      400 var(--type-label)/1.2 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+  }
+  .rng-text strong {
+    font:
+      400 14px/1.2 GeistMono,
+      monospace;
+    color: #e0e0d7;
+  }
+  .driver-poster .estimate-label {
+    margin: 0;
+    font-size: var(--type-label);
+    line-height: 1.2;
+    min-height: 15px;
+    color: #bdbdb3;
+  }
+  .driver-poster .estimate-number {
+    font:
+      900 56px/0.92 F1Black,
+      Archivo,
+      sans-serif;
+    letter-spacing: -0.07em;
+    min-height: 64px;
+    margin: 2px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    font-variant-numeric: proportional-nums;
+    font-feature-settings: 'pnum' 1;
+    font-kerning: normal;
+  }
+  .estimate-value {
+    font: inherit !important;
+    letter-spacing: inherit;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  /* F1Black digits have uneven side bearings; each digit sits in one fixed cell. */
+  .driver-poster .estimate-number .digit {
+    display: inline-block;
+    width: 0.76em;
+    text-align: center;
+    letter-spacing: 0;
+  }
+  .driver-poster .estimate-number > .estimate-unit {
+    font:
+      400 var(--type-label)/1.2 KHF1,
+      GeistMono,
+      monospace;
+    letter-spacing: 0;
+    color: #c0c0b6;
+  }
+  .lap-distribution {
+    margin-top: auto;
+    position: relative;
+    color: var(--team);
+  }
+  .distribution-caption {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font:
+      400 var(--type-label)/1.4 KHF1,
+      GeistMono,
+      monospace;
+    color: #b6b6ac;
+    margin-bottom: 2px;
+  }
+  .lap-distribution svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .distribution-baseline {
+    stroke: #ffffff30;
+    stroke-width: 1;
+  }
+  .distribution-dot {
+    fill: var(--team);
+    opacity: 0.75;
+  }
+  .distribution-dot.is-selected {
+    fill: #fff;
+    opacity: 1;
+  }
+  .distribution-marker {
+    stroke: #f4f4ef;
+    stroke-width: 1.4;
+  }
+  .lap-distribution text {
+    font:
+      400 var(--type-label) GeistMono,
+      monospace;
+    fill: #b6b6ac;
+  }
+  .distribution-empty {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 25px;
+    text-align: center;
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    color: #a7a79b;
+  }
+  @media (min-width: 1000px) {
+    .map-stage {
+      grid-template-columns: minmax(0, 1fr) 320px;
+    }
+    .estimate-stack {
+      grid-template-rows: repeat(2, minmax(412px, 1fr)) auto;
+    }
+  }
+  @media (min-width: 1000px) and (max-width: 1199px) {
+    .map-stage {
+      grid-template-columns: minmax(0, 1fr) 290px;
+    }
+    .driver-poster .estimate-number {
+      font-size: 52px;
+    }
+  }
+  @media (max-width: 999px) {
+    .driver-estimate.driver-poster {
+      grid-template-rows: 170px minmax(0, 1fr);
+      min-height: 412px;
+    }
+  }
+  @media (max-width: 720px) {
+    .driver-poster-data {
+      padding-inline: 16px;
+    }
+    .poster-team,
+    .poster-name {
+      left: 16px;
+    }
+    .driver-poster .estimate-number {
+      font-size: 52px;
+    }
+  }
+
+  /* The analysis area uses broadcast hierarchy without labels drawn over the data. */
+  .analysis-layout {
+    grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.7fr);
+    gap: 32px;
+    align-items: stretch;
+  }
+  .lap-panel {
+    padding: 24px;
+    background: radial-gradient(ellipse at 0 0, #20201c, #111110 85%);
+  }
+  .analysis-heading h2 {
+    font-size: var(--type-heading);
+  }
+  .lap-panel > .quiet-note {
+    font-size: var(--type-label);
+    max-width: 65ch;
+  }
+  .lap-selector {
+    margin-block: 18px 20px;
+    gap: 12px;
+  }
+  .lap-selector select {
+    width: 170px;
+    min-height: 38px;
+  }
+  .lap-selector label {
+    font-size: var(--type-label);
+  }
+  .chart-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .chart-summary-driver {
+    display: grid;
+    grid-template-columns: 10px auto 1fr;
+    gap: 7px;
+    align-items: center;
+    min-width: 0;
+  }
+  .chart-key {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--team);
+    flex-shrink: 0;
+  }
+  .chart-key.is-hollow {
+    background: transparent;
+    border: 1.5px solid var(--team);
+  }
+  .chart-summary-code {
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+  }
+  .chart-summary-value {
+    font:
+      400 var(--type-value) GeistMono,
+      monospace;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .chart-summary-value small {
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    color: #b6b6ab;
+  }
+  .chart-summary-caption {
+    grid-column: 2/-1;
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+  }
+  .chart-readout {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 48px;
+    padding: 10px 0;
+    border-top: 1px solid #ffffff14;
+    margin-bottom: 8px;
+  }
+  .chart-readout-lap {
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    white-space: nowrap;
+  }
+  .chart-readout > div {
+    display: flex;
+    gap: 18px;
+  }
+  .chart-readout > div > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+  }
+  .chart-readout b {
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    color: #d2d2c7;
+  }
+  .chart-readout strong {
+    font:
+      400 var(--type-value) GeistMono,
+      monospace;
+    min-width: 3ch;
+    text-align: right;
+  }
+  .chart-readout small {
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+  }
+  .session-chart-svg {
+    display: block;
+    cursor: crosshair;
+    overflow: visible;
+  }
+  .session-chart-svg:focus-visible {
+    outline: 1px solid #aaa99f;
+    outline-offset: 5px;
+  }
+  .chart-grid {
+    stroke: #ffffff12;
+    stroke-width: 1;
+  }
+  .chart-tick {
+    stroke: #ffffff35;
+    stroke-width: 1;
+  }
+  .chart-axis-text {
+    font:
+      400 var(--type-label) GeistMono,
+      monospace;
+    fill: #c0c0b4;
+  }
+  .chart-axis-unit {
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    fill: var(--muted);
+  }
+  .chart-cursor {
+    stroke: #f4f4ef;
+    stroke-width: 1;
+    stroke-opacity: 0.45;
+    stroke-dasharray: 3 4;
+  }
+  .chart-empty {
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    fill: #c0c0b4;
+  }
+  .chart-explanation {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 12px;
+    font:
+      400 var(--type-label)/1.5 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+  }
+  .chart-explanation > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .chart-band-key {
+    width: 14px;
+    height: 8px;
+    background: repeating-linear-gradient(135deg, #aaa7 0 1px, transparent 1px 4px);
+  }
+  .chart-caption {
+    font-size: var(--type-label);
+    line-height: 1.6;
+    margin-top: 15px;
+    color: #b6b6ab;
+  }
+  .driver-tower {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .driver-tower > .quiet-note {
+    font-size: var(--type-label);
+    margin-top: 10px;
+  }
+  .tower-selection {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .tower-selection button {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 8px 10px;
+    background: #1a1a17;
+    color: #c0c0b5;
+    border: 0;
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+    cursor: pointer;
+  }
+  .tower-selection b {
+    font-weight: 400;
+    color: #f4f4ef;
+  }
+  .tower-selection button > span:last-child {
+    margin-left: 5px;
+    color: var(--muted);
+  }
+  .tower-rows {
+    position: relative;
+    flex: 1 1 0;
+    height: 0;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    margin-top: 10px;
+    scroll-padding-block: 8px;
+  }
+  .tower-row {
+    grid-template-columns: 4px 22px minmax(0, 1fr) 27px 45px;
+    gap: 10px;
+    min-height: 56px;
+    padding: 8px 12px 8px 0;
+    background: #141412;
+    border-bottom-color: #ffffff0e;
+  }
+  .tower-team {
+    align-self: stretch;
+    height: auto;
+  }
+  .tower-row .team-logo {
+    width: 22px;
+    height: 22px;
+  }
+  .tower-identity {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .tower-fullname {
+    font:
+      400 var(--type-body)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tower-name {
+    font-size: var(--type-label);
+    line-height: 1.3;
+    color: #a5a59a;
+  }
+  .tower-code {
+    font-size: var(--type-label);
+    color: #a5a59a;
+  }
+  .tower-value {
+    font-size: var(--type-value);
+  }
+  .tower-row.selected {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--team) 26%, #171714), #171714);
+  }
+  .tower-row.compared {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--team) 11%, #171714), #171714);
+  }
+  .tower-row.selected .tower-code,
+  .tower-row.compared .tower-code {
+    color: var(--team);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .tower-selection button:hover {
+      background: #2a2a25;
+    }
+    .tower-row:hover {
+      background: #242420;
+    }
+  }
+  @media (max-width: 1199px) {
+    .analysis-layout {
+      grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.5fr);
+      gap: 22px;
+    }
+    .lap-panel {
+      padding: 20px;
+    }
+    .chart-readout > div {
+      gap: 12px;
+    }
+    .chart-readout small {
+      display: none;
+    }
+  }
+  @media (max-width: 999px) {
+    .analysis-layout {
+      grid-template-columns: 1fr;
+      gap: 38px;
+    }
+    .lap-panel {
+      order: 0;
+    }
+    .driver-tower {
+      order: 1;
+    }
+    .tower-rows {
+      flex: none;
+      height: auto;
+      max-height: 392px;
+    }
+    .chart-readout small {
+      display: block;
+    }
+  }
+  @media (max-width: 720px) {
+    .lap-panel {
+      padding: 20px 14px;
+    }
+    .analysis-heading h2 {
+      font-size: var(--type-heading);
+    }
+    .chart-readout {
+      gap: 8px;
+      align-items: start;
+      flex-direction: column;
+      min-height: 64px;
+    }
+    .chart-readout > div {
+      width: 100%;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .chart-readout small {
+      display: none;
+    }
+    .chart-summary {
+      gap: 14px;
+    }
+    .chart-summary-driver {
+      grid-template-columns: 7px auto;
+      gap: 6px;
+    }
+    .chart-summary-value {
+      grid-column: 2;
+      text-align: left;
+      font-size: var(--type-value);
+    }
+    .chart-summary-caption {
+      font-size: var(--type-label);
+    }
+    .chart-summary-code {
+      font-size: var(--type-label);
+    }
+    .chart-explanation {
+      font-size: var(--type-label);
+      flex-direction: column;
+      gap: 5px;
+    }
+    .tower-row {
+      gap: 8px;
+      grid-template-columns: 4px 22px minmax(0, 1fr) 25px 42px;
+    }
+    .tower-fullname {
+      font-size: var(--type-body);
+    }
+    .tower-value {
+      font-size: var(--type-value);
+    }
+    .tower-name {
+      font-size: var(--type-label);
+    }
+    .chart-caption {
+      font-size: var(--type-label);
+    }
+    .session-chart-svg {
+      touch-action: pan-y;
+    }
+  }
+  @media (max-width: 720px) {
+    .lap-selector select {
+      min-height: 44px;
+    }
+  }
+  @media (max-width: 720px) {
+    .chart-readout small {
+      display: block;
+      font-size: var(--type-label);
+    }
+  }
+
+  /* Circuit names vary widely; retain the display hierarchy without clipping long venue names. */
+  .race-hero h1 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Chart axis ticks stay at 11px while the label token is 12px. */
+  .chart-axis-text,
+  .chart-axis-unit {
+    font-size: 11px;
+  }
+  /* Compact persistent caveat band. */
+  .method-section .notice.notice-caution {
+    background: #121211;
+    background-image: none;
+    box-shadow: none;
+    border-left: 3px solid #f1c600;
+    color: #c0c0b7;
+    padding: 16px 20px;
+    min-height: 0;
+    gap: 16px;
+  }
+  .method-section .notice-caution .notice-icon {
+    color: #f1c600;
+    width: 24px;
+    height: 24px;
+  }
+  .method-section .notice-caution .notice-content h2 {
+    color: #f1c600;
+    font-size: 14px;
+  }
+  .method-section .notice-caution .notice-content p {
+    margin: 4px 0 0;
+    font:
+      400 14px/1.5 Geist,
+      sans-serif;
+    color: #c0c0b7;
+    opacity: 1;
+    max-width: none;
+  }
+  /* Coverage note: the ghost copy of the longest text reserves the height, so the stage never shifts. */
+  .coverage-note {
+    display: grid;
+    margin-bottom: 20px;
+  }
+  .coverage-note > * {
+    grid-area: 1 / 1;
+    display: block;
+    margin: 0;
+    padding: 12px 20px;
+    font:
+      400 14px/1.5 Geist,
+      sans-serif;
+    border-left: 3px solid transparent;
+  }
+  .coverage-note .coverage-ghost {
+    visibility: hidden;
+  }
+  .coverage-note p {
+    background: #121211;
+    border-left-color: #f1c600;
+    color: #c0c0b7;
+  }
+  /* Tower: bottom fade signals more rows below. */
+  .tower-rows {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
+    padding-bottom: 28px;
+  }
+  /* Map surface: footnote follows the circuit; the right column no longer forces extra height. */
+
+  @media (max-width: 720px) {
+    .lap-selector select {
+      width: auto;
+      min-width: 200px;
+      max-width: 100%;
+    }
+  }
+
+  /* Short states (missing session, API failure) must still cover the viewport so the footer behind the main is never clipped. */
+  .session-main {
+    min-height: calc(100vh - var(--header-h));
+    min-height: calc(100svh - var(--header-h));
+  }
+  .map-surface {
+    display: flex;
+    flex-direction: column;
+  }
+  /* The stage's height comes from the grid row; the svg is absolute, so fitting never feeds back. */
+  .map-surface .tmap--fill {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 420px;
+  }
+  .map-surface .map-footnote {
+    margin-top: auto;
+    padding-top: 16px;
+  }
+
+  /* Loading and stability: settings changes never resize containers. */
+  .map-status {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 24px;
+    line-height: 24px;
+  }
+  .distribution-caption > span:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 1.4em;
+    min-width: 0;
+  }
+  .estimate-label {
+    min-height: 1.4em;
+  }
+  .driver-estimate.driver-poster .estimate-number {
+    min-height: 64px;
+  }
+  .estimate-number,
+  .compare-estimate .estimate-number {
+    font-variant-numeric: tabular-nums;
+    min-width: 3ch;
+  }
+  .chart-readout-lap {
+    min-width: 9ch;
+  }
+  .chart-readout strong {
+    display: inline-block;
+    min-width: 2ch;
+    text-align: right;
+  }
+  .rule-slot {
+    margin-top: 8px;
+  }
+  .rule-slot.is-idle {
+    visibility: hidden;
+  }
+  .skeleton-status {
+    font:
+      400 var(--type-label)/1.5 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding-top: 20px;
+  }
+  .session-skeleton .session-controls {
+    padding-top: 12px;
+  }
+  .select-skel {
+    min-height: 58px;
+  }
+  .map-skel {
+    min-height: 480px;
+  }
+  .session-skeleton .estimate-actions .button {
+    pointer-events: none;
+  }
+  .lap-select-skel {
+    height: 44px;
+    width: 100%;
+  }
+  .chart-skel {
+    height: 480px;
+  }
+  .analysis-layout .tower-row.skel {
+    background: #141413;
+  }
+  @media (max-width: 999px) {
+    .map-skel {
+      min-height: 380px;
+    }
+    .session-skeleton .estimate-stack {
+      grid-template-columns: 1fr;
+    }
+  }
+  .session-skeleton .driver-poster {
+    min-height: 412px;
+  }
+  .analysis-layout .tower-rows:has(> .skel) {
+    max-height: none;
+    flex: 1 1 0;
+    height: 0;
+    overflow: hidden;
+  }
+  .chart-skel {
+    height: 534px;
+  }
+  @media (max-width: 999px) {
+    .map-skel {
+      min-height: 399px;
+    }
+    .session-skeleton .driver-poster {
+      min-height: 412px;
+    }
+    .analysis-layout .tower-rows:has(> .skel) {
+      flex: none;
+      height: 448px;
+    }
+    .chart-skel {
+      height: 566px;
+    }
+  }
+  .distribution-caption > span:last-child {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+/* Colour pass: a red bloom behind each hero halftone, and the selected team's tint behind the map. */
+@property --stage-team {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@property --stage-compare {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@layer pages {
+  .hero-band {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    overflow: clip;
+  }
+  .hero-band::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--hero-bloom);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-band::before {
+      animation: bloom-drift 18s ease-in-out infinite alternate;
+    }
+    .map-stage {
+      transition:
+        --stage-team 360ms var(--ease),
+        --stage-compare 360ms var(--ease);
+    }
+  }
+  @keyframes bloom-drift {
+    to {
+      transform: translate3d(12px, 0, 0);
+    }
+  }
+  /* --stage-team is set from the selected driver; when absent it is transparent and the ground stays neutral. */
+  .map-surface {
+    isolation: isolate;
+  }
+  .map-surface::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse 80% 85% at 20% 20%,
+        color-mix(in srgb, var(--stage-team) 6%, transparent),
+        transparent 80%
+      ),
+      radial-gradient(
+        ellipse 80% 85% at 85% 80%,
+        color-mix(in srgb, var(--stage-compare) 6%, transparent),
+        transparent 80%
+      );
+  }
+  .feed-readout > span .feed-code {
+    font-weight: inherit;
+    color: var(--team, inherit);
+  }
+
+  /* Eyebrow and stat line on the findings and method heroes. */
+  .finding-lead,
+  .method-lead {
+    min-width: 0;
+  }
+  .finding-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    font:
+      400 var(--type-label)/1.3 KHF1,
+      GeistMono,
+      monospace;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--red-text);
+  }
+  .finding-eyebrow::before {
+    content: '';
+    display: inline-block;
+    flex: none;
+    width: 24px;
+    height: 2px;
+    background: var(--red);
+  }
+  .finding-hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 22px;
+    font:
+      400 var(--type-label)/1.4 GeistMono,
+      monospace;
+    color: var(--muted);
+  }
+  .finding-hero-stats > span + span::before {
+    content: '·';
+    margin-right: 14px;
+    color: var(--line-strong);
+  }
+}
+
+@layer pages {
+  .map-heading-end {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .help-wrap {
+    position: relative;
+  }
+  .help-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid #ffffff2e;
+    background: transparent;
+    color: #f4f4ef;
+    font:
+      400 14px/1 KHF1,
+      GeistMono,
+      monospace;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    cursor: pointer;
+  }
+  .help-dot:hover,
+  .help-dot[aria-expanded='true'] {
+    border-color: #ffffff6b;
+  }
+  .help-dot:focus-visible {
+    outline: 2px solid #f4f4ef;
+    outline-offset: 2px;
+  }
+  .help-pop {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 30;
+    width: 300px;
+    max-width: calc(100vw - 32px);
+    padding: 16px 18px 14px;
+    background: #141413;
+    border: 1px solid #ffffff1c;
+    box-shadow: 0 18px 40px #000000a6;
+    font:
+      400 var(--type-label)/1.5 KHF1,
+      GeistMono,
+      monospace;
+    color: #d6d6c8;
+    transform-origin: top right;
+    transform: scale(0.96);
+    opacity: 0;
+    visibility: hidden;
+    outline: none;
+  }
+  .help-pop[data-open='true'] {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+  }
+  .help-pop ol {
+    list-style: none;
+    counter-reset: help;
+    margin: 0 0 12px;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .help-pop li {
+    counter-increment: help;
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 8px;
+  }
+  .help-pop li::before {
+    content: counter(help);
+    color: #8f8f84;
+  }
+  .help-pop a {
+    color: #f4f4ef;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .help-pop {
+      transition:
+        transform 180ms var(--ease),
+        opacity 180ms var(--ease),
+        visibility 0s linear 180ms;
+    }
+    .help-pop[data-open='true'] {
+      transition:
+        transform 180ms var(--ease),
+        opacity 180ms var(--ease),
+        visibility 0s;
+    }
+  }
+}
+
+@layer pages {
+  /* One driver keeps the two-card stage: the second slot is reserved, so the map never resizes. */
+  .driver-estimate.driver-poster.is-empty {
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: 1px dashed #ffffff24;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .driver-estimate.driver-poster.is-empty p {
+    margin: 0;
+    font:
+      400 var(--type-label)/1.4 KHF1,
+      GeistMono,
+      monospace;
+    color: var(--muted);
+    text-align: center;
+  }
+  @media (min-width: 1000px) {
+    .estimate-stack[data-count='1'] {
+      grid-template-rows: repeat(2, minmax(412px, 1fr)) auto;
+      align-self: stretch;
+    }
+  }
+  @media (max-width: 999px) {
+    .driver-estimate.driver-poster.is-empty {
+      display: none;
+    }
+  }
+
+  /* Hover and focus info markers on the key readouts. */
+  .info {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-left: 8px;
+    text-transform: none;
+  }
+  .info-dot {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 50%;
+    border: 0;
+    background: #2a2a28;
+    color: #f4f4ef;
+    font:
+      700 12px/1 Geist,
+      system-ui,
+      sans-serif;
+    display: grid;
+    place-items: center;
+    padding-bottom: 1px;
+    margin-block: -1px;
+    cursor: help;
+    text-transform: none;
+    letter-spacing: normal;
+    transition:
+      background-color 160ms var(--ease),
+      color 160ms var(--ease);
+  }
+  .info-dot:hover,
+  .info-dot[aria-expanded='true'],
+  .info-dot:focus-visible {
+    background: #f4f4ef;
+    color: #090909;
+  }
+  .info-term {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    text-decoration-color: #ffffff55;
+  }
+  .info-dot:focus-visible {
+    outline: 2px solid #f4f4ef;
+    outline-offset: 2px;
+  }
+  .info-tip {
+    position: fixed;
+    z-index: 60;
+    width: max-content;
+    max-width: min(260px, calc(100vw - 16px));
+    padding: 10px;
+    background: #141413;
+    border: 1px solid #ffffff1c;
+    box-shadow: 0 8px 24px #0008;
+    font:
+      400 12px/1.5 Geist,
+      system-ui,
+      sans-serif;
+    text-transform: none;
+    letter-spacing: normal;
+    color: #d6d6c8;
+    text-align: left;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(2px);
+    pointer-events: none;
+    transition:
+      opacity 160ms var(--ease),
+      transform 160ms var(--ease),
+      visibility 0s linear 160ms;
+  }
+  .info-tip[data-open='true'] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .info-tip,
+    .info-dot {
+      transition: none;
+    }
+    .info-tip {
+      transform: none;
+    }
+  }
+  .select-info {
+    position: relative;
+    min-width: 0;
+  }
+  .select-info > .info {
+    position: absolute;
+    top: -1px;
+    left: 9.5ch;
+    margin: 0;
+    font:
+      400 var(--type-label) KHF1,
+      GeistMono,
+      monospace;
+  }
+  .analysis-heading h2 .info {
+    vertical-align: middle;
+  }
+}
+
+@layer pages {
+  /* The footnote always reserves its longest wording, so the map height never depends on the comparison. */
+  .map-footnote {
+    display: grid;
+  }
+  .map-footnote > span {
+    grid-area: 1 / 1;
+  }
+  .map-footnote > span + span {
+    visibility: hidden;
+  }
+}
