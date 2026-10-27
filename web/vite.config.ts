@@ -56,8 +56,11 @@ function siteHead(origin: string): Plugin {
           '    <meta charset="utf-8" />',
           '    <meta name="viewport" content="width=device-width,initial-scale=1" />',
           '    <meta name="color-scheme" content="dark" />',
-          '    <meta name="theme-color" content="#030303" />',
-          '    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />',
+          '    <meta name="theme-color" content="#060606" />',
+          '    <link rel="icon" href="/favicon.ico" sizes="48x48" />',
+          '    <link rel="icon" href="/icon.svg" type="image/svg+xml" />',
+          '    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
+          '    <link rel="manifest" href="/site.webmanifest" />',
           // Only the faces used above the fold: Formula 1 Black, KH F1 (labels, nav), Geist (body).
           font('Formula1-Black'),
           font('KHInterferenceF1-Regular'),
