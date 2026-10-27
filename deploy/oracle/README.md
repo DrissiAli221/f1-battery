@@ -538,3 +538,11 @@ F1_S3_BUCKET=<bucket> web/scripts/private-assets.sh push
 
 `build-web.sh` pulls that list from `s3://<bucket>/private-assets/` into `web/public` before every
 build. With `F1_SKIP_OFFHOST=1` the pull is skipped and the site renders with the OFL fallback fonts.
+
+## Always-on replay feed
+
+`systemd/f1-replay-producer.service` keeps the replay producer running: one pass re-emits
+`REPLAY_SESSION_KEY` at `REPLAY_SPEED` onto Kafka and exits, and systemd restarts it 15 s later, so the
+Replay feed tab always has cars on the map. Install it with the other units; change the session or
+speed in `.env` and `sudo systemctl restart f1-replay-producer`. Stop it with `systemctl disable --now`
+when the demo is not needed (it uses about 320 MB and half a core while running).
