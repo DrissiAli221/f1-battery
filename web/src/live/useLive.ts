@@ -11,7 +11,7 @@ export interface LiveState {
   lap_distance_est: number;
 }
 
-export type LiveStatus = 'connecting' | 'connected' | 'no-data' | 'disabled' | 'no-topic' | 'error';
+export type LiveStatus = 'connecting' | 'connected' | 'no-data' | 'disabled' | 'starting' | 'error';
 
 export interface Live {
   status: LiveStatus;
@@ -23,7 +23,8 @@ export interface Live {
 /**
  * Subscribes to /api/live/<key> (docs/phase7-replay.md). EventSource cannot read the status
  * code, so a probe request tells "replay disabled" (404 with a JSON body) from a transient
- * connection failure. The probe deliberately asks for JSON: an enabled server answers 406 without
+ * connection failure. A session nobody is replaying yet answers with a "waiting" status and keeps the
+ * stream open until the replay (started on demand) delivers its first state. The probe deliberately asks for JSON: an enabled server answers 406 without
  * opening a stream (a text/event-stream probe would take a stream permit and start a Kafka
  * consumer), so the one 406 in the console is the expected "enabled" signal. Bursts are batched into one render per 100 ms.
  *
@@ -63,7 +64,7 @@ export function useLive(sessionKey: number | null): Live {
         if (now - w0 > 1500) setSpeed((newest - t0) / (now - w0));
       }
       setStates((s) => ({ ...s, ...batch }));
-      setStatus((st) => (st === 'no-data' || st === 'connecting' ? 'connected' : st));
+      setStatus((st) => (st === 'no-data' || st === 'connecting' || st === 'starting' ? 'connected' : st));
     }, 100);
 
     const open = () => {
@@ -71,10 +72,10 @@ export function useLive(sessionKey: number | null): Live {
       es.addEventListener('status', (e) => {
         try {
           const s = JSON.parse((e as MessageEvent).data) as { state: string };
-          if (s.state === 'no-topic') {
-            setStatus('no-topic');
-            es?.close();
-          } else setStatus('no-data');
+          // "waiting": the session has no fresh feed yet. The stream stays open on purpose: an open
+          // stream is what asks the server to start the replay, and the first state ends the wait.
+          if (s.state === 'waiting' || s.state === 'no-topic') setStatus('starting');
+          else setStatus('no-data');
         } catch {
           /* ignore malformed status */
         }

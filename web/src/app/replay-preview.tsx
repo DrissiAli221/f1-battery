@@ -59,30 +59,39 @@ function ReplayStageSkeleton({ label }: { label: string }) {
     </section>
   );
 }
-/** GET /api/live: the sessions the rotating replay is feeding right now (docs/api-contract.md). */
+/** GET /api/live: the sessions being replayed right now and the replay slots in use (docs/api-contract.md). */
 interface LiveIndex {
   enabled: boolean;
   active: { session_key: number; last_ts: string; age_s: number }[];
+  capacity?: { max: number; used: number };
 }
 
 /** What the page knows about the session being replayed: still loading, unknown (call failed) or a list. */
 type NowPlaying =
-  { state: 'pending' | 'unknown' } | { state: 'known'; items: { key: number; label: string }[] };
+  | { state: 'pending' | 'unknown' }
+  | { state: 'known'; items: { key: number; label: string }[]; full: boolean; max: number };
 
 /**
- * The overlay text for a session without a feed. The rotating replay plays one session at a time, so
- * point at the one that is playing; fall back to the plain statement when the lookup is unavailable.
+ * The overlay text for a session without a feed yet. Any session with results can be watched: opening
+ * the feed asks the server to start its replay, which takes about 20 seconds. Only when every replay
+ * slot is taken by other sessions does it point at the ones that are playing.
  */
-function noFeedMessage(np: NowPlaying, sessionKey: number) {
-  if (np.state !== 'known') return 'No replay has started for this session.';
-  const other = np.items.find((i) => i.key !== sessionKey);
-  if (!other) return 'No session is being replayed right now.';
-  return (
-    <>
-      The live replay plays one session at a time. Now playing: {other.label} ·{' '}
-      <a href={pageUrl('replay', { mode: 'feed', session: other.key })}>open</a>
-    </>
-  );
+function noFeedMessage(np: NowPlaying, sessionKey: number, label: string) {
+  if (np.state === 'known' && np.full && !np.items.some((i) => i.key === sessionKey)) {
+    return (
+      <>
+        All {np.max} replay slots are busy. Watch one of:{' '}
+        {np.items.map((i, n) => (
+          <span key={i.key}>
+            {n > 0 && ', '}
+            <a href={pageUrl('replay', { mode: 'feed', session: i.key })}>{i.label}</a>
+          </span>
+        ))}
+        , or try again in a few minutes.
+      </>
+    );
+  }
+  return `Starting the replay for ${label} at real speed… this takes about 20 seconds`;
 }
 
 function ReplaySession({
@@ -90,7 +99,9 @@ function ReplaySession({
   mode,
   onReview,
   nowPlaying,
+  label,
 }: {
+  label: string;
   sessionKey: number;
   mode: 'review' | 'feed';
   onReview: () => void;
@@ -312,8 +323,8 @@ function ReplaySession({
           ? 'Feed quiet'
           : feed.status === 'disabled'
             ? 'Replay disabled'
-            : feed.status === 'no-topic'
-              ? 'No replay running'
+            : feed.status === 'starting'
+              ? 'Starting replay'
               : feed.status === 'error'
                 ? 'Connection lost · retrying'
                 : connected
@@ -399,6 +410,14 @@ function ReplaySession({
           <div className="replay-state" role="status">
             <span className={`feed-dot ${connected && !paused && !quiet ? 'is-connected' : ''}`} />
             {status}
+            {mode === 'feed' && (
+              <span className="feed-speed">
+                ·{' '}
+                {feed.speed === null || (feed.speed >= 0.8 && feed.speed <= 1.3)
+                  ? 'Real speed'
+                  : `${feed.speed.toFixed(1)}× speed`}
+              </span>
+            )}
           </div>
         </div>
       </section>
@@ -572,8 +591,8 @@ function ReplaySession({
                   <p>
                     {feed.status === 'disabled'
                       ? 'Replay is disabled on this server.'
-                      : feed.status === 'no-topic'
-                        ? noFeedMessage(nowPlaying, sessionKey)
+                      : feed.status === 'starting'
+                        ? noFeedMessage(nowPlaying, sessionKey, label)
                         : feed.status === 'error'
                           ? 'Replay connection lost. Retrying…'
                           : slow
@@ -585,7 +604,7 @@ function ReplaySession({
                     onClick={onReview}
                     {...(slow ||
                     feed.status === 'disabled' ||
-                    feed.status === 'no-topic' ||
+                    feed.status === 'starting' ||
                     feed.status === 'error'
                       ? {}
                       : ({ inert: '', tabIndex: -1, 'aria-hidden': true } as Record<string, unknown>))}
@@ -776,8 +795,8 @@ function ReplaySession({
                 <p>
                   {feed.status === 'disabled'
                     ? 'This server has replay disabled. Recorded lap review remains available.'
-                    : feed.status === 'no-topic'
-                      ? 'No replay topic exists for this session yet.'
+                    : feed.status === 'starting'
+                      ? 'The replay for this session is being started on demand. It plays at real speed.'
                       : feed.status === 'error'
                         ? 'The connection was lost. The existing client will retry; displayed states may be old.'
                         : 'This follows a recorded session through the local replay service. It is not a live race.'}
@@ -808,23 +827,20 @@ function App() {
   const limited = useRateLimited();
   const sessions = useList<SessionRow>('/sessions');
   useInitialAnchor(!!sessions.data || !!sessions.error);
-  const [key, setKey] = useState(Number(initial.get('session')) || 11361);
+  // Without ?session= the first session with results is chosen once the list has loaded.
+  const [key, setKey] = useState(Number(initial.get('session')) || 0);
   const [mode, setMode] = useState<'review' | 'feed'>(initial.get('mode') === 'feed' ? 'feed' : 'review');
-  // Asked only in feed mode. A visitor who opens the feed without choosing a session gets the playing one.
+  // Asked only in feed mode: which sessions play now and whether every replay slot is taken.
   const index = useRemote<LiveIndex>(mode === 'feed' ? url('/live') : null);
-  const wantsPlaying = useRef(initial.get('mode') === 'feed' && !initial.get('session'));
-  const races = useMemo(
-    () =>
-      (sessions.data ?? []).filter(
-        (s) => (s.session_name === 'Race' || s.session_name === 'Sprint') && s.has_results
-      ),
-    [sessions.data]
-  );
+  const races = useMemo(() => (sessions.data ?? []).filter((s) => s.has_results), [sessions.data]);
   const nowPlaying = useMemo<NowPlaying>(() => {
     if (index.error || (index.data && !index.data.enabled)) return { state: 'unknown' };
     if (!index.data || sessions.loading) return { state: 'pending' };
+    const capacity = index.data.capacity;
     return {
       state: 'known',
+      full: !!capacity && capacity.max > 0 && capacity.used >= capacity.max,
+      max: capacity?.max ?? 0,
       items: index.data.active.map((a) => {
         const row = (sessions.data ?? []).find((s) => s.session_key === a.session_key);
         return {
@@ -845,6 +861,7 @@ function App() {
       : 'Replay / F1 Battery';
   }, [session, place]);
   useEffect(() => {
+    if (!key) return;
     const q = new URLSearchParams(location.search);
     q.set('session', String(key));
     q.set('mode', mode);
@@ -853,12 +870,6 @@ function App() {
   useEffect(() => {
     if (races.length && !races.some((s) => s.session_key === key)) setKey(races[0].session_key);
   }, [races, key]);
-  useEffect(() => {
-    if (!wantsPlaying.current || index.loading || sessions.loading) return;
-    wantsPlaying.current = false;
-    const playing = index.data?.active[0]?.session_key;
-    if (playing !== undefined && races.some((s) => s.session_key === playing)) setKey(playing);
-  }, [index.loading, index.data, sessions.loading, races]);
   useEffect(() => {
     document
       .querySelectorAll<HTMLAnchorElement>('.replay-preview .button-light, .replay-preview .button-grey')
@@ -930,6 +941,7 @@ function App() {
               mode={mode}
               onReview={() => setMode('review')}
               nowPlaying={nowPlaying}
+              label={`${place} · ${session.session_name}`}
             />
           ) : sessions.loading ? (
             <>

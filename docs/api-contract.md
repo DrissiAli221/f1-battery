@@ -68,13 +68,22 @@ Endpoints:
 
 ## Live replay (opt-in, `api.replay.enabled`)
 - `GET /api/live` → which sessions have a replay feed right now:
-  `{"enabled": true, "active": [{"session_key": 11361, "last_ts": "2026-10-27T11:59:48Z", "age_s": 12}]}`.
+  `{"enabled": true, "active": [{"session_key": 11361, "last_ts": "2026-10-27T11:59:48Z", "age_s": 12}], "capacity": {"max": 3, "used": 1}}`.
   `active` lists the `regime-state.<key>` Kafka topics whose newest record (Kafka record time, wall
   clock) is under 120 s old, newest first; the lookup probes at most the 50 highest session keys and
-  is cached in memory for 10 s. With replay disabled the answer is `200 {"enabled": false, "active": []}`.
+  is cached in memory for 10 s. With replay disabled the answer is `200 {"enabled": false, "active": [], "capacity": {"max": 0, "used": 0}}`.
+  `capacity.max` is the number of replays the VM runs at once (`API_REPLAY_MAX_SESSIONS`), `used` the
+  number of active sessions.
   A broker that cannot be reached is `503`.
 - `GET /api/live/{session_key}` → server-sent events of the reduced regime state (`driver_number`,
-  `ts`, `regime`, `lap_distance_est`); `404` when replay is disabled. See `docs/phase7-replay.md`.
+  `ts`, `regime`, `lap_distance_est`); `404` when replay is disabled. See `docs/phase7-replay.md`. Opening the stream for a session that
+  has model results records demand (see below); a session with no fresh feed gets the status event
+  `{"state":"waiting"}` and the stream stays open until its first state arrives.
+- `GET /api/live/demand` → `{"wanted": [{"session_key": 11361, "viewers": 1, "last_seen": "…", "since": "…"}]}`,
+  the sessions with an open stream, plus those whose last viewer left under 5 minutes ago, longest
+  wanted first. Read by the replay controller on the VM over the compose network; the Caddy origin
+  answers 404 for this path, so it is not reachable from the public site. The API itself stays
+  read-only: it records demand, it starts nothing.
 
 ## Non-functional
 CORS for the view origin (env `API_CORS_ORIGIN`). Basic per-IP rate limit

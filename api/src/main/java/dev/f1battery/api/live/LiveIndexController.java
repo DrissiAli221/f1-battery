@@ -3,6 +3,7 @@ package dev.f1battery.api.live;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -26,12 +27,20 @@ public class LiveIndexController {
             @JsonProperty("last_ts") String lastTs,
             @JsonProperty("age_s") long ageSeconds) {}
 
-    public record Body(@JsonProperty("active") List<Entry> active, @JsonProperty("enabled") boolean enabled) {}
+    /** Replay slots: {@code max} sessions can be replayed at once (the VM budget), {@code used} are playing now. */
+    public record Capacity(@JsonProperty("max") int max, @JsonProperty("used") int used) {}
+
+    public record Body(
+            @JsonProperty("active") List<Entry> active,
+            @JsonProperty("enabled") boolean enabled,
+            @JsonProperty("capacity") Capacity capacity) {}
 
     private final NowPlaying nowPlaying;
+    private final int maxSessions;
 
-    public LiveIndexController(NowPlaying nowPlaying) {
+    public LiveIndexController(NowPlaying nowPlaying, @Value("${api.replay.max-sessions:3}") int maxSessions) {
         this.nowPlaying = nowPlaying;
+        this.maxSessions = maxSessions;
     }
 
     @GetMapping("/api/live")
@@ -40,7 +49,7 @@ public class LiveIndexController {
             List<Entry> entries = nowPlaying.active().stream()
                     .map(a -> new Entry(a.sessionKey(), a.lastTs().toString(), a.ageSeconds()))
                     .toList();
-            return new Body(entries, true);
+            return new Body(entries, true, new Capacity(maxSessions, entries.size()));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "live index unavailable");

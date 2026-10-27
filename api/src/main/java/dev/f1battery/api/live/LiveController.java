@@ -76,9 +76,14 @@ public class LiveController {
     private final Semaphore permits;
     private final Set<Runnable> closers = ConcurrentHashMap.newKeySet();
 
+    private final DemandRegistry demand;
+    private final SessionResults results;
+
     public LiveController(@Value("${api.replay.kafka-bootstrap:localhost:9092}") String bootstrap,
-            @Value("${api.live.max-streams:20}") int maxStreams) {
+            @Value("${api.live.max-streams:20}") int maxStreams, DemandRegistry demand, SessionResults results) {
         this.bootstrap = bootstrap;
+        this.demand = demand;
+        this.results = results;
         this.permits = new Semaphore(Math.max(1, maxStreams));
     }
 
@@ -113,6 +118,16 @@ public class LiveController {
         if (!permits.tryAcquire()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "too many live streams");
         }
+        // Opening the stream of a session that has results is what asks the VM to replay it
+        // (GET /api/live/demand); a session without results is never replayed.
+        boolean wanted = false;
+        try {
+            wanted = results.has(sessionKey);
+        } catch (RuntimeException e) {
+            log.warn("results lookup for session {} failed: {}", sessionKey, e.toString());
+        }
+        if (wanted) demand.open(sessionKey);
+        final boolean registered = wanted;
         // The ETag filter buffers the whole body to hash it, which would hold back every event.
         ShallowEtagHeaderFilter.disableContentCaching(request);
         SseEmitter emitter = new SseEmitter(0L);
@@ -133,8 +148,9 @@ public class LiveController {
         try {
             pool.execute(() -> {
                 try {
-                    follow(sessionKey, emitter, open, holder);
+                    follow(sessionKey, emitter, open, holder, registered);
                 } finally {
+                    if (registered) demand.close(sessionKey);
                     closers.remove(closeAll);
                     permits.release();
                 }
@@ -142,6 +158,7 @@ public class LiveController {
         } catch (RuntimeException e) {
             closers.remove(closeAll);
             permits.release();
+            if (registered) demand.close(sessionKey);
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "live streams unavailable");
         }
         return emitter;
@@ -152,7 +169,45 @@ public class LiveController {
         return new KafkaConsumer[1];
     }
 
-    private void follow(int sessionKey, SseEmitter emitter, AtomicBoolean open, KafkaConsumer<String, String>[] holder) {
+    /**
+     * Waits, with the stream open, until the topic exists and has a record from the last
+     * {@link NowPlaying#ACTIVE_WITHIN}. A session nobody has played lately has either no topic or an old
+     * one left by an earlier replay; the open stream is what asks the replay controller to start it
+     * (see {@link DemandRegistry}), and the view is told {@code waiting} meanwhile. Returns the topic's
+     * partitions, or null if the stream closed first.
+     */
+    private List<TopicPartition> awaitFreshTopic(KafkaConsumer<String, String> c, String topic, SseEmitter emitter,
+            AtomicBoolean open, int sessionKey, boolean registered) throws IOException {
+        boolean told = false;
+        while (open.get()) {
+            var infos = c.partitionsFor(topic, Duration.ofSeconds(5));
+            List<TopicPartition> parts = new ArrayList<>();
+            if (infos != null) infos.forEach(i -> parts.add(new TopicPartition(topic, i.partition())));
+            if (!parts.isEmpty()) {
+                long since = System.currentTimeMillis() - NowPlaying.ACTIVE_WITHIN.toMillis();
+                Map<TopicPartition, Long> query = new HashMap<>();
+                parts.forEach(tp -> query.put(tp, since));
+                // A non-null entry means the partition holds a record at or after that time.
+                if (c.offsetsForTimes(query).values().stream().anyMatch(o -> o != null)) return parts;
+            }
+            if (!told) {
+                emitter.send(SseEmitter.event().name("status").data("{\"state\":\"waiting\"}"));
+                told = true;
+            }
+            emitter.send(SseEmitter.event().comment("keepalive"));
+            if (registered) demand.touch(sessionKey);
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private void follow(int sessionKey, SseEmitter emitter, AtomicBoolean open, KafkaConsumer<String, String>[] holder,
+            boolean registered) {
         String topic = "regime-state." + sessionKey;
         Properties p = new Properties();
         p.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
@@ -164,15 +219,8 @@ public class LiveController {
         p.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "10000");
         try (KafkaConsumer<String, String> c = new KafkaConsumer<>(p)) {
             holder[0] = c;
-            var infos = c.partitionsFor(topic, Duration.ofSeconds(5));
-            List<TopicPartition> parts = new ArrayList<>();
-            if (infos != null) infos.forEach(i -> parts.add(new TopicPartition(topic, i.partition())));
-            if (parts.isEmpty()) {
-                // The topic does not exist yet (producer/consumer not started). Tell the view and finish.
-                emitter.send(SseEmitter.event().name("status").data("{\"state\":\"no-topic\"}"));
-                emitter.complete();
-                return;
-            }
+            List<TopicPartition> parts = awaitFreshTopic(c, topic, emitter, open, sessionKey, registered);
+            if (parts == null) return; // closed while waiting
             c.assign(parts);
             c.seekToBeginning(parts);
             Map<TopicPartition, Long> end = c.endOffsets(parts);
@@ -198,6 +246,7 @@ public class LiveController {
                 }
                 // Keeps proxies from closing an idle stream and surfaces a closed client as an IOException.
                 emitter.send(SseEmitter.event().comment("keepalive"));
+                if (registered) demand.touch(sessionKey);
             }
         } catch (WakeupException e) {
             // connection closed by the client

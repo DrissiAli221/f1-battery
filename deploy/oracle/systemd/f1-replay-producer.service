@@ -1,5 +1,5 @@
 [Unit]
-Description=f1-battery replay rotation: re-emits the recorded sessions onto Kafka at REPLAY_SPEED, one after another, forever
+Description=f1-battery on-demand replay controller: replays the sessions viewers have open, at REPLAY_SPEED (1 = real time)
 After=docker.service network-online.target
 Requires=docker.service
 
@@ -7,11 +7,11 @@ Requires=docker.service
 Type=simple
 User=ubuntu
 WorkingDirectory=/opt/f1-battery/deploy/oracle
-# The script loops over the sessions selected by REPLAY_SESSIONS (default: races), one producer run each.
-# Restart only covers the script itself dying.
-ExecStart=/opt/f1-battery/deploy/oracle/scripts/replay-rotate.sh
-ExecStopPost=/opt/f1-battery/deploy/oracle/scripts/dc.sh --profile replay --profile replay-run rm -sf replay-producer
-ExecStopPost=-/usr/bin/docker rm -f f1-replay-rotation-consumer
+# The script polls the API's demand list and keeps up to REPLAY_MAX_SESSIONS producer+consumer pairs
+# (containers f1-replay-<key>-producer / -consumer) running. Restart only covers the script itself dying.
+# It removes its containers when it exits; the line below does the same if it was killed hard.
+ExecStart=/opt/f1-battery/deploy/oracle/scripts/replay-controller.sh
+ExecStopPost=/bin/sh -c 'ids=$(/usr/bin/docker ps -aq --filter name=^f1-replay-); [ -z "$ids" ] || /usr/bin/docker rm -f $ids'
 Restart=always
 RestartSec=15
 Nice=10

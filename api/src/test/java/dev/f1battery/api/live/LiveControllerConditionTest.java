@@ -14,7 +14,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class LiveControllerConditionTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withUserConfiguration(LiveDisabledController.class, LiveController.class);
+            .withUserConfiguration(LiveDisabledController.class, LiveController.class)
+            .withBean(DemandRegistry.class, DemandRegistry::new)
+            .withBean(SessionResults.class, () -> new SessionResults(null));
 
     @Test
     void disabledByDefault() {
@@ -53,7 +55,12 @@ class LiveControllerConditionTest {
 
     @Test
     void streamBeyondTheLimitIsRefusedWith503() {
-        LiveController c = new LiveController("localhost:1", 1);
+        LiveController c = new LiveController("localhost:1", 1, new DemandRegistry(), new SessionResults(null) {
+            @Override
+            public boolean has(int sessionKey) {
+                return true;
+            }
+        });
         try {
             var req = new org.springframework.mock.web.MockHttpServletRequest();
             c.stream(1, req); // takes the only permit; the worker waits on the unreachable broker for seconds

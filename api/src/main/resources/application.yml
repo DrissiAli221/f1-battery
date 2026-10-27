@@ -27,3 +27,5 @@ api:
     # Opt-in live replay (Phase 7): streams regime-state.<session_key> from Kafka over SSE.
     enabled: ${API_REPLAY_ENABLED:false}
     kafka-bootstrap: ${KAFKA_BOOTSTRAP:localhost:9092}
+    # Replay slots the VM controller keeps running at once (reported as capacity.max by /api/live).
+    max-sessions: ${API_REPLAY_MAX_SESSIONS:3}

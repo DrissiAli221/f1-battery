@@ -19,6 +19,12 @@ http://__F1_ORIGIN_HOST__ {
 		@write not method GET HEAD OPTIONS
 		respond @write "Method not allowed" 405
 
+		# The demand list is for the replay controller on the VM, which calls the API directly on the
+		# compose network. It is never served to the outside.
+		handle /api/live/demand {
+			respond "Not found" 404
+		}
+
 		# Live replay is Server-Sent Events: no compression, no buffering.
 		handle /api/live/* {
 			reverse_proxy f1-api:8080 {
