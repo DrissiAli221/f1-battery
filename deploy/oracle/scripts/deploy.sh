@@ -17,7 +17,7 @@ site_url="https://$(site_host)"
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
     die "working tree has local changes; commit or discard them (image tags come from commits)"
 fi
-branch="${F1_BRANCH:-deploy}"
+branch="${F1_BRANCH:-$(env_get F1_BRANCH)}"; branch="${branch:-main}"
 if [[ "$(git rev-parse --abbrev-ref HEAD)" != "$branch" ]]; then
     log "switching to $branch"
     git switch "$branch"

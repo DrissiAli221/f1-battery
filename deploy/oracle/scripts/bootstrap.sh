@@ -5,7 +5,7 @@
 #
 #   F1_REPO_URL=https://github.com/<you>/f1-battery.git deploy/oracle/scripts/bootstrap.sh
 #   F1_REPO_URL=git@github-f1:<you>/f1-battery.git deploy/oracle/scripts/bootstrap.sh
-#     (from anywhere: clones branch $F1_BRANCH, default `deploy`, to /opt/f1-battery and
+#     (from anywhere: clones branch $F1_BRANCH, default `main`, to /opt/f1-battery and
 #     continues from there; the git@github-f1 form uses the read-only deploy key, README)
 #   /opt/f1-battery/deploy/oracle/scripts/bootstrap.sh
 #     (from an existing clone)
@@ -25,7 +25,7 @@ if [[ "$(cd "$SELF_DIR/../../.." && pwd)" != "$TARGET" ]]; then
         fi
         # umask 022 for git only: under 077 the working tree would be 0600 and unreadable to
         # the (non-root) container users and bind mounts.
-        (umask 022 && git clone -b "${F1_BRANCH:-deploy}" "$F1_REPO_URL" "$TARGET")
+        (umask 022 && git clone -b "${F1_BRANCH:-main}" "$F1_REPO_URL" "$TARGET")
     fi
     exec "$TARGET/deploy/oracle/scripts/bootstrap.sh" "$@"
 fi
