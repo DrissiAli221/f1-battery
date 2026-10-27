@@ -288,79 +288,83 @@ Object.assign(ICONS, {
   box: 'm12 3 8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9',
 });
 type D = { k: string; t: string; s: string; i: string; h: string; m?: string[] };
-type Group = { h: string; label: string; title: string; icon: string; m: string[]; items: string[] };
-const GROUPS: Group[] = [
-  { h: GH, label: 'Source', title: 'GitHub', icon: 'github', m: ['github'], items: ['Repo DrissiAli221/f1-battery', 'Read-only deploy key on the VM', 'CI is verify-only'] },
-  { h: AWS, label: 'AWS · Terraform', title: 'CloudFront + S3', icon: 'globe', m: ['terraform', 'cloudfront', 's3', 'iam'], items: ['CloudFront: site from S3, /api/* to the VM', 'S3: web bucket and a private data bucket', 'IAM user f1-battery-vm, least privilege'] },
-  { h: VM, label: 'Oracle VM · Always Free', title: 'Compose project f1-battery', icon: 'server', m: ['oracle', 'ubuntu', 'docker'], items: ['Ubuntu 24.04 ARM, 2 OCPU / 12 GB', 'Shared Caddy owns 80/443 and proxies /api', 'Always up: db, api, kafka, replay-consumer'] },
-];
+/* A card's brand marks at 22 px, else its line icon at the same size and place. */
+const DBadge = ({ i, m }: { i: string; m?: string[] }) =>
+  m?.length
+    ? <span className="pl-marks">{m.map((x) => <Mark key={x} n={x} size={22} />)}</span>
+    : <svg className="pl-marks" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONS[i]} /></svg>;
+
 const DEPLOY: D[] = [
-  { k: 'GitHub', t: 'Branch deploy', s: 'git pull, read-only key', i: 'github', m: ['github'], h: GH },
-  { k: 'VM · deploy.sh', t: 'Build web', s: 'Vite build on the VM', i: 'code', m: ['vite'], h: VM },
-  { k: 'AWS', t: 'Web bucket', s: 'web/dist synced', i: 'bucket', m: ['s3'], h: AWS },
-  { k: 'AWS', t: 'CloudFront', s: 'Serves the site', i: 'globe', m: ['cloudfront'], h: AWS },
-  { k: 'Public', t: 'Visitor', s: 'Static site', i: 'user', h: GH },
+  { k: 'GitHub', t: 'Branch deploy', s: 'git pull with a read-only key', i: 'github', m: ['github'], h: GH },
+  { k: 'VM · deploy.sh', t: 'Build web', s: 'Vite build on the VM', i: 'code', m: ['oracle', 'vite'], h: VM },
+  { k: 'AWS · S3', t: 'Web bucket', s: 'web/dist synced to the bucket', i: 'bucket', m: ['s3'], h: AWS },
+  { k: 'AWS · CDN', t: 'CloudFront', s: 'Serves the static site', i: 'globe', m: ['cloudfront'], h: AWS },
 ];
 const REQUEST: D[] = [
-  { k: 'Public', t: 'Visitor', s: 'Any browser', i: 'user', h: GH },
-  { k: 'AWS', t: 'CloudFront /api/*', s: 'HTTP + secret header', i: 'globe', m: ['cloudfront'], h: AWS },
-  { k: 'VM · shared', t: 'Caddy', s: '403 without the secret', i: 'shield', m: ['caddy'], h: VM },
-  { k: 'Container', t: 'api', s: 'Spring Boot, read-only', i: 'code', m: ['springboot'], h: VM },
-  { k: 'Container', t: 'db', s: 'Postgres + Timescale', i: 'db', m: ['postgresql'], h: VM },
+  { k: 'AWS · /api/*', t: 'CloudFront', s: 'Adds a secret header, calls the VM', i: 'globe', m: ['cloudfront'], h: AWS },
+  { k: 'VM · shared', t: 'Caddy', s: 'Returns 403 without the secret', i: 'shield', m: ['caddy'], h: VM },
+  { k: 'Container', t: 'API', s: 'Spring Boot, read-only role', i: 'code', m: ['springboot'], h: VM },
+  { k: 'Container', t: 'Database', s: 'Postgres 16 with TimescaleDB', i: 'db', m: ['postgresql', 'timescale'], h: VM },
 ];
 const REPLAY: D[] = [
-  { k: 'Service', t: 'replay-producer', s: 'Looping service', i: 'play', m: ['springboot'], h: JOB },
-  { k: 'Container', t: 'Kafka topic', s: 'KRaft, one broker', i: 'log', m: ['apachekafka'], h: VM },
-  { k: 'Container', t: 'replay-consumer', s: 'Labels regimes', i: 'headphones', m: ['springboot'], h: VM },
-  { k: 'Container', t: 'api SSE', s: '/api/live/{key}', i: 'radio', h: VM },
-  { k: 'AWS', t: 'CloudFront /api/live/*', s: 'Unbuffered to browser', i: 'globe', m: ['cloudfront'], h: AWS },
+  { k: 'Service · looping', t: 'Producer', s: 'Telemetry paced at speed', i: 'play', m: ['springboot'], h: JOB },
+  { k: 'Container', t: 'Kafka', s: 'KRaft, one broker, a topic per session', i: 'log', m: ['apachekafka'], h: VM },
+  { k: 'Container', t: 'Consumer', s: 'Labels regimes per driver', i: 'headphones', m: ['springboot'], h: VM },
+  { k: 'Container · /api/live/*', t: 'API SSE', s: 'Streamed unbuffered via CloudFront', i: 'radio', h: VM },
 ];
 const TIMERS: D[] = [
-  { k: 'f1-backup.timer', t: 'Nightly 02:00 UTC', s: 'pg_dump to S3', i: 'clock', h: JOB },
-  { k: 'f1-weekly.timer', t: 'Monday 04:00 UTC', s: 'Ingest, model, publish', i: 'clock', h: JOB },
-  { k: 'AWS', t: 'Data bucket', s: 'Assets and backups', i: 'bucket', m: ['s3'], h: AWS },
+  { k: 'F1-WEEKLY.TIMER', t: 'Weekly run', s: 'Mondays 04:00 UTC: ingest, model, publish', i: 'clock', m: ['openf1', 'python'], h: JOB },
+  { k: 'F1-BACKUP.TIMER', t: 'Nightly backup', s: '02:00 UTC, pg_dump to the data bucket', i: 'clock', m: ['postgresql'], h: JOB },
+  { k: 'AWS · S3 + IAM', t: 'Data bucket', s: 'Private, least-privilege IAM user', i: 'bucket', m: ['iam', 's3'], h: AWS },
 ];
-function DFlow({ nodes, dashed, noLink }: { nodes: D[]; dashed?: boolean; noLink?: (i: number) => boolean }) {
+
+/* Arrows live in the gutter between cards: 1.5 px line, filled 6x8 head, source hue, 70% opacity. */
+const Arrow = ({ h, cls = '' }: { h: string; cls?: string }) => (
+  <svg className={`dp-arrow ${cls}`} width="32" height="8" viewBox="0 0 32 8" style={{ color: h }} aria-hidden="true">
+    <line x1="4" y1="4" x2="23" y2="4" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M22 0 28 4 22 8Z" fill="currentColor" />
+  </svg>
+);
+const Visitor = ({ side }: { side: 'start' | 'end' }) => (
+  <span className={`dp-visitor ${side}`} style={{ ['--h' as string]: GH } as CSSProperties} aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS.user} /></svg>
+    <i>Visitor</i>
+  </span>
+);
+function Row({ title, note, nodes, dashed, start, end, tone }: { title: string; note: string; nodes: D[]; dashed?: boolean; start?: boolean; end?: boolean; tone?: string }) {
   return (
-    <div className="pl-flow">
-      {nodes.map((n, i) => (
-        <span key={n.t + i} style={{ display: 'contents' }}>
-          {i > 0 && <span className="pl-arrow" style={{ ['--h' as string]: nodes[i - 1].h }} aria-hidden="true">{noLink?.(i) ? '' : '→'}</span>}
-          <div className="pl-node dp-node" style={{ ['--h' as string]: n.h, ...(dashed ? { borderStyle: 'dashed', borderColor: `color-mix(in srgb, ${n.h} 35%, transparent)` } : {}) } as CSSProperties}>
-            <Badge i={n.i} m={n.m} />
+    <section className="dp-section">
+      <p className="pl-eyebrow dp-head"><span style={tone ? { color: tone } : undefined}>{title}</span><span>{note}</span></p>
+      <div className="dp-row">
+        {start && <><Visitor side="start" /><Arrow h={GH} cls="start" /></>}
+        {nodes.map((n, i) => (
+          <div key={n.t + i} className={`pl-node dp-card${dashed ? ' is-dashed' : ''}`} style={{ ['--h' as string]: n.h } as CSSProperties}>
+            <DBadge i={n.i} m={n.m} />
             <span className="k">{n.k}</span>
             <strong>{n.t}</strong>
             <small>{n.s}</small>
+            {(i < nodes.length - 1 && !(title === 'Scheduled' && i === 0) || (end && i === nodes.length - 1)) && <Arrow h={n.h} />}
           </div>
-        </span>
-      ))}
-    </div>
+        ))}
+        {end && <Visitor side="end" />}
+      </div>
+    </section>
   );
 }
 function Deployment() {
   useEffect(() => { document.documentElement.dataset.painted = '1'; }, []);
   return (
     <div className="panel panel-pipeline panel-deploy" id="deployment">
-      <p className="pl-eyebrow"><span>How it is deployed</span><b>d1913ktwn45t9g.cloudfront.net</b></p>
-      <div className="dp-groups">
-        {GROUPS.map((g) => (
-          <div key={g.title} className="pl-node dp-group" style={{ ['--h' as string]: g.h } as CSSProperties}>
-            <Badge i={g.icon} m={g.m} />
-            <span className="k">{g.label}</span>
-            <strong>{g.title}</strong>
-            <ul>{g.items.map((x) => <li key={x}>{x}</li>)}</ul>
-          </div>
-        ))}
-      </div>
-      <div className="dp-lane"><p className="pl-eyebrow"><span>Deploy and publish</span><span>deploy.sh</span></p><DFlow nodes={DEPLOY} /></div>
-      <div className="dp-lane"><p className="pl-eyebrow"><span>Request path</span><span>/api/*</span></p><DFlow nodes={REQUEST} /></div>
-      <div className="dp-lane pl-lane"><p className="pl-eyebrow"><span style={{ color: JOB }}>Live replay lane</span><span>/api/live/*</span></p><DFlow nodes={REPLAY} dashed /></div>
-      <div className="dp-lane"><p className="pl-eyebrow"><span style={{ color: JOB }}>systemd timers</span><span>UTC</span></p><DFlow nodes={TIMERS} noLink={(i) => i === 1} /></div>
-    <p className="dp-legend">
-        <span style={{ ['--h' as string]: GH } as CSSProperties}>Grey: GitHub</span>
-        <span style={{ ['--h' as string]: AWS } as CSSProperties}>Teal: AWS</span>
-        <span style={{ ['--h' as string]: VM } as CSSProperties}>Red: Oracle VM</span>
-        <span style={{ ['--h' as string]: JOB } as CSSProperties}>Amber: scheduled and replay</span>
+      <p className="pl-eyebrow dp-title"><span>How it is deployed</span><b>d1913ktwn45t9g.cloudfront.net</b></p>
+      <Row title="Deploy and publish" note="deploy.sh" nodes={DEPLOY} />
+      <Row title="Request path" note="/api/*" nodes={REQUEST} start />
+      <Row title="Live replay" note="/api/live/*" nodes={REPLAY} dashed end tone={JOB} />
+      <Row title="Scheduled" note="systemd timers, UTC" nodes={TIMERS} tone={JOB} />
+      <p className="dp-legend">
+        <span style={{ ['--h' as string]: GH } as CSSProperties}>GitHub</span>
+        <span style={{ ['--h' as string]: AWS } as CSSProperties}>AWS</span>
+        <span style={{ ['--h' as string]: VM } as CSSProperties}>Oracle VM</span>
+        <span style={{ ['--h' as string]: JOB } as CSSProperties}>Scheduled and replay</span>
       </p>
     </div>
   );
