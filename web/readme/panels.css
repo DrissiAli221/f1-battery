@@ -86,4 +86,14 @@
   .dp-node small { font-size: 13px; }
   .pl-lane .dp-node { min-height: 104px; }
   .pl-lane .dp-node strong { font-size: 18px; }
+
+  /* Brand marks */
+  .pl-marks { position: absolute; top: 18px; right: 18px; display: flex; align-items: center; gap: 10px; color: var(--h); opacity: 0.85; }
+  .pl-mark { display: block; }
+  .pl-word { font: 400 11px/1 KHF1, monospace; text-transform: none; letter-spacing: 0.04em; border: 1px solid currentColor; padding: 4px 6px 3px; }
+  .pl-node:has(.pl-marks) .k { padding-right: 44px; }
+  .pl-node:has(.pl-mark + .pl-mark) .k { padding-right: 0; white-space: nowrap; }
+  .dp-group:has(.pl-marks) .k { padding-right: 190px; }
+  .dp-legend { margin: 28px 0 0; display: flex; gap: 32px; font: 400 12px/1 KHF1, monospace; text-transform: uppercase; letter-spacing: 0.08em; color: #8c8b82; }
+  .dp-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; background: var(--h); margin-right: 10px; }
 }

@@ -11,6 +11,7 @@ import '../src/app/findings.css';
 import '../src/app/refinement.css';
 import '../src/app/home.css';
 import './panels.css';
+import { Mark } from './logos';
 
 const MONZA = 39;
 
@@ -57,7 +58,7 @@ function Banner() {
   );
 }
 
-type N = { k: string; t: string; s: string; i: string; pub?: boolean; w?: number };
+type N = { k: string; t: string; s: string; i: string; m?: string[]; pub?: boolean; w?: number };
 /* 24-grid line icons, 1.6 stroke, round joins, no fills (same style as session-icons.tsx). */
 const ICONS: Record<string, string> = {
   cloud: 'M7 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 8.5a4.75 4.75 0 0 1 0 9.5M12 11v8m-3-3 3 3 3-3',
@@ -78,20 +79,23 @@ const Icon = ({ n }: { n: string }) => (
     <path d={ICONS[n]} />
   </svg>
 );
+/* Brand marks when the thing has one, otherwise the line icon. */
+const Badge = ({ i, m }: { i: string; m?: string[] }) =>
+  m?.length ? <span className="pl-marks">{m.map((x) => <Mark key={x} n={x} />)}</span> : <Icon n={i} />;
 const MAIN: N[] = [
   { k: 'Source', t: 'OpenF1', s: 'Free tier, or a local backup', i: 'cloud' },
-  { k: 'Java 21', t: 'Ingest', s: 'Idempotent, resumable upserts', i: 'ingest' },
-  { k: 'Store', t: 'Postgres 16 + TimescaleDB', s: 'Schema in Flyway migrations', i: 'db', w: 1.45 },
-  { k: 'Python', t: 'Estimator', s: 'Alignment, regimes, cut-offs', i: 'chart' },
+  { k: 'Java 21', t: 'Ingest', s: 'Idempotent, resumable upserts', i: 'ingest', m: ['openjdk', 'springboot'] },
+  { k: 'Store', t: 'Postgres 16 + TimescaleDB', s: 'Schema in Flyway migrations', i: 'db', m: ['postgresql', 'timescale'], w: 1.45 },
+  { k: 'Python', t: 'Estimator', s: 'Alignment, regimes, cut-offs', i: 'chart', m: ['python'] },
   { k: 'Published', t: 'Model run', s: 'Versioned by run_id', i: 'tag', pub: true },
-  { k: 'Read-only', t: 'API', s: 'API on :8080. SELECT-only role, rate limited', i: 'code' },
-  { k: 'React 18', t: 'Web', s: 'Maps, findings, method log', i: 'browser' },
+  { k: 'Read-only', t: 'API', s: 'API on :8080. SELECT-only role, rate limited', i: 'code', m: ['springboot'] },
+  { k: 'React 18', t: 'Web', s: 'Maps, findings, method log', i: 'browser', m: ['react', 'vite'] },
 ];
 const LANE: N[] = [
-  { k: 'Producer', t: 'Replay producer', s: 'Telemetry paced at speed', i: 'play' },
-  { k: 'Topic', t: 'telemetry.<key>', s: 'One session per key', i: 'log' },
-  { k: 'Consumer', t: 'Replay consumer', s: 'Labels regimes per driver', i: 'headphones' },
-  { k: 'Topic', t: 'regime-state.<key>', s: 'Per-driver regime state', i: 'layers' },
+  { k: 'Producer', t: 'Replay producer', s: 'Telemetry paced at speed', i: 'play', m: ['springboot'] },
+  { k: 'Topic', t: 'telemetry.<key>', s: 'One session per key', i: 'log', m: ['apachekafka'] },
+  { k: 'Consumer', t: 'Replay consumer', s: 'Labels regimes per driver', i: 'headphones', m: ['springboot'] },
+  { k: 'Topic', t: 'regime-state.<key>', s: 'Per-driver regime state', i: 'layers', m: ['apachekafka'] },
   { k: 'Stream', t: 'SSE /api/live/{key}', s: 'To the browser', i: 'radio' },
 ];
 
@@ -102,7 +106,7 @@ function Flow({ nodes, cls }: { nodes: N[]; cls?: string }) {
         <span key={n.t} style={{ display: 'contents' }}>
           {i > 0 && <span className={`pl-arrow ${cls ?? ''}`} aria-hidden="true">→</span>}
           <div className={`pl-node ${cls ?? ''}${n.pub ? ' is-published' : ''}`} style={n.w ? { flexGrow: n.w } : undefined}>
-            <Icon n={n.i} />
+            <Badge i={n.i} m={n.m} />
             <span className="k">{n.k}</span>
             <strong>{n.t}</strong>
             <small>{n.s}</small>
@@ -282,38 +286,38 @@ Object.assign(ICONS, {
   key: 'M14 10a4 4 0 1 0-3.5 4L12 15.5V18h2.5v2.5H17V18l2-2-5-6Z',
   box: 'm12 3 8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9',
 });
-type D = { k: string; t: string; s: string; i: string; h: string };
-type Group = { h: string; label: string; title: string; icon: string; items: string[] };
+type D = { k: string; t: string; s: string; i: string; h: string; m?: string[] };
+type Group = { h: string; label: string; title: string; icon: string; m: string[]; items: string[] };
 const GROUPS: Group[] = [
-  { h: GH, label: 'Source', title: 'GitHub', icon: 'github', items: ['Repo DrissiAli221/f1-battery', 'Branch deploy', 'Read-only deploy key on the VM', 'CI is verify-only'] },
-  { h: AWS, label: 'AWS · Terraform in infra/aws-f1', title: 'CloudFront + S3', icon: 'globe', items: ['CloudFront: default origin S3; /api/* to the VM over HTTP with an X-Origin-Secret header; /api/live/* unbuffered SSE', 'S3 web bucket: web/dist, synced on each build', 'S3 data bucket: private-assets/ fonts, db-backups/ nightly dumps (14-day expiry), raw/ OpenF1 backup', 'IAM user f1-battery-vm, least privilege'] },
-  { h: VM, label: 'Oracle VM oracle-arm-1 · Always Free', title: 'Compose project f1-battery', icon: 'server', items: ['Ubuntu 24.04 ARM, 2 OCPU / 12 GB, in /opt/f1-battery', 'Shared with another project (RCP): its Caddy owns 80/443 and imports the f1 site block (403 without the secret, 405 on writes, proxies /api to f1-api:8080)', 'Always up: db, api, kafka, replay-consumer', 'Jobs: ingest, model, replay-producer, s3'] },
+  { h: GH, label: 'Source', title: 'GitHub', icon: 'github', m: ['github'], items: ['Repo DrissiAli221/f1-battery', 'Read-only deploy key on the VM', 'CI is verify-only'] },
+  { h: AWS, label: 'AWS · Terraform', title: 'CloudFront + S3', icon: 'globe', m: ['terraform', 'cloudfront', 's3', 'iam'], items: ['CloudFront: site from S3, /api/* to the VM', 'S3: web bucket and a private data bucket', 'IAM user f1-battery-vm, least privilege'] },
+  { h: VM, label: 'Oracle VM · Always Free', title: 'Compose project f1-battery', icon: 'server', m: ['oracle', 'ubuntu', 'docker'], items: ['Ubuntu 24.04 ARM, 2 OCPU / 12 GB', 'Shared Caddy owns 80/443 and proxies /api', 'Always up: db, api, kafka, replay-consumer'] },
 ];
 const DEPLOY: D[] = [
-  { k: 'GitHub', t: 'Branch deploy', s: 'git pull over the read-only deploy key', i: 'github', h: GH },
-  { k: 'VM · deploy.sh', t: 'Build web', s: 'Vite build on the VM', i: 'code', h: VM },
-  { k: 'AWS S3', t: 'Web bucket', s: 'web/dist synced on each build', i: 'bucket', h: AWS },
-  { k: 'AWS', t: 'CloudFront', s: 'd1913ktwn45t9g.cloudfront.net', i: 'globe', h: AWS },
-  { k: 'Public', t: 'Visitor', s: 'Static site from S3', i: 'user', h: GH },
+  { k: 'GitHub', t: 'Branch deploy', s: 'git pull, read-only key', i: 'github', m: ['github'], h: GH },
+  { k: 'VM · deploy.sh', t: 'Build web', s: 'Vite build on the VM', i: 'code', m: ['vite'], h: VM },
+  { k: 'AWS', t: 'Web bucket', s: 'web/dist synced', i: 'bucket', m: ['s3'], h: AWS },
+  { k: 'AWS', t: 'CloudFront', s: 'Serves the site', i: 'globe', m: ['cloudfront'], h: AWS },
+  { k: 'Public', t: 'Visitor', s: 'Static site', i: 'user', h: GH },
 ];
 const REQUEST: D[] = [
-  { k: 'Public', t: 'Visitor', s: 'Browser, any region', i: 'user', h: GH },
-  { k: 'AWS', t: 'CloudFront /api/*', s: 'HTTP to the VM with X-Origin-Secret', i: 'globe', h: AWS },
-  { k: 'VM · shared', t: 'Caddy (RCP)', s: '403 without the secret, 405 on writes', i: 'shield', h: VM },
-  { k: 'Container', t: 'api', s: 'Spring Boot, read-only role', i: 'code', h: VM },
-  { k: 'Container', t: 'db', s: 'Postgres 16 + TimescaleDB', i: 'db', h: VM },
+  { k: 'Public', t: 'Visitor', s: 'Any browser', i: 'user', h: GH },
+  { k: 'AWS', t: 'CloudFront /api/*', s: 'HTTP + secret header', i: 'globe', m: ['cloudfront'], h: AWS },
+  { k: 'VM · shared', t: 'Caddy', s: '403 without the secret', i: 'shield', m: ['caddy'], h: VM },
+  { k: 'Container', t: 'api', s: 'Spring Boot, read-only', i: 'code', m: ['springboot'], h: VM },
+  { k: 'Container', t: 'db', s: 'Postgres + Timescale', i: 'db', m: ['postgresql'], h: VM },
 ];
 const REPLAY: D[] = [
-  { k: 'Service · always on', t: 'replay-producer', s: 'Looping systemd service', i: 'play', h: JOB },
-  { k: 'Container', t: 'Kafka topic', s: 'kafka 3.8, KRaft', i: 'log', h: VM },
-  { k: 'Container', t: 'replay-consumer', s: 'Labels regimes per driver', i: 'headphones', h: VM },
+  { k: 'Service', t: 'replay-producer', s: 'Looping service', i: 'play', m: ['springboot'], h: JOB },
+  { k: 'Container', t: 'Kafka topic', s: 'KRaft, one broker', i: 'log', m: ['apachekafka'], h: VM },
+  { k: 'Container', t: 'replay-consumer', s: 'Labels regimes', i: 'headphones', m: ['springboot'], h: VM },
   { k: 'Container', t: 'api SSE', s: '/api/live/{key}', i: 'radio', h: VM },
-  { k: 'AWS', t: 'CloudFront /api/live/*', s: 'Unbuffered, to the visitor', i: 'globe', h: AWS },
+  { k: 'AWS', t: 'CloudFront /api/live/*', s: 'Unbuffered to browser', i: 'globe', m: ['cloudfront'], h: AWS },
 ];
 const TIMERS: D[] = [
-  { k: 'f1-backup.timer', t: 'Nightly 02:00 UTC', s: 'pg_dump to S3 db-backups/, 14-day expiry', i: 'clock', h: JOB },
-  { k: 'f1-weekly.timer', t: 'Monday 04:00 UTC', s: 'OpenF1 backup, ingest, model, publish, S3 sync', i: 'clock', h: JOB },
-  { k: 'AWS S3', t: 'Data bucket', s: 'private-assets/, db-backups/, raw/', i: 'bucket', h: AWS },
+  { k: 'f1-backup.timer', t: 'Nightly 02:00 UTC', s: 'pg_dump to S3', i: 'clock', h: JOB },
+  { k: 'f1-weekly.timer', t: 'Monday 04:00 UTC', s: 'Ingest, model, publish', i: 'clock', h: JOB },
+  { k: 'AWS', t: 'Data bucket', s: 'Assets and backups', i: 'bucket', m: ['s3'], h: AWS },
 ];
 function DFlow({ nodes, dashed, noLink }: { nodes: D[]; dashed?: boolean; noLink?: (i: number) => boolean }) {
   return (
@@ -322,7 +326,7 @@ function DFlow({ nodes, dashed, noLink }: { nodes: D[]; dashed?: boolean; noLink
         <span key={n.t + i} style={{ display: 'contents' }}>
           {i > 0 && <span className="pl-arrow" style={{ ['--h' as string]: nodes[i - 1].h }} aria-hidden="true">{noLink?.(i) ? '' : '→'}</span>}
           <div className="pl-node dp-node" style={{ ['--h' as string]: n.h, ...(dashed ? { borderStyle: 'dashed', borderColor: `color-mix(in srgb, ${n.h} 35%, transparent)` } : {}) } as CSSProperties}>
-            <Icon n={n.i} />
+            <Badge i={n.i} m={n.m} />
             <span className="k">{n.k}</span>
             <strong>{n.t}</strong>
             <small>{n.s}</small>
@@ -340,7 +344,7 @@ function Deployment() {
       <div className="dp-groups">
         {GROUPS.map((g) => (
           <div key={g.title} className="pl-node dp-group" style={{ ['--h' as string]: g.h } as CSSProperties}>
-            <Icon n={g.icon} />
+            <Badge i={g.icon} m={g.m} />
             <span className="k">{g.label}</span>
             <strong>{g.title}</strong>
             <ul>{g.items.map((x) => <li key={x}>{x}</li>)}</ul>
@@ -351,6 +355,12 @@ function Deployment() {
       <div className="dp-lane"><p className="pl-eyebrow"><span>Request path</span><span>/api/*</span></p><DFlow nodes={REQUEST} /></div>
       <div className="dp-lane pl-lane"><p className="pl-eyebrow"><span style={{ color: JOB }}>Live replay lane</span><span>/api/live/*</span></p><DFlow nodes={REPLAY} dashed /></div>
       <div className="dp-lane"><p className="pl-eyebrow"><span style={{ color: JOB }}>systemd timers</span><span>UTC</span></p><DFlow nodes={TIMERS} noLink={(i) => i === 1} /></div>
+    <p className="dp-legend">
+        <span style={{ ['--h' as string]: GH } as CSSProperties}>Grey: GitHub</span>
+        <span style={{ ['--h' as string]: AWS } as CSSProperties}>Teal: AWS</span>
+        <span style={{ ['--h' as string]: VM } as CSSProperties}>Red: Oracle VM</span>
+        <span style={{ ['--h' as string]: JOB } as CSSProperties}>Amber: scheduled and replay</span>
+      </p>
     </div>
   );
 }
