@@ -1,6 +1,6 @@
 /* Render with the private assets present (web/scripts/private-assets.sh pull), otherwise the fallback fonts are captured. */
 /* Dev-only README panel renderer. Builds nothing for production: it is served through vite.readme.config.ts. */
-import { StrictMode, useEffect, useRef, type CSSProperties } from 'react';
+import { StrictMode, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Atmosphere, PageGround } from '../src/app/chrome';
 import { CircuitMini } from '../src/app/circuit-mini';
@@ -83,71 +83,66 @@ const Icon = ({ n }: { n: string }) => (
 /* Brand marks when the thing has one, otherwise the line icon. */
 const Badge = ({ i, m }: { i: string; m?: string[] }) =>
   m?.length ? <span className="pl-marks">{m.map((x) => <Mark key={x} n={x} />)}</span> : <Icon n={i} />;
-const MAIN: N[] = [
-  { k: 'Source', t: 'OpenF1', s: 'Free tier, or a local backup', i: 'cloud' },
-  { k: 'Java 21', t: 'Ingest', s: 'Idempotent, resumable upserts', i: 'ingest', m: ['openjdk', 'springboot'] },
-  { k: 'Store', t: 'Postgres 16 + TimescaleDB', s: 'Schema in Flyway migrations', i: 'db', m: ['postgresql', 'timescale'], w: 1.45 },
-  { k: 'Python', t: 'Estimator', s: 'Alignment, regimes, cut-offs', i: 'chart', m: ['python'] },
-  { k: 'Published', t: 'Model run', s: 'Versioned by run_id', i: 'tag', pub: true },
-  { k: 'Read-only', t: 'API', s: 'API on :8080. SELECT-only role, rate limited', i: 'code', m: ['springboot'] },
-  { k: 'React 18', t: 'Web', s: 'Maps, findings, method log', i: 'browser', m: ['react', 'vite'] },
+/* Pipeline panel (?p=pipeline): same card, gutter-arrow and uppercase style as the deployment panel. */
+const BLUE = '#6a9fff', RED = '#ff4d44', TEAL = '#27f4d2', AMBER = '#f0b429';
+type PN = { k: string; t: string; s: string; i: string; h: string; m?: string[] };
+const MAIN: PN[] = [
+  { k: 'Source', t: 'OpenF1', s: 'Free tier, or a local backup', i: 'cloud', m: ['openf1'], h: BLUE },
+  { k: 'Java 21', t: 'Ingest', s: 'Idempotent, resumable upserts', i: 'ingest', m: ['openjdk', 'springboot'], h: BLUE },
+  { k: 'Store', t: 'Postgres 16 +\nTimescaleDB', s: 'Schema in Flyway migrations', i: 'db', m: ['postgresql', 'timescale'], h: BLUE },
+  { k: 'Python', t: 'Estimator', s: 'Alignment, regimes, cut-offs', i: 'chart', m: ['python'], h: RED },
+  { k: 'Published', t: 'Model run', s: 'Versioned by run_id', i: 'tag', h: RED },
+  { k: 'Read-only', t: 'API', s: 'SELECT-only role, rate limited', i: 'code', m: ['springboot'], h: TEAL },
+  { k: 'React 18', t: 'Web', s: 'Maps, findings, method log', i: 'browser', m: ['react', 'vite'], h: TEAL },
 ];
-const LANE: N[] = [
-  { k: 'Producer', t: 'Replay producer', s: 'Telemetry paced at speed', i: 'play', m: ['springboot'] },
-  { k: 'Topic', t: 'telemetry.<key>', s: 'One session per key', i: 'log', m: ['apachekafka'] },
-  { k: 'Consumer', t: 'Replay consumer', s: 'Labels regimes per driver', i: 'headphones', m: ['springboot'] },
-  { k: 'Topic', t: 'regime-state.<key>', s: 'Per-driver regime state', i: 'layers', m: ['apachekafka'] },
-  { k: 'Stream', t: 'SSE /api/live/{key}', s: 'To the browser', i: 'radio' },
+const LANE: PN[] = [
+  { k: 'Producer', t: 'Replay producer', s: 'Telemetry paced at speed', i: 'play', m: ['springboot'], h: AMBER },
+  { k: 'Topic', t: 'telemetry.<key>', s: 'One session per key', i: 'log', m: ['apachekafka'], h: AMBER },
+  { k: 'Consumer', t: 'Replay consumer', s: 'Labels regimes per driver', i: 'headphones', m: ['springboot'], h: AMBER },
+  { k: 'Topic', t: 'regime-state.<key>', s: 'Per-driver regime state', i: 'layers', m: ['apachekafka'], h: AMBER },
+  { k: 'Stream', t: 'SSE /api/live/{key}', s: 'To the browser', i: 'radio', h: AMBER },
 ];
 
-function Flow({ nodes, cls }: { nodes: N[]; cls?: string }) {
+/* The seven cards cannot stay >= 200 px wide in one row at 1600, so they wrap 4 + 3 with an elbow arrow. */
+const Elbow = ({ h }: { h: string }) => (
+  <svg className="dp-elbow" width="1408" height="56" viewBox="0 0 1408 56" style={{ color: h }} aria-hidden="true">
+    <path d="M1244 4V28H164V50" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M160 48H168L164 56Z" fill="currentColor" />
+  </svg>
+);
+function PCard({ n, arrow, dashed }: { n: PN; arrow?: ReactNode; dashed?: boolean }) {
   return (
-    <>
-      {nodes.map((n, i) => (
-        <span key={n.t} style={{ display: 'contents' }}>
-          {i > 0 && <span className={`pl-arrow ${cls ?? ''}`} aria-hidden="true">→</span>}
-          <div className={`pl-node ${cls ?? ''}${n.pub ? ' is-published' : ''}`} style={n.w ? { flexGrow: n.w } : undefined}>
-            <Badge i={n.i} m={n.m} />
-            <span className="k">{n.k}</span>
-            <strong>{n.t}</strong>
-            <small>{n.s}</small>
-          </div>
-        </span>
-      ))}
-    </>
-  );
-}
-
-const STAGES = [
-  { id: 'data', label: 'Data', nodes: MAIN.slice(0, 3) },
-  { id: 'model', label: 'Model', nodes: MAIN.slice(3, 5) },
-  { id: 'serve', label: 'Serve', nodes: MAIN.slice(5) },
-];
-
-function Pipeline() {
-  return (
-    <div className="panel panel-pipeline" id="pipeline">
-      <p className="pl-eyebrow"><span>How it works</span><b>Estimates, not measurements</b></p>
-      <div className="pl-flow">
-        {STAGES.map((s, i) => (
-          <span key={s.id} style={{ display: 'contents' }}>
-            {i > 0 && <span className={`pl-arrow pl-gap st-${STAGES[i - 1].id}`} aria-hidden="true">→</span>}
-            <div className={`pl-stage st-${s.id}`} style={{ flexGrow: s.nodes.reduce((a, n) => a + (n.w ?? 1), 0) }}>
-              <div className="pl-flow"><Flow nodes={s.nodes} cls={`st-${s.id}`} /></div>
-            </div>
-          </span>
-        ))}
-      </div>
-      <p className="pl-meet">Python and Java meet only at one versioned results table</p>
-      <div className="pl-lane">
-        <p className="pl-eyebrow"><span>Live replay lane · optional</span><span>API_REPLAY_ENABLED</span></p>
-        <div className="pl-flow"><Flow nodes={LANE} /></div>
-        <p className="pl-note">Kafka is isolated to replay, behind a Compose profile and an API flag.</p>
-      </div>
+    <div className={`pl-node dp-card${dashed ? ' is-dashed' : ''}`} style={{ ['--h' as string]: n.h } as CSSProperties}>
+      <DBadge i={n.i} m={n.m} />
+      <span className="k">{n.k}</span>
+      <strong>{n.t.split('\n').map((l, i) => <span key={i}>{i > 0 && <br />}{l}</span>)}</strong>
+      <small>{n.s}</small>
+      {arrow}
     </div>
   );
 }
 
+function Pipeline() {
+  useEffect(() => { document.documentElement.dataset.painted = '1'; }, []);
+  return (
+    <div className="panel panel-pipeline panel-deploy" id="pipeline">
+      <p className="pl-eyebrow dp-title"><span>How it works</span><b>Estimates, not measurements</b></p>
+      <div className="dp-row dp-main">
+        {MAIN.map((n, i) => (
+          <PCard key={n.t} n={n} arrow={i === 3 ? <Elbow h={n.h} /> : i < MAIN.length - 1 ? <Arrow h={n.h} /> : undefined} />
+        ))}
+      </div>
+      <p className="pl-meet">Python and Java meet only at one versioned results table</p>
+      <section className="dp-section dp-lane5">
+        <p className="pl-eyebrow dp-head"><span style={{ color: AMBER }}>Live replay lane · optional</span><span>API_REPLAY_ENABLED</span></p>
+        <div className="dp-row five">
+          {LANE.map((n, i) => <PCard key={n.t} n={n} dashed arrow={i < LANE.length - 1 ? <Arrow h={n.h} /> : undefined} />)}
+        </div>
+        <p className="pl-note">Kafka is isolated to replay, behind a Compose profile and an API flag.</p>
+      </section>
+    </div>
+  );
+}
 
 const heightParam = Number(new URLSearchParams(location.search).get('h')) || 520;
 const Notice = () => (
