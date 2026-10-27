@@ -32,11 +32,15 @@ Postgres car_data + location
   (`connected`, `no-topic`) and `state` (the JSON record). The whole feature is behind
   `api.replay.enabled` (env `API_REPLAY_ENABLED`, default false). When disabled,
   `GET /api/live/{key}` answers 404 with `{"error":"replay disabled"}` and no Kafka client is
-  created.
+  created. Streams are bounded: `API_LIVE_MAX_STREAMS` (default 20) concurrent
+  connections, each with one thread and one Kafka consumer; the next request gets
+  503. All streams are closed when the application shuts down.
 - **View.** Probes the endpoint when the EventSource errors: a 404 shows "Replay is not enabled on
   this server" with the instruction to enable it.
 
-State record: `{session_key, driver_number, ts, x, y, speed, regime, lap_distance_est}`. `regime`
+State record on Kafka: `{session_key, driver_number, ts, x, y, speed, regime, lap_distance_est}`.
+The API forwards only `{driver_number, ts, regime, lap_distance_est}` over SSE; `x`, `y`
+and `speed` stay inside the topic (D9: raw samples are not published). `regime`
 is `deploy`, `plateau`, `lift`, `brake` or `other` (full throttle while decelerating, as in the
 batch labeller).
 
@@ -89,11 +93,13 @@ is `f1battery_kafka`.
   position. The view places a dot at `(lap_distance_est * 10) mod outline length` along the
   reference outline (outline distances are in 1/10 m), which gives correct pace and wrap-around
   but an approximate and slowly drifting position. Cars that started the consumer mid-lap are
-  offset by a constant. The `x`, `y` fields are in the record but not used for placement, because
-  drawing raw positions would publish raw samples (D9).
+  offset by a constant. The `x`, `y` fields are in the Kafka record but are not forwarded to browsers,
+  because drawing raw positions would publish raw samples (D9). The table shows the
+  estimated lap distance instead of speed.
 - One broker, replication factor 1, no authentication: a local demo, not a deployment target.
-- Publishing the live feed beyond localhost would serve near-raw speed values; D9 restricts public
-  deploys to derived outputs, so the replay profile is for local use only.
+- The forwarded feed carries regime and an estimated distance only, but D9 still restricts public
+  deploys to derived outputs, and the broker has no authentication, so the replay profile is for
+  local use. The `replay` image (`replay/Dockerfile`) is built in CI; see `docs/ops.md`.
 - `docker compose --profile replay` needs about 400 MB for the image plus a small volume.
 
 ## Open decisions

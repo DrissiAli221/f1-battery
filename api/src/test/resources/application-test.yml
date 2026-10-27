@@ -1,5 +1,7 @@
 spring:
   flyway:
     enabled: true
+    placeholders:
+      api_db_password: f1api
 api:
   rate-per-min: 100000

@@ -1,0 +1,15 @@
+# Keeps the build context small and keeps data and private notes out of images.
+data/
+.venv/
+web/node_modules/
+web/dist/
+model/out/
+private/
+spike/cache/
+**/target/
+.git/
+out/
+# Deployment state and secrets never go into a build context.
+deploy/oracle/secrets/
+deploy/oracle/backups/
+deploy/oracle/.env

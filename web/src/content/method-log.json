@@ -18,11 +18,11 @@
         },
         {
           "label": "D7",
-          "path": "DECISIONS.md#d7"
+          "path": "DECISIONS.md#d7--2026-10-17--changes-from-the-second-independent-review"
         },
         {
           "label": "D10",
-          "path": "DECISIONS.md#d10"
+          "path": "DECISIONS.md#d10--2026-10-17--phase-s-result-proceed-in-proxy-mode-confirmed-by-the-owner-2026-10-17"
         }
       ],
       "figure": {
@@ -47,7 +47,7 @@
         },
         {
           "label": "D10",
-          "path": "DECISIONS.md#d10"
+          "path": "DECISIONS.md#d10--2026-10-17--phase-s-result-proceed-in-proxy-mode-confirmed-by-the-owner-2026-10-17"
         }
       ]
     },
@@ -67,7 +67,7 @@
         },
         {
           "label": "D11",
-          "path": "DECISIONS.md#d11"
+          "path": "DECISIONS.md#d11--2026-10-18--improvements-adopted-from-the-second-review"
         }
       ]
     },
@@ -91,11 +91,11 @@
         },
         {
           "label": "D18",
-          "path": "DECISIONS.md#d18"
+          "path": "DECISIONS.md#d18--2026-10-18--phase-3-check-failed-on-one-criterion-estimator-choice"
         },
         {
           "label": "D19",
-          "path": "DECISIONS.md#d19"
+          "path": "DECISIONS.md#d19--2026-10-18--singapore-straight-3-explained-hinge-detector-artifact"
         }
       ]
     },
@@ -119,7 +119,7 @@
         },
         {
           "label": "D18",
-          "path": "DECISIONS.md#d18"
+          "path": "DECISIONS.md#d18--2026-10-18--phase-3-check-failed-on-one-criterion-estimator-choice"
         }
       ]
     },
@@ -139,11 +139,11 @@
         },
         {
           "label": "D13",
-          "path": "DECISIONS.md#d13"
+          "path": "DECISIONS.md#d13--2026-10-18--raw-openf1-backup-race-sessions-done"
         },
         {
           "label": "D17",
-          "path": "DECISIONS.md#d17"
+          "path": "DECISIONS.md#d17--2026-10-18--phase-2-closed-sessions-excluded-from-modelling"
         }
       ]
     },
@@ -167,7 +167,7 @@
         },
         {
           "label": "D20",
-          "path": "DECISIONS.md#d20"
+          "path": "DECISIONS.md#d20--2026-10-18--phase-5-result-no-effect-frozen-test-run-as-written"
         }
       ]
     },
@@ -187,11 +187,32 @@
         },
         {
           "label": "D20",
-          "path": "DECISIONS.md#d20"
+          "path": "DECISIONS.md#d20--2026-10-18--phase-5-result-no-effect-frozen-test-run-as-written"
         },
         {
           "label": "HYPOTHESIS.md",
           "path": "HYPOTHESIS.md"
+        }
+      ]
+    },
+    {
+      "id": "model-rerun-proxy-0-2",
+      "title": "Re-run of the model as proxy-0.2 for the main straight in qualifying",
+      "phase": "Phase 6",
+      "date": "2026-10-21",
+      "tried": "A full re-run of estimate.py --all and profile.py --all-sessions under a new run_id, so that the main straight in qualifying sessions is analysed. The previous-lap gate had excluded it, because the lap before a flying lap is always an out-lap or a cool-down lap. A partial run was not possible: the API serves exactly one published run for every endpoint, and the hinge CdA is pooled over every analysed straight-lap of the session.",
+      "check": "Compare the new run with the previous one: every row of the earlier run stays unchanged, and the only new output is straight 1 after a non-green lap (docs/backend-review-2026-10-21.md; D33). Race results should move very little, since a race lap's previous lap is usually green already.",
+      "found": "Qualifying main-straight rows are now analysed and published. Hinge and energy are withheld on those new rows. The pooled CdA keeps the strict gate; the relaxed rows dragged it to the grid edge in six qualifying sessions, so they do not enter the pool. The run is published under proxy-0.2 (run 26862846-4455-495b-98c0-3cb1dff4fcb3, 2026-10-21) so the frozen proxy-0.1 findings run is not overwritten.",
+      "consequence": "The explorer and replay read proxy-0.2; the findings page keeps the frozen proxy-0.1 record, which was not re-run.",
+      "sources": [
+        {
+          "label": "docs/backend-review-2026-10-21.md",
+          "path": "docs/backend-review-2026-10-21.md",
+          "unpublished": true
+        },
+        {
+          "label": "D33",
+          "path": "DECISIONS.md#d33--2026-10-21--a-straight-across-the-line-needs-usable-not-green-samples-from-the-previous-lap"
         }
       ]
     }

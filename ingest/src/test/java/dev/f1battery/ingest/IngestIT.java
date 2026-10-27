@@ -29,7 +29,7 @@ class IngestIT {
 
     @Container
     static final PostgreSQLContainer<?> DB = new PostgreSQLContainer<>(
-            DockerImageName.parse("timescale/timescaledb:latest-pg16")
+            DockerImageName.parse("timescale/timescaledb:2.30.2-pg16")
                     .asCompatibleSubstituteFor("postgres"));
 
     @DynamicPropertySource
@@ -44,6 +44,12 @@ class IngestIT {
     @Autowired MeterRegistry metrics;
 
     private static final IngestOptions LOCAL = new IngestOptions("local", 2026, null, java.util.List.of(), false);
+
+    /** Tests share one database; each starts from an empty one. */
+    @org.junit.jupiter.api.BeforeEach
+    void clean() {
+        jdbc.execute("TRUNCATE session, ingestion_log CASCADE");
+    }
 
     private long count(String table) {
         return jdbc.queryForObject("SELECT count(*) FROM " + table, Long.class);
@@ -95,10 +101,71 @@ class IngestIT {
     }
 
     @Test
+    void driverDetailsRoundTripAndRefreshBackfillsExistingRows() {
+        service.run(LOCAL);
+        Map<String, Object> row = jdbc.queryForMap("SELECT * FROM driver WHERE session_key = 11234 AND driver_number = 10");
+        assertThat(row.get("first_name")).isEqualTo("Pierre");
+        assertThat(row.get("last_name")).isEqualTo("Gasly");
+        assertThat(row.get("broadcast_name")).isEqualTo("P GASLY");
+        assertThat(row.get("team_colour")).isEqualTo("00A1E8");
+        assertThat((String) row.get("headshot_url")).startsWith("https://media.formula1.com/");
+
+        // Simulate rows stored before V8, then show a plain rerun skips them and --refresh=drivers fills them.
+        jdbc.update("UPDATE driver SET headshot_url = NULL, team_colour = NULL, first_name = NULL, last_name = NULL, "
+                + "broadcast_name = NULL, country_code = NULL");
+        service.run(LOCAL);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM driver WHERE team_colour IS NULL", Long.class)).isEqualTo(2L);
+
+        IngestService.Summary refreshed = service.run(new IngestOptions("local", 2026, null, java.util.List.of(), false,
+                java.util.Set.of("drivers")));
+        assertThat(refreshed.ok()).isTrue();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM driver WHERE team_colour IS NOT NULL AND headshot_url IS NOT NULL",
+                Long.class)).isEqualTo(2L);
+        assertThat(jdbc.queryForObject("SELECT first_name FROM driver WHERE session_key = 11234 AND driver_number = 10",
+                String.class)).isEqualTo("Pierre");
+    }
+
+    @Test
     void dryRunWritesNothing() {
         long before = count("ingestion_log");
         IngestService.Summary s = service.run(new IngestOptions("local", 2026, 11234, java.util.List.of(), true));
         assertThat(s.ok()).isTrue();
         assertThat(count("ingestion_log")).isEqualTo(before);
+    }
+
+    /** Coverage rule of IngestionLog.isComplete: a containing window satisfies a contained one. */
+    @Test
+    void aWholeSessionRowFromAnotherSourceCoversContainedWindowsButNotAnOverrun() {
+        var log = new dev.f1battery.ingest.log.IngestionLog(jdbc);
+        var t0 = java.time.OffsetDateTime.parse("2031-01-01T10:00:00Z");
+        jdbc.update("INSERT INTO session (session_key, meeting_key, circuit_key, session_name, session_type, country_name, circuit_short_name, date_start, date_end, year) "
+                + "VALUES (990001, 1, 1, 'Race', 'Race', 'X', 'Y', ?, ?, 2031)", t0, t0.plusHours(2));
+        log.record(new dev.f1battery.ingest.log.IngestionLog.Unit("car_data", 990001, 7, t0, t0.plusHours(2), "w180_00"),
+                "local", 10, "complete");
+        var inside = new dev.f1battery.ingest.log.IngestionLog.Unit("car_data", 990001, 7, t0.plusMinutes(10), t0.plusMinutes(20), "10_01");
+        var overrun = new dev.f1battery.ingest.log.IngestionLog.Unit("car_data", 990001, 7, t0.plusMinutes(120), t0.plusMinutes(126), "10_12");
+        var otherDriver = new dev.f1battery.ingest.log.IngestionLog.Unit("car_data", 990001, 8, t0.plusMinutes(10), t0.plusMinutes(20), "10_01");
+        try {
+        assertThat(log.isComplete(inside, "api")).isTrue();
+        assertThat(log.isComplete(inside, "local")).as("same source: labels stay strict").isFalse();
+        assertThat(log.isComplete(overrun, "api")).isFalse();
+        assertThat(log.isComplete(otherDriver, "api")).isFalse();
+        } finally {
+            // The container is shared with the other tests in this class, which count rows.
+            jdbc.update("DELETE FROM ingestion_log WHERE session_key = 990001");
+            jdbc.update("DELETE FROM session WHERE session_key = 990001");
+        }
+    }
+
+    @Test
+    void metricsSummaryIsOneLineOfJson() throws Exception {
+        String line = service.metricsSummary(new IngestService.Summary(2, 5, 3, 1));
+        assertThat(line).doesNotContain("\n");
+        var json = new com.fasterxml.jackson.databind.ObjectMapper().readTree(line);
+        assertThat(json.get("units_done").asInt()).isEqualTo(5);
+        assertThat(json.get("units_skipped").asInt()).isEqualTo(3);
+        assertThat(json.get("units_failed").asInt()).isEqualTo(1);
+        assertThat(json.has("rows_upserted")).isTrue();
+        assertThat(json.get("http_429").asLong()).isZero();
     }
 }

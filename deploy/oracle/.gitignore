@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+backups/
+.weekly.lock
+.web-built
+.deployed-commit
+caddy/sites/

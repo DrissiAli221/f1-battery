@@ -1,4 +1,7 @@
 import json
+from pathlib import Path
+
+import pytest
 
 from f1battery_model import straights
 
@@ -26,11 +29,14 @@ def test_window_mask_wraps_over_the_line():
 
 
 def test_mapping_covers_every_file_in_the_sections_directory():
+    if not straights.SECTIONS_DIR.is_dir():
+        pytest.skip("reference data not present (data/ is not in the repository)")
     stems = {p.stem for p in straights.SECTIONS_DIR.glob("*.json")}
     mapped = set(straights.SECTION_FILE_TO_CIRCUIT) | set(straights.UNUSED_SECTION_FILES)
     assert stems == mapped
 
 
-def test_monza_straights_from_real_file():
-    rows = straights.parse_sections(straights.SECTIONS_DIR / "monza.json")
+def test_monza_straights_from_fixture_file():
+    """Committed fixture in the TracingInsights sections schema; no dependence on data/."""
+    rows = straights.parse_sections(Path(__file__).parent / "fixtures" / "sections" / "monza.json")
     assert len(rows) == 5 and rows[0][1] > rows[0][2] and rows[1][1:3] == (19.14, 34.18)

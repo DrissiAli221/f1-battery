@@ -1,0 +1,1643 @@
+@layer tokens, base, components, pages, overrides;
+@layer overrides {
+  /* Refinement pass: keep the approved material/typography, make hierarchy and navigation consistent.
+   Data charts stay still; the existing pixel-button owns its own hover layers and transforms. */
+  .project-header {
+    height: var(--header-h);
+    min-height: var(--header-h);
+  }
+  .site-header {
+    background: #070707f5;
+    isolation: isolate;
+  }
+  .project-wordmark {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .nav-island {
+    gap: 30px;
+  }
+  .nav-island a {
+    font-size: 12px;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+  .nav-island a::after {
+    bottom: calc(50% - 11px);
+  }
+  .nav-island a[aria-current] {
+    color: #f4f4ef;
+  }
+  .button {
+    min-height: 44px;
+    font-size: 12px;
+    letter-spacing: 0;
+  }
+  .button-secondary {
+    background-color: #1b1b19;
+    border-color: #ffffff1c;
+    box-shadow:
+      inset 0 1px #ffffff08,
+      0 3px 12px #0003;
+  }
+  .button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  /* Only the in-page landing targets that preview-navigation focuses (elements with an id); any other programmatically focused element keeps its ring. */
+  [id][tabindex='-1']:focus {
+    outline: none;
+  }
+  :is(button, a, input, select, summary, [role='button']):focus-visible {
+    outline: 2px solid #f4f4ef;
+    outline-offset: 4px;
+  }
+  :is(input, select) {
+    color-scheme: dark;
+  }
+  /* These links are a reading aid, not a second application header. */
+  .page-sections {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding-block: 12px;
+    margin-block: 0;
+    position: relative;
+  }
+  .page-sections::after {
+    content: '';
+    position: absolute;
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, #ffffff25, #ffffff0c);
+  }
+  .page-sections > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+  }
+  .page-sections a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 44px;
+    font:
+      400 12px/1.45 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .page-sections a[aria-current] {
+    color: #f4f4ef;
+  }
+  .page-sections a::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #f4f4ef;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 240ms var(--ease);
+  }
+  .page-sections a[aria-current]::after {
+    transform: scaleX(1);
+  }
+  .page-sections > a {
+    color: #eee;
+  }
+  .session-sections {
+    padding-top: 0;
+  }
+  /* The section under a rail owns the space below it. */
+  .section-rail + section > .wrap {
+    padding-top: var(--section-pad-rail);
+  }
+  .session-controls {
+    border-top: 0;
+    padding-top: 20px;
+  }
+  .race-hero {
+    min-height: 230px;
+    padding-top: 36px;
+    padding-bottom: 28px;
+  }
+  .select-trigger:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .track-section {
+    padding-block: var(--section-pad);
+  }
+  /* Reading pages use the same baseline and whitespace, with prose allowed to breathe. */
+  .finding-hero,
+  .method-hero {
+    min-height: 370px;
+    padding-top: 64px;
+    padding-bottom: 40px;
+    gap: 64px;
+    align-items: center;
+  }
+  .finding-hero h1,
+  .method-hero h1 {
+    font-size: clamp(70px, 8vw, 118px);
+    line-height: 0.93;
+  }
+  .finding-answer h2,
+  .method-hero-copy h2 {
+    font-size: 23px;
+    line-height: 1.3;
+  }
+  .finding-answer > p,
+  .method-hero-copy > p {
+    font-size: 15px;
+    line-height: 1.75;
+    color: #c5c5bb;
+  }
+  .finding-answer .finding-caveat,
+  .method-hero-copy .method-small {
+    font:
+      400 13px/1.7 Geist,
+      sans-serif;
+    color: #afafa4;
+  }
+  .finding-section-intro h2,
+  .permutation-copy h2,
+  .method-section-heading h2,
+  .method-boundaries h2 {
+    font-size: 28px;
+    line-height: 1.22;
+    letter-spacing: -0.015em;
+  }
+  .finding-section-intro,
+  .method-section-heading {
+    gap: 64px;
+  }
+  .finding-section-intro > p,
+  .method-section-heading p {
+    line-height: 1.75;
+    color: #c5c5bb;
+  }
+  .finding-evidence,
+  .finding-checks,
+  .finding-limits,
+  .method-record {
+    padding-block: var(--section-pad);
+  }
+
+  .finding-disclosure summary,
+  .check-status {
+    font-size: 12px;
+  }
+  .spot-check summary {
+    min-height: 84px;
+  }
+  .check-moment {
+    line-height: 1.5;
+  }
+  .finding-disclosure[open],
+  .spot-check[open],
+  .method-entry[open] {
+    background: linear-gradient(110deg, #ffffff04, transparent 80%);
+  }
+  .finding-disclosure[open] summary,
+  .spot-check[open] summary,
+  .method-entry[open] .entry-title {
+    color: #f4f4ef;
+  }
+  .method-process {
+    padding-block: var(--section-pad);
+  }
+  .method-process h2 {
+    font-size: 16px;
+    min-height: 2.8em;
+  }
+  .method-process p {
+    font-size: 14px;
+    color: #c0c0b6;
+  }
+  .method-process .process-number {
+    margin-bottom: 18px;
+  }
+  .method-entry summary {
+    padding-block: 24px;
+    gap: 24px;
+    grid-template-columns: 30px minmax(0, 1fr) 150px 20px;
+  }
+  .entry-title {
+    font-size: 18px;
+    line-height: 1.5;
+  }
+  .entry-meta,
+  .entry-status,
+  .record-count,
+  .method-download {
+    font-size: 12px;
+  }
+  .entry-short {
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 70ch;
+  }
+  .entry-detail {
+    padding-bottom: 30px;
+  }
+  .race-choice {
+    padding: 20px;
+    gap: 18px;
+    background-color: #161615;
+    background-image: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+  }
+  .race-choice .card-meta {
+    font-size: 12px;
+    color: #d6d6cb;
+  }
+  .race-choice h3 {
+    font-size: clamp(29px, 6.4cqw, 56px);
+    line-height: 1.02;
+    min-height: auto;
+  }
+  .race-venue-name {
+    font-size: 12px;
+    color: #d0d0c5;
+    line-height: 1.6;
+  }
+  .race-count {
+    font-size: 12px;
+    line-height: 1.7;
+    color: #b9b9ae;
+  }
+  .home-section-heading h2 {
+    font-size: 28px;
+  }
+  .home-research {
+    padding-block: var(--section-pad);
+  }
+  .home-research h2 {
+    line-height: 1.05;
+  }
+  .home-research .research-copy > p:first-child {
+    font-size: 20px;
+  }
+  /* Consistent recovery states keep a failed request from masquerading as an empty dashboard. */
+  .load-state,
+  .replay-load {
+    min-height: 260px;
+    padding-block: 48px;
+  }
+  .load-state h2,
+  .replay-load h2 {
+    font:
+      400 26px/1.25 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+  }
+  .load-state > p,
+  .replay-load > p {
+    font:
+      400 15px/1.7 Geist,
+      sans-serif;
+    color: #bcbcb2;
+    margin-block: 18px 24px;
+    max-width: 58ch;
+  }
+  .recovery-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+  }
+  .recovery-actions a {
+    font:
+      400 12px/1.5 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .availability-band {
+    background: linear-gradient(110deg, #d9bd6412, transparent);
+    color: #d9c77d;
+  }
+  .availability-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-block: 18px;
+    margin-block: 12px 20px;
+    font:
+      400 13px/1.65 Geist,
+      sans-serif;
+  }
+  .availability-notice a,
+  .availability-notice button {
+    font:
+      400 12px/1.5 KHF1,
+      GeistMono,
+      monospace;
+    flex-shrink: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    text-transform: uppercase;
+  }
+  /* Whole-field replay shows all dots. Only selected/inspected identities need permanent labels. */
+  .replay-track .tmap__tag.is-compact {
+    --dot: 10px;
+    z-index: 3;
+  }
+  .replay-track .tmap__tag.is-compact .tmap__tag-chip {
+    opacity: 0;
+    transition: opacity 120ms var(--ease-out);
+    pointer-events: none;
+  }
+  .replay-track .tmap__tag.is-compact .tmap__tag-lead {
+    opacity: 0;
+  }
+  .replay-track .tmap__tag.is-interactive {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .replay-track .tmap__tag.is-interactive::after {
+    content: '';
+    position: absolute;
+    left: -14px;
+    top: -14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+  }
+  .replay-track .tmap__tag.is-interactive:focus-visible {
+    outline: none;
+    z-index: 5;
+  }
+  .replay-track .tmap__tag.is-interactive:focus-visible .tmap__tag-dot {
+    box-shadow:
+      0 0 0 3px #111,
+      0 0 0 5px #f4f4ef;
+  }
+  .replay-track .tmap__tag.is-compact:focus-visible .tmap__tag-chip {
+    opacity: 1;
+  }
+  .replay-track .tmap__tag.is-on {
+    z-index: 4;
+  }
+  .replay-field-rows {
+    max-height: 380px;
+    scrollbar-color: #68685d #1a1a18;
+    overscroll-behavior: contain;
+  }
+  .replay-field-rows button {
+    min-height: 76px;
+  }
+  .replay-field-heading > span,
+  .field-display > span,
+  .replay-state,
+  .replay-small {
+    font-size: 12px;
+  }
+  .field-display button {
+    min-height: 44px;
+  }
+  .replay-hero {
+    padding-block: 54px 34px;
+  }
+  .replay-hero > div > p {
+    font-size: 23px;
+    line-height: 1.35;
+  }
+  .field-map-guide {
+    font:
+      400 12px/1.65 Geist,
+      sans-serif;
+    color: #b7b7ac;
+    padding: 10px 8px 16px;
+  }
+  .feed-readout > p {
+    max-width: 70ch;
+  }
+  .replay-context {
+    gap: 64px;
+    padding-block: var(--section-pad);
+  }
+  .replay-lap select {
+    min-height: 56px;
+  }
+  /* Routes make the footer useful without another oversized headline or decorative callout. */
+  .footer-inner {
+    padding-top: 44px;
+    padding-bottom: 32px;
+  }
+  .footer-route-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin: 20px 0 30px;
+  }
+  .footer-route-links a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font:
+      400 13px/1.4 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: #d0d0c5;
+  }
+  .footer-bottom p,
+  .footer-bottom > a {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .page-sections a:hover,
+    .footer-route-links a:hover {
+      color: #fff;
+    }
+    .nav-island a:hover {
+      color: var(--ink);
+    }
+    .button-secondary:hover {
+      background-color: #262623;
+      border-color: #ffffff38;
+    }
+    .replay-track .tmap__tag.is-compact:hover {
+      z-index: 5;
+    }
+    .replay-track .tmap__tag.is-compact:hover .tmap__tag-chip {
+      opacity: 1;
+    }
+  }
+  @media (max-width: 1000px) {
+    .finding-hero,
+    .method-hero,
+    .finding-section-intro,
+    .method-section-heading {
+      gap: 36px;
+    }
+    .method-process ol {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px;
+    }
+    .method-process h2 {
+      min-height: 0;
+    }
+  }
+  @media (max-width: 720px) {
+    .menu-toggle {
+      font-size: 12px;
+      background: transparent;
+      border-color: #ffffff25;
+      padding-inline: 12px;
+      gap: 14px;
+    }
+    .nav-island {
+      gap: 0;
+      background: #111110;
+      box-shadow: 0 16px 32px #000a;
+    }
+    .nav-island a {
+      font:
+        900 20px/1.2 F1Black,
+        Archivo,
+        sans-serif;
+      min-height: 56px;
+      padding-block: 14px;
+    }
+    .nav-island a::after {
+      bottom: 8px;
+    }
+    .page-sections {
+      align-items: start;
+      flex-wrap: wrap;
+      gap: 0;
+      padding-block: 8px;
+      margin-bottom: 0;
+    }
+    .page-sections > div {
+      gap: 0 22px;
+      flex-wrap: wrap;
+    }
+    .page-sections a {
+      font-size: 11px;
+      min-height: 42px;
+    }
+    .page-sections > a {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .session-sections > div {
+      width: 100%;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .finding-hero,
+    .method-hero {
+      min-height: 0;
+      padding-top: 40px;
+      padding-bottom: 28px;
+      gap: 28px;
+      grid-template-columns: 1fr;
+    }
+    .finding-hero h1,
+    .method-hero h1 {
+      font-size: clamp(62px, 18vw, 100px);
+      line-height: 0.94;
+    }
+    .finding-answer h2,
+    .method-hero-copy h2 {
+      font-size: 21px;
+    }
+    .finding-section-intro h2,
+    .permutation-copy h2,
+    .method-section-heading h2,
+    .method-boundaries h2 {
+      font-size: 24px;
+    }
+    .finding-section-intro,
+    .method-section-heading {
+      gap: 18px;
+    }
+    .method-process ol {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .method-process li {
+      padding-top: 16px;
+      padding-right: 0;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 0 16px;
+    }
+    .method-process .process-number {
+      grid-column: 1;
+      grid-row: 1/3;
+      font-size: 14px;
+      margin: 0;
+    }
+    .method-process h2,
+    .method-process p {
+      grid-column: 2;
+    }
+    .method-process h2 {
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+    .method-process .process-arrow {
+      display: none;
+    }
+    .method-entry summary {
+      grid-template-columns: 22px minmax(0, 1fr) 16px;
+      gap: 10px 12px;
+      padding-block: 22px;
+    }
+    .entry-title {
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .entry-status {
+      font-size: 11px;
+      grid-column: 2;
+      grid-row: 2;
+    }
+    .entry-toggle {
+      grid-column: 3;
+      grid-row: 1/3;
+    }
+    .entry-meta {
+      font-size: 11px;
+    }
+    .entry-short {
+      font-size: 14px;
+    }
+    .race-choice {
+      padding: 20px;
+      gap: 18px;
+    }
+    .race-choice .card-meta {
+      font-size: 11px;
+    }
+    .race-choice h3 {
+      font-size: clamp(28px, 8.3cqw, 46px);
+    }
+    .race-count {
+      font-size: 11px;
+    }
+    .home-section-heading h2 {
+      font-size: 24px;
+    }
+    .home-research .research-copy > p:first-child {
+      font-size: 18px;
+    }
+    .replay-hero {
+      padding-block: 38px 26px;
+    }
+    .replay-hero > div > p {
+      font-size: 20px;
+    }
+    .replay-field-rows {
+      max-height: 360px;
+    }
+    .replay-field-rows button {
+      min-height: 76px;
+    }
+    .replay-context {
+      gap: 24px;
+    }
+    .field-display > span,
+    .replay-state {
+      font-size: 11px;
+    }
+    .availability-band {
+      background: linear-gradient(110deg, #d9bd6412, transparent);
+      color: #d9c77d;
+    }
+    .availability-notice {
+      flex-direction: column;
+      align-items: start;
+      gap: 8px;
+    }
+    .footer-inner {
+      padding-top: 34px;
+      padding-bottom: 28px;
+    }
+    .footer-route-links {
+      gap: 0 24px;
+      margin: 16px 0 24px;
+    }
+    .footer-route-links a {
+      font-size: 12px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      scroll-behavior: auto !important;
+    }
+    .replay-track .tmap__tag-chip {
+      transition: none !important;
+    }
+  }
+  html[data-input='keyboard'] .replay-track .tmap__tag-chip {
+    transition: none !important;
+  }
+
+  @media (max-width: 720px) {
+    .race-hero {
+      min-height: 0;
+      padding-block: 34px 24px;
+    }
+    .race-search input,
+    .replay-lap select,
+    .lap-selector select {
+      font-size: 16px;
+    }
+    .session-controls {
+      padding-top: 12px;
+    }
+  }
+  /* Intrinsic display-font width must never expand a single-column phone grid. */
+  @media (max-width: 720px) {
+    .method-hero,
+    .finding-hero {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .method-hero > *,
+    .finding-hero > * {
+      min-width: 0;
+    }
+    .method-hero h1 {
+      font-size: clamp(42px, 14.2vw, 90px);
+    }
+  }
+
+  /* A phone should show the coefficient and interval together, not an off-screen numeric column. */
+  .skip {
+    z-index: 100;
+  }
+
+  /* The skip link must sit above the sticky masthead, and phone maps avoid unreadable corner numbers. */
+  @media (max-width: 480px) {
+    .replay-track .tmap__corner,
+    .replay-track .tmap__corner-n {
+      display: none;
+    }
+  }
+
+  .feed-waiting > p {
+    max-width: 65ch;
+  }
+  .feed-waiting .button {
+    margin-top: 14px;
+    text-transform: uppercase;
+  }
+
+  /* Hit targets have real bounds; label size stays readable independently of circuit scaling. */
+  .replay-track .tmap__tag-chip {
+    height: 22px;
+    font-size: 12px;
+    letter-spacing: 0;
+  }
+  .replay-track .tmap__tag-code {
+    font-size: 12px;
+  }
+  .replay-track .tmap__tag.is-interactive::after {
+    display: none;
+  }
+  .replay-track .tmap__tag-hit {
+    position: absolute;
+    left: -16px;
+    top: -16px;
+    width: 32px;
+    height: 32px;
+    min-height: 0;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    z-index: 2;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+  .replay-track .tmap__tag-hit:focus-visible {
+    outline: none;
+  }
+  .replay-track .tmap__tag:has(.tmap__tag-hit:focus-visible) {
+    z-index: 6;
+  }
+  .replay-track .tmap__tag:has(.tmap__tag-hit:focus-visible) .tmap__tag-chip {
+    opacity: 1;
+    transition: none;
+  }
+  .replay-track .tmap__tag:has(.tmap__tag-hit:focus-visible) .tmap__tag-dot {
+    box-shadow:
+      0 0 0 3px #111,
+      0 0 0 5px #f4f4ef;
+  }
+  /* Map annotations retain a readable minimum even when the geometry scales down. */
+  .tmap__tag-chip {
+    min-height: 22px;
+    font-size: max(11px, calc(var(--M) * 0.56));
+  }
+  .tmap__tag-chip.has-note small {
+    font-size: max(11px, calc(var(--M) * 0.5));
+    font-weight: 400;
+  }
+  .replay-track .tmap__tag-chip,
+  .replay-track .tmap__tag-code {
+    font-size: 12px;
+  }
+  /* Keep the halftone at the edge: it must not sit behind explanatory copy on phones. */
+  @media (max-width: 720px) {
+    .home-screen {
+      height: 220px;
+      bottom: auto;
+    }
+  }
+  /* Between phone and desktop, long display words must not widen the reading grid. */
+  @media (min-width: 721px) and (max-width: 1000px) {
+    .method-hero,
+    .finding-hero {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    }
+    .method-hero h1 {
+      font-size: clamp(54px, 7.4vw, 78px);
+    }
+  }
+
+  /* Hover audit: 160ms colour/background transitions and visible focus on rows, tabs and links. No transforms. */
+  :is(
+    .tower-row,
+    .replay-field-rows button,
+    .spot-check summary,
+    .finding-disclosure summary,
+    .method-entry summary,
+    .method-explainer summary,
+    .race-filters button,
+    .record-filters button,
+    .footer-route-links a,
+    .page-sections a
+  ) {
+    transition:
+      background-color 160ms var(--ease),
+      color 160ms var(--ease);
+  }
+  :is(
+    .tower-row,
+    .replay-field-rows button,
+    .spot-check summary,
+    .finding-disclosure summary,
+    .method-entry summary,
+    .method-explainer summary,
+    .race-filters button,
+    .record-filters button,
+    .footer-route-links a,
+    .page-sections a
+  ):focus-visible {
+    outline: 2px solid #f4f4ef;
+    outline-offset: 2px;
+  }
+  :is(.tower-row, .replay-field-rows button, .spot-check summary):focus-visible {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+      .spot-check summary,
+      .finding-disclosure summary,
+      .method-entry summary,
+      .method-explainer summary
+    ):hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    :is(.race-filters button, .record-filters button, .footer-route-links a, .page-sections a):hover {
+      color: #f4f4ef;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :is(
+      .tower-row,
+      .replay-field-rows button,
+      .spot-check summary,
+      .finding-disclosure summary,
+      .method-entry summary,
+      .method-explainer summary,
+      .race-filters button,
+      .record-filters button,
+      .footer-route-links a,
+      .page-sections a
+    ) {
+      transition: none;
+    }
+  }
+  .race-choice {
+    display: flex;
+    flex-direction: column;
+  }
+  .race-choice h3 {
+    flex: 0 0 auto;
+  }
+  .race-choice .race-choice-bottom {
+    margin-top: auto;
+  }
+  .race-facts {
+    font:
+      400 12px/1.4 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  /* Anchor landing offsets: sticky header is 64px (60 phone); the findings/method section rail pins at top:64px on desktop. */
+  /* Motion: underline wipes, hover colour/ink, mode panes. */
+  :is(.race-filters, .record-filters, .replay-modes > div) button::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: #f4f4ef;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 240ms var(--ease);
+  }
+  .replay-modes > div button::after {
+    bottom: 0;
+  }
+  :is(.race-filters, .record-filters, .replay-modes > div) button[aria-pressed='true']::after {
+    transform: scaleX(1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+      .replay-modes > div button,
+      .select-trigger,
+      .home-text-link,
+      .home-scroll,
+      .finding-jump,
+      .method-jump,
+      .finding-download,
+      .method-download,
+      .inline-link,
+      .race-search input
+    ) {
+      transition:
+        color 200ms var(--ease),
+        background-color 200ms var(--ease),
+        border-color 200ms var(--ease);
+    }
+    .select-option {
+      transition: background-color 120ms var(--ease);
+    }
+    .nav-island a::after {
+      transition: opacity 200ms var(--ease);
+    }
+  }
+  .mode-pane {
+    transition:
+      opacity 200ms var(--ease),
+      transform 200ms var(--ease),
+      visibility 0s;
+  }
+  .mode-pane[inert] {
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 200ms var(--ease),
+      transform 200ms var(--ease),
+      visibility 0s linear 200ms;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mode-pane,
+    .mode-pane[inert] {
+      transition: none;
+    }
+    .mode-pane[inert] {
+      transform: none;
+    }
+  }
+  /* Press feedback (not the pixel buttons): a small scale, restored on release. */
+  @media (prefers-reduced-motion: no-preference) {
+    :is(
+      .button:not(.pixel-button),
+      .race-filters button,
+      .record-filters button,
+      .replay-modes > div button,
+      .tabs button,
+      .tower-row,
+      .replay-field-rows button
+    ) {
+      transition:
+        background-color 160ms var(--ease),
+        color 160ms var(--ease),
+        border-color 160ms var(--ease),
+        transform 160ms var(--ease);
+    }
+    :is(
+        .button:not(.pixel-button),
+        .race-filters button,
+        .record-filters button,
+        .replay-modes > div button,
+        .tabs button,
+        .tower-row,
+        .replay-field-rows button
+      ):not(:disabled):active {
+      transform: scale(0.97);
+    }
+  }
+
+  /* Race cards share one structure: two-line title slot, facts line always present, fixed-height session slots. */
+  .race-choice > h3 {
+    min-height: 2.1em;
+  }
+  .race-facts {
+    min-height: 17px;
+  }
+  .race-facts {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Anchor landing offsets, from the pinned chrome tokens (tokens.css). The header is 64px
+     (60 on phones); on Findings and Method the section rail also pins from the wide layout up. */
+  :is(section[id], .lap-panel[id], .method-entry) {
+    scroll-margin-top: calc(var(--header-h) + 40px);
+  }
+  #replay-controls {
+    scroll-margin-top: calc(var(--header-h) + 40px);
+  }
+  @media (min-width: 1000px) {
+    :is(.findings-preview, .method-preview) :is(section[id], .method-entry) {
+      scroll-margin-top: calc(var(--sticky-stack) + 4px);
+    }
+  }
+  .home-preview #races {
+    scroll-margin-top: calc(var(--header-h) - 40px);
+  }
+  .home-preview #research {
+    scroll-margin-top: var(--header-h);
+  }
+  /* The eyebrow and stat line add height; the padding gives it back so the hero keeps its size. */
+  @media (min-width: 1001px) {
+    .finding-hero {
+      padding-top: 59px;
+      padding-bottom: 35px;
+    }
+  }
+  @media (max-width: 720px) {
+    .finding-hero,
+    .method-hero {
+      padding-top: 28px;
+      padding-bottom: 20px;
+      gap: 22px;
+    }
+  }
+}
+
+@layer overrides {
+  /* The wrap is narrower than the viewport here, so the dots fade out at their right edge instead of ending hard. */
+  @media (min-width: 1601px) {
+    .home-screen,
+    .race-halftone,
+    .finding-screen,
+    .method-screen {
+      mask-image:
+        linear-gradient(to right, transparent 0, #000 40%),
+        linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%),
+        linear-gradient(to left, transparent 0, #000 96px);
+      -webkit-mask-image:
+        linear-gradient(to right, transparent 0, #000 40%),
+        linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%),
+        linear-gradient(to left, transparent 0, #000 96px);
+    }
+    /* Session hero dots: a radial field with a long fade, plus the same right-edge fade. */
+    .race-halftone {
+      mask-image:
+        radial-gradient(ellipse closest-side at 70% 45%, #000 40%, transparent 100%),
+        linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%),
+        linear-gradient(to left, transparent 0, #000 96px);
+      -webkit-mask-image:
+        radial-gradient(ellipse closest-side at 70% 45%, #000 40%, transparent 100%),
+        linear-gradient(to bottom, transparent 0, #000 22%, #000 48%, transparent 100%),
+        linear-gradient(to left, transparent 0, #000 96px);
+    }
+  }
+}
+
+/* Method page rhythm: the same gaps, hairlines, inset rows and press states as the Findings page. */
+@layer overrides {
+  .method-hero,
+  .method-estimator,
+  .method-section-heading,
+  .method-boundaries {
+    gap: 64px;
+  }
+  .method-section-heading {
+    margin-bottom: 36px;
+  }
+  .method-estimator {
+    align-items: start;
+  }
+  .estimator-copy h3 {
+    margin-top: 0;
+  }
+  .method-hero-copy {
+    position: relative;
+    z-index: 1;
+  }
+  @media (min-width: 1000px) {
+    .method-hero-copy {
+      padding-right: 0;
+      max-width: 390px;
+    }
+  }
+  @media (min-width: 721px) and (max-width: 1100px) {
+    .method-screen {
+      width: 220px;
+      opacity: 0.3;
+    }
+  }
+  /* One divider between the filters and the list: the filter row's own hairline. */
+  .method-entries {
+    --status-col: 150px;
+    --icon-col: 30px;
+    --col-gap: 24px;
+    --toggle-col: 20px;
+    --row-inset: 14px;
+    border-top: 0;
+    margin-inline: calc(var(--row-inset) * -1);
+  }
+  /* The fill spans the wider box; the hairlines stay on the content edge. */
+  .method-explainer {
+    margin-inline: -14px;
+    border-top: 0;
+    background: linear-gradient(#ffffff26, #ffffff26) 14px 0 / calc(100% - 28px) 1px no-repeat;
+  }
+  /* The hairline is a background, not ::after: a pseudo-element on a closed <details> is not reliable in WebKit. */
+  .method-entry {
+    border-bottom: 0;
+    background: linear-gradient(#ffffff26, #ffffff26) var(--row-inset) 100% /
+      calc(100% - 2 * var(--row-inset)) 1px no-repeat;
+  }
+  .method-entry[open] {
+    background:
+      linear-gradient(110deg, #ffffff04, transparent 80%),
+      linear-gradient(#ffffff26, #ffffff26) var(--row-inset) 100% / calc(100% - 2 * var(--row-inset)) 1px
+        no-repeat;
+  }
+  .method-entry summary,
+  .method-explainer summary {
+    padding-inline: 14px;
+  }
+  .method-entry summary {
+    grid-template-columns: var(--icon-col) minmax(0, 1fr) var(--status-col) var(--toggle-col);
+    gap: var(--col-gap);
+  }
+  .entry-detail {
+    padding: 0 calc(var(--row-inset) + var(--toggle-col) + var(--col-gap) + var(--status-col)) 30px
+      calc(var(--row-inset) + var(--icon-col) + var(--col-gap));
+  }
+  .entry-detail dl > div:first-child {
+    border-top: 0;
+  }
+  .method-footer,
+  .findings-footer {
+    border-top: 1px solid var(--line);
+  }
+  /* Match Findings: rows lift to white on hover and dim on press. */
+  @media (hover: hover) and (pointer: fine) {
+    .method-entry summary:hover,
+    .method-explainer summary:hover {
+      color: #fff;
+    }
+  }
+  .method-entry summary:active,
+  .method-explainer summary:active {
+    background: #ffffff08;
+  }
+  .record-filters button:active,
+  .method-download:active {
+    color: #fff;
+  }
+  @media (max-width: 1000px) {
+    .method-hero,
+    .method-estimator,
+    .method-section-heading,
+    .method-boundaries {
+      gap: 36px;
+    }
+    /* The status column stacks under the title here, so the detail text no longer reserves its width. */
+    .entry-detail {
+      padding-right: calc(var(--row-inset) + var(--toggle-col) + var(--col-gap));
+    }
+    .method-process li:nth-child(2n) .process-arrow {
+      display: none;
+    }
+  }
+  @media (max-width: 720px) {
+    /* The hero keeps the 22px phone gap it shares with the findings hero. */
+    .method-estimator,
+    .method-section-heading,
+    .method-boundaries {
+      gap: 18px;
+    }
+    .method-section-heading {
+      margin-bottom: 36px;
+    }
+    .method-entries {
+      --icon-col: 22px;
+      --col-gap: 12px;
+    }
+    .method-entry summary {
+      grid-template-columns: var(--icon-col) minmax(0, 1fr) 16px;
+    }
+    .entry-detail {
+      padding: 0 var(--row-inset) 22px calc(var(--row-inset) + var(--icon-col) + var(--col-gap));
+    }
+  }
+}
+@layer overrides {
+  .home-preview .race-choice {
+    background-color: #0b0b0a;
+    border-color: #ffffff14;
+  }
+  .home-preview .race-choice.race-plate {
+    background-color: #6a6a65;
+    background-image:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 55%, rgba(0, 0, 0, 0.12)),
+      url('/assets/felt-grey.jpg');
+    background-size:
+      100% 100%,
+      480px;
+    background-repeat: no-repeat, repeat;
+    background-blend-mode: normal, multiply;
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.1),
+      inset -1px -1px 0 rgba(0, 0, 0, 0.45);
+    border-color: #ffffff13;
+  }
+  .race-plate .card-meta,
+  .race-plate .race-facts {
+    color: #c0c0b7;
+    text-shadow: none;
+  }
+  .race-plate h3,
+  .race-plate:hover h3,
+  .race-plate:focus-within h3 {
+    color: #090909;
+    text-shadow:
+      0 1px 0 #fff3,
+      0 -1px 0 #000c,
+      0 -2px 2px #0006;
+  }
+  .race-plate-map {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 200px;
+    height: 128px;
+    transform: translateY(-50%);
+    color: #090909;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 0 #fff3) drop-shadow(0 -1px 0 #000c);
+  }
+  @media (max-width: 720px) {
+    /* On a phone the title runs most of the card width, so the outline sits under it, beside the second line. */
+    /* Below the two-line title slot, beside the facts line, so it never touches the last glyph. */
+    .race-plate-map {
+      width: 76px;
+      height: 46px;
+      top: 100%;
+      bottom: auto;
+      margin-top: 4px;
+      transform: none;
+    }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .home-preview .race-choice:not(.race-plate):hover,
+    .home-preview .race-choice:not(.race-plate):focus-within {
+      border-color: #ffffff33;
+    }
+  }
+}
+
+@layer overrides {
+  .home-preview .race-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+  .home-preview .race-chips .button-chip,
+  .home-preview .race-chips .race-chip-off {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 10px;
+    font:
+      400 11px/1 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .home-preview .race-chips .race-chip-off {
+    border: 1px solid #ffffff14;
+    border-radius: var(--radius);
+    color: #6f6f68;
+    background: none;
+  }
+  @media (max-width: 720px) {
+    .home-preview .race-chips {
+      gap: 6px;
+    }
+    .home-preview .race-chips .button-chip,
+    .home-preview .race-chips .race-chip-off {
+      padding: 0 7px;
+      font-size: 10px;
+    }
+  }
+}
+@layer overrides {
+  @media (max-width: 380px) {
+    .home-preview .race-chips {
+      gap: 4px;
+    }
+    .home-preview .race-chips .button-chip,
+    .home-preview .race-chips .race-chip-off {
+      padding: 0 3px;
+    }
+  }
+}
+
+/* Session chips: F1 icons and a type colour. Icons are CSS masks so hover.js can replace the anchor children freely. */
+@layer overrides {
+  .home-preview .race-chips .button-chip,
+  .home-preview .race-chips .race-chip-off {
+    gap: 6px;
+    --chip-c: #6f6f68;
+  }
+  .home-preview .race-chips .button-chip::before,
+  .home-preview .race-chips .race-chip-off::before {
+    content: '';
+    flex: none;
+    width: 14px;
+    height: 14px;
+    background-color: var(--chip-c);
+    -webkit-mask: var(--chip-icon) center / contain no-repeat;
+    mask: var(--chip-icon) center / contain no-repeat;
+  }
+  .home-preview .race-chips .button-chip::before {
+    position: static;
+    inset: auto;
+    align-self: center;
+    margin: 0;
+    transition: background-color 160ms ease-out;
+  }
+  .home-preview .race-chips .button-chip:hover::before,
+  .home-preview .race-chips .button-chip:focus-visible::before,
+  .home-preview .race-chips .button-chip[data-hover-phase='enter']::before,
+  .home-preview .race-chips .button-chip[data-hover-phase='entered']::before {
+    background-color: #030303;
+  }
+  .home-preview .race-chips .button-chip::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+  .home-preview .race-chips .button-chip {
+    gap: 7px;
+    box-shadow:
+      inset 0 1px #ffffff08,
+      0 3px 12px #0003;
+  }
+  .home-preview .race-chips .race-chip-off {
+    gap: 7px;
+    border: 0;
+    border-radius: var(--radius);
+    background: #0c0c0b;
+    color: #5f5f59;
+    cursor: default;
+  }
+  .home-preview .race-chips .race-chip-off::before {
+    opacity: 0.35;
+  }
+  .home-preview .race-chips [data-kind='Race'] {
+    --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M5%2021V3M5%204h14v8H5M9.67%204v8M14.33%204v8M5%208h14%27/%3E%3C/svg%3E');
+  }
+  .home-preview .race-chips .button-chip[data-kind='Race'] {
+    --chip-c: var(--red);
+  }
+  .home-preview .race-chips [data-kind='Qualifying'] {
+    --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M10%203h4M12%203v3M12%2013V9M12%206a7%207%200%201%200%200%2014a7%207%200%200%200%200-14Z%27/%3E%3C/svg%3E');
+  }
+  .home-preview .race-chips .button-chip[data-kind='Qualifying'] {
+    --chip-c: #f4f4ef;
+  }
+  .home-preview .race-chips [data-kind='Sprint'] {
+    --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M13%202%205%2013.5h6L10%2022l9-12h-6Z%27/%3E%3C/svg%3E');
+  }
+  .home-preview .race-chips .button-chip[data-kind='Sprint'] {
+    --chip-c: #f0b429;
+  }
+  .home-preview .race-chips [data-kind='Sprint Qualifying'] {
+    --chip-icon: url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27M10%203h4M12%203v3M12%206a7%207%200%201%200%200%2014a7%207%200%200%200%200-14ZM12.6%209%209.4%2013.2h2.3l-.6%203.8%203.5-4.4h-2.4Z%27/%3E%3C/svg%3E');
+  }
+  .home-preview .race-chips .button-chip[data-kind='Sprint Qualifying'] {
+    --chip-c: #f0b429;
+  }
+  @media (min-width: 381px) and (max-width: 520px) {
+    .home-preview .race-chips {
+      gap: 3px;
+    }
+    .home-preview .race-chips .button-chip,
+    .home-preview .race-chips .race-chip-off {
+      gap: 3px;
+      padding: 0 4px;
+      font-size: 9px;
+    }
+    .home-preview .race-chips .button-chip::before,
+    .home-preview .race-chips .race-chip-off::before {
+      width: 11px;
+      height: 11px;
+    }
+  }
+  @media (max-width: 380px) {
+    .home-preview .race-chips .button-chip::before,
+    .home-preview .race-chips .race-chip-off::before {
+      width: 10px;
+      height: 10px;
+    }
+    .home-preview .race-chips .button-chip,
+    .home-preview .race-chips .race-chip-off {
+      gap: 2px;
+      padding: 0 2px 0 3px;
+      font-size: 8px;
+    }
+    .home-preview .race-chips .button-chip::before,
+    .home-preview .race-chips .race-chip-off::before {
+      margin-left: -1px;
+    }
+  }
+  .home-preview .race-single-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .home-preview .race-single-label .session-icon {
+    flex: none;
+  }
+  .home-preview .race-single-label [data-kind='Race'] {
+    color: var(--red);
+  }
+  .home-preview .race-single-label [data-kind='Qualifying'] {
+    color: #f4f4ef;
+  }
+  .home-preview .race-single-label [data-kind='Sprint'] {
+    color: #f0b429;
+  }
+}
+
+@layer overrides {
+  /* Numbered section anchors, shared by findings and method; the number is the only colour. */
+  .section-no {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 20px;
+    font:
+      400 12px/1.4 KHF1,
+      GeistMono,
+      monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .section-no b,
+  .page-sections a b {
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    color: var(--red-text);
+  }
+  .page-sections a b {
+    color: var(--muted);
+    transition: color 240ms var(--ease);
+  }
+  .page-sections a[aria-current] b {
+    color: var(--red-text);
+  }
+  .section-no.in-grid {
+    grid-column: 1 / -1;
+  }
+  .finding-provenance {
+    row-gap: 0;
+  }
+  /* Findings: one hairline between any two blocks. Bands, the rail and the footer own the lines. */
+  .findings-preview .model-strip {
+    box-shadow: none;
+    margin-bottom: 8px;
+    padding-bottom: 0;
+  }
+  .findings-preview .band + .band {
+    border-top: 0;
+  }
+  .findings-preview .finding-sample {
+    gap: 28px 40px;
+    background: none;
+    border: 0;
+  }
+  .findings-preview .finding-sample > div {
+    background: none;
+    padding: 0;
+  }
+  .findings-preview .finding-sample > .is-answer strong {
+    color: var(--red-text);
+  }
+  .finding-sample-verdict {
+    margin: 36px 0 0;
+    font:
+      400 15px/1.5 Geist,
+      sans-serif;
+    color: var(--ink);
+  }
+  .findings-preview .finding-block {
+    padding-top: 0;
+    border-top: 0;
+    margin-top: 56px;
+  }
+  .findings-preview .evidence-explanation > .finding-block {
+    margin-top: 0;
+  }
+  .findings-preview .finding-block-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .findings-preview .finding-block-title::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+  .findings-preview .permutation-copy .permutation-p {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .findings-preview .finding-limits dl > div {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .findings-preview .source-list > div {
+    border-top: 0;
+    padding: 10px 0;
+  }
+  .findings-preview .forest-row,
+  .findings-preview .forest-axis-row,
+  .findings-preview .term-row,
+  .findings-preview .maker-row,
+  .findings-preview .run-figure figcaption,
+  .findings-preview .cc-visual {
+    border-top: 0;
+  }
+  .findings-preview .finding-flags li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .findings-preview .finding-flags li i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .findings-preview .finding-flags li.is-neutral i {
+    display: none;
+  }
+  /* Toned down (Ali, 2026-10-25): the text and border stay neutral; only the dot carries the state. */
+  .findings-preview .finding-flags li.is-fail i {
+    background: var(--red-text);
+  }
+  .findings-preview .finding-flags li.is-pass i {
+    background: #9ad67a;
+  }
+}
+
+@layer overrides {
+  /* Method: one line under the rail, none per column; the record keeps its filter line and one rule per entry. */
+  .method-preview .method-process li,
+  .method-preview .estimator-rules > div,
+  .method-preview .method-entries,
+  .method-preview .entry-detail dl > div,
+  .method-preview .tl-details dl > div {
+    border-top: 0;
+  }
+  .method-preview .estimator-rules > div {
+    padding-top: 0;
+  }
+  .method-preview .method-process li {
+    padding-top: 0;
+  }
+  .method-preview .process-number {
+    color: var(--red-text);
+  }
+  .method-preview .method-estimator {
+    row-gap: 0;
+  }
+  .method-preview .method-process .section-no {
+    margin-bottom: 40px;
+  }
+}
+
+@layer overrides {
+  /* The estimator caveat is plain content, always open: an eyebrow-style title, no marker, no rule. */
+  .method-preview .method-explainer {
+    margin: 28px 0 0;
+    background: none;
+    border-top: 0;
+  }
+  .method-preview .method-explainer h4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+    font:
+      400 12px/1.4 KHF1,
+      GeistMono,
+      monospace;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .method-preview .method-explainer h4::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+  .method-preview .method-explainer p {
+    padding-bottom: 0;
+  }
+}

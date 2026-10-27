@@ -1,0 +1,5 @@
+# Production profile (SPRING_PROFILES_ACTIVE=prod): no development password. RequireDbPassword
+# stops startup with a clear message when DB_PASSWORD is unset.
+spring:
+  datasource:
+    password: ${DB_PASSWORD:}

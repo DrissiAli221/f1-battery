@@ -1,0 +1,143 @@
+export interface Page<T> {
+  items: T[];
+  page: number;
+  size: number;
+  total: number;
+}
+
+export interface SessionRow {
+  session_key: number;
+  meeting_key: number;
+  circuit_key: number | null;
+  circuit_short_name: string | null;
+  session_name: string;
+  date_start: string | null;
+  date_end: string | null;
+  year: number | null;
+  has_results: boolean;
+}
+
+export interface Driver {
+  driver_number: number;
+  name_acronym: string | null;
+  full_name: string | null;
+  team_name: string | null;
+  /** `#RRGGBB`, or null if not ingested yet. */
+  team_colour: string | null;
+  /** Source URL of the headshot (not proxied), or null. */
+  headshot_url: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  broadcast_name: string | null;
+  country_code: string | null;
+}
+
+export interface Lap {
+  driver_number: number;
+  lap_number: number;
+  date_start: string | null;
+  lap_duration: number | null;
+  green: boolean | null;
+  reason: string | null;
+}
+
+export interface Straight {
+  straight_id: number;
+  label: string | null;
+  start_pct: number;
+  end_pct: number;
+}
+
+export interface OutlinePoint {
+  d: number;
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface Outline {
+  session_key: number;
+  driver_number: number;
+  lap_number: number;
+  points: OutlinePoint[];
+}
+
+export type RegimeLabel = 'deploy' | 'plateau' | 'lift' | 'brake';
+
+export interface RegimeBin {
+  bin: number;
+  d_start_m: number;
+  label: RegimeLabel;
+}
+
+export interface ResultRow {
+  session_key: number;
+  driver_number: number;
+  lap_number: number;
+  straight_id: number | null;
+  variable: string;
+  value: number | null;
+  ci_low: number | null;
+  ci_high: number | null;
+}
+
+export interface SummaryDriver extends Driver {
+  straights: {
+    straight_id: number;
+    cutoff_distance_median_m: number | null;
+    ci_low: number | null;
+    ci_high: number | null;
+  }[];
+  regime_shares: Partial<Record<RegimeLabel, number>>;
+}
+
+export interface CompareDriver {
+  driver_number: number;
+  name_acronym: string | null;
+  team_name: string | null;
+  team_colour: string | null;
+  headshot_url: string | null;
+  series: {
+    lap_number: number;
+    straight_id: number | null;
+    cutoff_distance_m: number | null;
+    ci_low: number | null;
+    ci_high: number | null;
+  }[];
+}
+
+export interface Compare {
+  session_key: number;
+  model_version: string | null;
+  straight_id: number | null;
+  drivers: CompareDriver[];
+}
+
+/** Display name for a straight; `label` holds the resolved name when the straight went through `nameStraights`. */
+export function straightName(s: { straight_id: number; label?: string | null }): string {
+  const l = (s.label ?? '').trim();
+  return l && !/^(straight|derived)$/i.test(l) ? l : `Straight ${s.straight_id}`;
+}
+
+/** One 50 m bin of a cross-lap speed profile (D30): medians over the clean laps. */
+export interface ProfileBin {
+  bin: number;
+  d_start_m: number;
+  /** Median speed in the bin, whole kph. */
+  v_kph: number;
+  /** Median of the per-lap mean acceleration in the bin, m/s². */
+  a_ms2: number;
+}
+
+/** `GET /api/sessions/{key}/straights/{s}/profile?driver=` (derived aggregate, never raw samples). */
+export interface StraightProfileResponse {
+  session_key: number;
+  driver_number: number;
+  straight_id: number;
+  model_version: string | null;
+  bin_m: number;
+  bins: ProfileBin[];
+  cutoff_median_m: number | null;
+  ci_low_m: number | null;
+  ci_high_m: number | null;
+}

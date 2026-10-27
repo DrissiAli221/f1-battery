@@ -10,7 +10,10 @@ immutable per `model_version`.
 - `GET /api/sessions` → sessions with `session_key, meeting_key, circuit_key,
   circuit_short_name, session_name, date_start, date_end, year, has_results`.
 - `GET /api/sessions/{key}/drivers` → `driver_number, name_acronym, full_name,
-  team_name`.
+  team_name, headshot_url, team_colour (`#RRGGBB`), first_name, last_name,
+  broadcast_name, country_code`. The detail fields are nullable (null until
+  `drivers` has been re-ingested). `headshot_url` is the OpenF1 source URL;
+  the API never proxies or caches images (DECISIONS.md D24).
 - `GET /api/sessions/{key}/laps?driver=` → from `lap` joined to
   `lap_quality`: `lap_number, date_start, lap_duration, green, reason`.
 - `GET /api/circuits/{circuit_key}/straights` → from `straight`:
@@ -50,11 +53,16 @@ Endpoints:
   entry per straight the driver has per-lap rows on, with `laps_analysed`,
   `laps_detected` and the median cut-off with CI (null unless at least three
   laps were detected, `pipeline.MIN_LAPS_FOR_SUMMARY`); regime shares averaged
-  over green laps; team_name. Drivers with no results (no green lap) are absent.
+  over green laps; team_name, team_colour
+  (`#RRGGBB`), headshot_url. Drivers with no results (no green lap) are absent.
 - `GET /api/sessions/{key}/laps/{lap}/regimes?driver=&model=` → the regime
   label per 50 m distance bin for that lap (from `model_result` variable
   `regime_bin_<n>` stored as value 0..3, or a compact JSON column if Phase 4
   chooses one; the API hides the storage).
+- `GET /api/sessions/{key}/straights/{straightId}/profile?driver=&model=` →
+  median speed (kph) and acceleration (m/s2) per 50 m bin from the straight's
+  start (`speed_bin_<n>`, `accel_bin_<n>` at lap_number 0), with the lap-0
+  cut-off median and interval; empty `bins` when the run has no profile rows.
 - `GET /api/compare?session=&drivers=a,b&straight=&model=` → the two drivers'
   per-lap cut-off series side by side.
 

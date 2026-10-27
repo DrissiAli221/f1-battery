@@ -69,7 +69,7 @@ public class ReferenceController {
         schema.requireSession(key);
         long total = jdbc.queryForObject("select count(*) from driver where session_key = ?", Long.class, key);
         List<Map<String, Object>> items = jdbc.query(
-                "select driver_number, name_acronym, full_name, team_name from driver "
+                "select driver_number, name_acronym, full_name, team_name, " + Schema.DRIVER_DETAILS + " from driver "
                         + "where session_key = ? order by driver_number limit ? offset ?",
                 Rows.MAP,
                 key,

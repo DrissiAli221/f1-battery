@@ -1,2 +1,8 @@
 node_modules
 dist
+
+# private assets, fetched at build (see private-assets.txt, scripts/private-assets.sh)
+/public/fonts/Formula1-Black.woff2
+/public/fonts/KHInterference-Regular.woff2
+/public/fonts/KHInterferenceF1-Regular.woff2
+/public/assets/heron-pixel-mask.svg
