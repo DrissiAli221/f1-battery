@@ -17,13 +17,13 @@
     "d3-scale": "4.0.2",
     "gsap": "3.15.0",
     "number-flow": "0.6.2",
-    "react": "18.3.1",
+    "react": "19.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "@types/d3-scale": "4.0.8",
-    "@types/react": "18.3.31",
+    "@types/react": "19.3.0",
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "4.7.0",
     "axe-core": "4.14.0",
