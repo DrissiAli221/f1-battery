@@ -4,7 +4,9 @@
 
 Estimates where electrical deployment ends on each straight from public 2026 telemetry, then tests one pre-registered question against real overtakes.
 
-Phases 0 to 6 are built and the findings are written (2026-10-18). The optional Phase 7 live replay (Kafka) is built. Not deployed yet.
+**Live:** https://d1913ktwn45t9g.cloudfront.net
+
+Phases 0 to 6 are built and the findings are written (2026-10-18). The optional Phase 7 live replay (Kafka) is built. The site is deployed (Oracle VM + AWS CloudFront) with the replay on.
 
 **Estimates, not measurements.** F1 does not publish battery or active-aero data for 2026, so this project never measures battery state and never reports a state of charge. The 2026 cars split power between engine and motor, and the FIA rules state how much electric power a car may use at each speed (Section C, Article C5.2.8), so the hidden state is partly constrained. That makes an estimate worth attempting and an honest test possible. Several per-race estimators exist (DECISIONS.md D1); this adds a season-wide pipeline and a pre-registered test against overtakes.
 
@@ -65,7 +67,19 @@ No effect means none detectable with this estimator and sample, not proof of abs
 - **Ingestion is rerunnable.** Upserts on natural keys mean a second full run inserts 0 rows ([phase1-ingestion.md](docs/phase1-ingestion.md)).
 - **The API is read-only.** The `f1_api` role has SELECT only; it is rate limited and serves derived aggregates, never raw samples.
 - **Kafka is optional,** behind a Compose profile and an API flag ([phase7-replay.md](docs/phase7-replay.md)).
-- **Planned hosting:** Oracle Cloud ARM free tier plus a private S3 backup. None of it is deployed.
+
+## Deployment
+
+<img alt="Deployment diagram: GitHub deploy branch to the Oracle VM, web build to S3 and CloudFront, API requests through CloudFront and Caddy to the API and database, the Kafka replay lane, and the systemd timers writing to S3" src="docs/figures/readme/deployment.webp" width="100%">
+
+- **Where things run.** One Oracle Cloud ARM VM (Always Free, 2 OCPU / 12 GB) runs the Compose project: Postgres with TimescaleDB, the read-only API, Kafka, the replay consumer and the job containers. A second project's Caddy owns ports 80/443 and proxies `/api` to the API.
+- **Public entry.** CloudFront serves the static site from S3 and forwards `/api/*` to the VM with a secret header; the VM answers 403 without it and 405 on writes. `/api/live/*` is unbuffered for the replay stream.
+- **Free tier.** The VM is Always Free; S3 and CloudFront stay small. Terraform for the AWS side is in `infra/aws-f1`, with a least-privilege IAM user for the VM.
+- **Timers.** `f1-backup.timer` dumps the database to S3 nightly at 02:00 UTC; `f1-weekly.timer` runs Mondays at 04:00 UTC (OpenF1 backup, ingest, model, publish, S3 sync); the replay producer is an always-on service.
+- **Backups.** Nightly dumps live in `db-backups/` on the data bucket with 14-day expiry; the raw OpenF1 backup is in `raw/`.
+- **A deploy.** `deploy.sh` pulls the `deploy` branch over a read-only deploy key, builds, publishes the model results and syncs `web/dist` to S3. CI only verifies.
+
+Details: [deploy/oracle/README.md](deploy/oracle/README.md), [infra/aws-f1/README.md](infra/aws-f1/README.md).
 
 ## Quick start
 
@@ -126,7 +140,7 @@ A caught artifact (smoothing "super-clip" segments, a failed hinge-ramp detector
 | 6 API and view | built |
 | Hypothesis and findings | frozen |
 | 7 Live replay with Kafka | optional |
-| 1.5 Deployment | not deployed |
+| 1.5 Deployment | deployed |
 
 ## Docs
 
